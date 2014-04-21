@@ -3,9 +3,9 @@
 """Tests for EventletThread."""
 
 import unittest
-from fred.test_handler import TestHandler
-from fred.eventlet_thread import EventletThread
-from fred.eventlet_test_handler import TestHandler as EventletTestHandler
+from serf.test_handler import TestHandler
+from serf.eventlet_thread import EventletThread
+from serf.eventlet_test_handler import TestHandler as EventletTestHandler
 
 class EventletThreadTest(unittest.TestCase):
     def test(self):

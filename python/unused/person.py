@@ -1,6 +1,6 @@
 """Demo cap with data schema."""
 
-from fred.obj import obj
+from serf.obj import obj
 
 schema = {
     'firstname': 'str',

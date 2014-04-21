@@ -1,7 +1,7 @@
 """Reliably replicate calls to a remote node."""
 
-from fred.po.call_log_reader import CallLogReader
-from fred.po.data_log import DataLog
+from serf.po.call_log_reader import CallLogReader
+from serf.po.data_log import DataLog
 
 class CallLog(object):
     serialize = ('_vat', 'data_log', 'readers')

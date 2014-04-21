@@ -1,12 +1,12 @@
 """Another attempt to model persistence."""
 
 from cStringIO import StringIO
-from fred.serialize import encode, decode, encodes, decodes, SerializationError, POD_TYPES
-from fred.ref import Ref
-from fred.synchronous import Synchronous
-from fred.util import randomString, rmap
-from fred.proxy import Proxy
-from fred.storage import Storage
+from serf.serialize import encode, decode, encodes, decodes, SerializationError, POD_TYPES
+from serf.ref import Ref
+from serf.synchronous import Synchronous
+from serf.util import randomString, rmap
+from serf.proxy import Proxy
+from serf.storage import Storage
 
 # Most of what happens here is converting stuff, either for
 # passing it to another Vat or for saving to disk.

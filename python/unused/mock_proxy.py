@@ -1,6 +1,6 @@
 """Mock proxy types for use in testing."""
 
-from fred.util import EqualityMixin
+from serf.util import EqualityMixin
 
 class SProxy(EqualityMixin):
     def __init__(self, arg):

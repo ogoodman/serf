@@ -6,9 +6,9 @@ import time
 import os
 import unittest
 import socket
-from fred.util import codeDir
-from fred.eventlet_net import Net
-from fred.eventlet_test_handler import TestHandler
+from serf.util import codeDir
+from serf.eventlet_net import Net
+from serf.eventlet_test_handler import TestHandler
 
 SERV = '127.0.0.1:6512'
 NOSERV = '127.0.0.1:6514'

@@ -1,6 +1,6 @@
 """Prints calls made on it."""
 
-from fred.util import EqualityMixin
+from serf.util import EqualityMixin
 
 class Printer(EqualityMixin):
     serialize = ()

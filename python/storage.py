@@ -1,20 +1,20 @@
 """Dictionary of persistent objects."""
 
-from fred.serialize import encodes, decodes, SerializationError
-from fred.po.file import File
-from fred.ref import Ref
-from fred.proxy import Proxy
-from fred.util import randomString, importSymbol
-from fred.synchronous import Synchronous
+from serf.serialize import encodes, decodes, SerializationError
+from serf.po.file import File
+from serf.ref import Ref
+from serf.proxy import Proxy
+from serf.util import randomString, importSymbol
+from serf.synchronous import Synchronous
 
 # This enables us to move serializable classes around.
 try:
-    from fred.config import mapClass
+    from serf.config import mapClass
 except ImportError:
     mapClass = lambda c: c
 
 AUTO_MAKE = {
-    'node_observer': 'fred.po.node_observer.NodeObserver'
+    'node_observer': 'serf.po.node_observer.NodeObserver'
 }
 
 Unique = []

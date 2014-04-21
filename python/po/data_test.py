@@ -3,11 +3,11 @@
 """Tests for Data object which wraps and observes changes to plain-old-data."""
 
 import unittest
-from fred.po.data import Data, AutoSave
-from fred.synchronous import Synchronous
-from fred.green_thread import GreenThread
-from fred.worker import Callback
-from fred.proxy import Proxy
+from serf.po.data import Data, AutoSave
+from serf.synchronous import Synchronous
+from serf.green_thread import GreenThread
+from serf.worker import Callback
+from serf.proxy import Proxy
 
 class TestObserver(object):
     def __init__(self):

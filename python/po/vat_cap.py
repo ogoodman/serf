@@ -1,6 +1,6 @@
 """Exposes some vat methods as a capability."""
 
-from fred.po.printer import Printer
+from serf.po.printer import Printer
 
 class VatCap(object):
     serialize = ('_vat',)

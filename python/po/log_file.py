@@ -2,7 +2,7 @@
 
 import os
 import struct
-from fred.po.file import openFile
+from serf.po.file import openFile
 
 class IncompleteRead(Exception):
     pass

@@ -4,8 +4,8 @@
 
 import os
 import unittest
-from fred.po.file import TestFile
-from fred.po.log_file import LogFile
+from serf.po.file import TestFile
+from serf.po.log_file import LogFile
 
 class LogFileTest(unittest.TestCase):
     def setUp(self):

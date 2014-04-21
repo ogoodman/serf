@@ -3,7 +3,7 @@
 """Tests for the Synchronous thread-model."""
 
 import unittest
-from fred.synchronous import Synchronous
+from serf.synchronous import Synchronous
 
 class SynchronousTest(unittest.TestCase):
     def test(self):

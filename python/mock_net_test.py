@@ -3,7 +3,7 @@
 """Tests for MockNet."""
 
 import unittest
-from fred.mock_net import MockNet
+from serf.mock_net import MockNet
 
 # It would be an encoded dictionary-like thing being passed in the
 # real framework layer. If we don't feel the need to test serialization

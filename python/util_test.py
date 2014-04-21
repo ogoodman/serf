@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
-"""Test for functions in fred.util."""
+"""Test for functions in serf.util."""
 
 import unittest
-from fred.util import EqualityMixin, rmap
+from serf.util import EqualityMixin, rmap
 
 class A(EqualityMixin):
     def __init__(self, arg):

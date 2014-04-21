@@ -3,19 +3,19 @@
 """Tests for class Vat."""
 
 import unittest
-from fred.vat import Vat, convert
-from fred.mock_net import MockNet
-from fred.proxy import Proxy
-from fred.ref import Ref
-from fred.po.data import Data
-from fred.test_object import TestObject
-from fred.serialize import SerializationError
-from fred.test_time import Time
-from fred.green_thread import GreenThread
-from fred.worker import Worker
-from fred.test_handler import TestHandler
-from fred.eventlet_thread import EventletThread
-from fred.storage import Storage
+from serf.vat import Vat, convert
+from serf.mock_net import MockNet
+from serf.proxy import Proxy
+from serf.ref import Ref
+from serf.po.data import Data
+from serf.test_object import TestObject
+from serf.serialize import SerializationError
+from serf.test_time import Time
+from serf.green_thread import GreenThread
+from serf.worker import Worker
+from serf.test_handler import TestHandler
+from serf.eventlet_thread import EventletThread
+from serf.storage import Storage
 
 class VatTest(unittest.TestCase):
     def testCall(self):

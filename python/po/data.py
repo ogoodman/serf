@@ -1,6 +1,6 @@
 """Free-form data for use in a storage slot."""
 
-from fred.po.group import Group
+from serf.po.group import Group
 
 def copy(data):
     t = type(data)

@@ -4,8 +4,8 @@
 
 import unittest
 import socket
-from fred.po.node_observer import NodeObserver
-from fred.synchronous import Synchronous
+from serf.po.node_observer import NodeObserver
+from serf.synchronous import Synchronous
 
 class TestObserver(object):
     def __init__(self):

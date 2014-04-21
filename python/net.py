@@ -3,8 +3,8 @@
 import struct
 import traceback
 import threading
-from fred.worker import Worker
-from fred.net_base import BaseReceiver, NetBase
+from serf.worker import Worker
+from serf.net_base import BaseReceiver, NetBase
 from lib.publisher import Publisher
 
 DEFAULT_PORT = 6502

@@ -3,15 +3,15 @@
 """Tests for reliable replication."""
 
 import unittest
-from fred.mock_net import MockNet
-from fred.test_fs import TestFS
-from fred.proxy import Proxy
+from serf.mock_net import MockNet
+from serf.test_fs import TestFS
+from serf.proxy import Proxy
 
-from fred.po.file import File
-from fred.po.data_log import DataLog
-from fred.po.call_log import CallLog
-from fred.po.printer import Printer
-from fred.po.node_observer import NodeObserver
+from serf.po.file import File
+from serf.po.data_log import DataLog
+from serf.po.call_log import CallLog
+from serf.po.printer import Printer
+from serf.po.node_observer import NodeObserver
 
 class CallLogTest(unittest.TestCase):
     def test(self):

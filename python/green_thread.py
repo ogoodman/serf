@@ -4,7 +4,7 @@ import atexit
 from greenlet import greenlet
 import threading
 import traceback
-from fred.worker import Worker, Scheduler, Callback
+from serf.worker import Worker, Scheduler, Callback
 from eventlet.green import threading as green_threading
 
 class Future(object):

@@ -1,6 +1,6 @@
 """Simple demo of master-slave switching."""
 
-from fred.obj import obj
+from serf.obj import obj
 
 class TestData(object):
     serialize = ('value', 'is_master')

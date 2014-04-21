@@ -7,18 +7,18 @@ import sys
 import time
 from eventlet.green import select
 from code import InteractiveConsole
-from fred.fs_dict import FSDict
-from fred.vat import Vat
-from fred.eventlet_net import Net
-from fred.node import Node
-from fred.eventlet_thread import EventletThread
-from fred.proxy import Proxy
-from fred.util import timeCall, codeDir
-from fred.po.printer import Printer
-from fred.po.group import Group
-from fred.storage import Storage, fcat
-from fred.worker import Worker
-from fred.repl_proxy import REPLProxy
+from serf.fs_dict import FSDict
+from serf.vat import Vat
+from serf.eventlet_net import Net
+from serf.node import Node
+from serf.eventlet_thread import EventletThread
+from serf.proxy import Proxy
+from serf.util import timeCall, codeDir
+from serf.po.printer import Printer
+from serf.po.group import Group
+from serf.storage import Storage, fcat
+from serf.worker import Worker
+from serf.repl_proxy import REPLProxy
 
 # A basic problem here (and with all code which uses eventlet in
 # the Python REPL) is that raw_input does a blocking read which prevents

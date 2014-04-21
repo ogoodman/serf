@@ -1,9 +1,9 @@
 """Mock internet."""
 
 import socket
-from fred.node import Node
-from fred.vat import Vat
-from fred.storage import Storage
+from serf.node import Node
+from serf.vat import Vat
+from serf.storage import Storage
 from lib.publisher import Publisher
 
 class MockEndpoint(Publisher):

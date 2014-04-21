@@ -1,8 +1,8 @@
 """Same as LogFile but stores serializable data structures."""
 
-from fred.serialize import encodes, decodes
-from fred.po.log_file import LogFile
-from fred.po.group import Group
+from serf.serialize import encodes, decodes
+from serf.po.log_file import LogFile
+from serf.po.group import Group
 
 class DataLog(object):
     serialize = ('_vat', 'fh', 'obs')

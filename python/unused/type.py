@@ -1,7 +1,7 @@
 """Type checking and normalization."""
 
 from datetime import date
-from fred.obj import obj
+from serf.obj import obj
 
 def normalize_str(value):
     if not isinstance(value, basestring):

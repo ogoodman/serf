@@ -3,12 +3,12 @@
 """Tests for Storage."""
 
 import unittest
-from fred.util import EqualityMixin
-from fred.storage import Storage
-from fred.po.data import Data
-from fred.ref import Ref
-from fred.test_person import Person
-from fred.test_time import Time
+from serf.util import EqualityMixin
+from serf.storage import Storage
+from serf.po.data import Data
+from serf.ref import Ref
+from serf.test_person import Person
+from serf.test_time import Time
 
 class TestObject(EqualityMixin):
     serialize = ('data', 'obs')

@@ -3,10 +3,10 @@
 """Tests for a DataLog."""
 
 import unittest
-from fred.storage import Storage
-from fred.test_fs import TestFS
-from fred.po.file import File
-from fred.po.data_log import DataLog
+from serf.storage import Storage
+from serf.test_fs import TestFS
+from serf.po.file import File
+from serf.po.data_log import DataLog
 
 class TestCallLog(object):
     def __init__(self):

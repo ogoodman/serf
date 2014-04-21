@@ -5,9 +5,9 @@
 import os
 import unittest
 import socket
-from fred.net import Net
-from fred.test_handler import TestHandler
-from fred.util import codeDir
+from serf.net import Net
+from serf.test_handler import TestHandler
+from serf.util import codeDir
 
 SERV = '127.0.0.1:6512'
 

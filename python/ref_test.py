@@ -3,13 +3,13 @@
 """Tests for Refs."""
 
 import unittest
-from fred.serialize import SerializationError
-from fred.ref import Ref, ReferenceError
-from fred.mock_net import MockNet
-from fred.obj import obj
-from fred.proxy import Proxy
-from fred.test_data import TestData
-from fred.storage import Storage
+from serf.serialize import SerializationError
+from serf.ref import Ref, ReferenceError
+from serf.mock_net import MockNet
+from serf.obj import obj
+from serf.proxy import Proxy
+from serf.test_data import TestData
+from serf.storage import Storage
 
 class RefTest(unittest.TestCase):
     def testFacets(self):

@@ -4,8 +4,8 @@
 
 import threading
 import unittest
-from fred.worker import Worker
-from fred.test_handler import TestHandler
+from serf.worker import Worker
+from serf.test_handler import TestHandler
 
 class WorkerTest(unittest.TestCase):
     def test(self):

@@ -3,10 +3,10 @@
 """Tests for class Proxy."""
 
 import unittest
-from fred.mock_net import MockNet
-from fred.vat import Vat
-from fred.test_object import TestObject
-from fred.proxy import Proxy
+from serf.mock_net import MockNet
+from serf.vat import Vat
+from serf.test_object import TestObject
+from serf.proxy import Proxy
 
 
 class ProxyTest(unittest.TestCase):

@@ -3,8 +3,8 @@
 """Tests for the serialize module."""
 
 import unittest
-from fred.serialize import encodes, decodes
-from fred.util import EqualityMixin
+from serf.serialize import encodes, decodes
+from serf.util import EqualityMixin
 
 
 class A(EqualityMixin):

@@ -3,7 +3,7 @@
 """Tests for group of references."""
 
 import unittest
-from fred.po.group import Group
+from serf.po.group import Group
 
 class TestObject(object):
     def __init__(self, can_throw=False):

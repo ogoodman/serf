@@ -4,11 +4,11 @@
 
 import unittest
 import os
-from fred.po.file import File, FileHandle, TestFile
-from fred.test_fs import TestFS
-from fred.fs_dict import FSDict
-from fred.obj import obj
-from fred.util import codeDir
+from serf.po.file import File, FileHandle, TestFile
+from serf.test_fs import TestFS
+from serf.fs_dict import FSDict
+from serf.obj import obj
+from serf.util import codeDir
 
 DATA_DIR = os.path.join(codeDir(), 'test_data')
 

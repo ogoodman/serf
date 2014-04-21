@@ -3,13 +3,13 @@
 """Server for distributed capabilities."""
 
 import os
-from fred.eventlet_net import Net
-from fred.fs_dict import FSDict
-from fred.eventlet_thread import EventletThread
-from fred.node import Node
-from fred.storage import Storage
-from fred.vat import Vat
-from fred.util import codeDir
+from serf.eventlet_net import Net
+from serf.fs_dict import FSDict
+from serf.eventlet_thread import EventletThread
+from serf.node import Node
+from serf.storage import Storage
+from serf.vat import Vat
+from serf.util import codeDir
 
 if __name__ == '__main__':
     NODE = '127.0.0.1:6502'

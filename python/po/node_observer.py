@@ -9,7 +9,7 @@ when it goes online after us, our observers of that node will get
 an online call.
 """
 
-from fred.po.group import Group
+from serf.po.group import Group
 import socket
 
 class NodeObserver(object):

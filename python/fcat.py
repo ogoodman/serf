@@ -7,8 +7,8 @@ Synopsis:
 """
 
 import os
-from fred.serialize import decodes, Record
-from fred.util import getOptions
+from serf.serialize import decodes, Record
+from serf.util import getOptions
 
 def main():
     opt, args = getOptions('-hn')

@@ -1,6 +1,6 @@
 """What capabilities should really look like."""
 
-from fred.obj import obj
+from serf.obj import obj
 
 def Printer():
     def pr(*x):

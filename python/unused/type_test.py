@@ -4,7 +4,7 @@
 
 import unittest
 from datetime import date
-from fred.obj import obj
+from serf.obj import obj
 from type import Types, RefTypes
 from mock_proxy import MockProxyFactory, Proxy, SProxy
 

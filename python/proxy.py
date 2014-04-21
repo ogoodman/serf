@@ -34,7 +34,7 @@ class Proxy(object):
         self._getattr('__delitem__')(key)
 
     def __str__(self):
-        return 'fred://' + self._node + '/' + self._path
+        return 'serf://' + self._node + '/' + self._path
 
     def __eq__(self, other):
         return (type(other) is Proxy and

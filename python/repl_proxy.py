@@ -5,8 +5,8 @@ Read-Eval-Print-Loop.
 """
 
 import types
-from fred.worker import Callback
-from fred.serialize import POD_TYPES
+from serf.worker import Callback
+from serf.serialize import POD_TYPES
 
 class REPLProxy(object):
     def __init__(self, target, tm):
