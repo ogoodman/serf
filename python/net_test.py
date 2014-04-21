@@ -9,6 +9,11 @@ from serf.net import Net
 from serf.test_handler import TestHandler
 from serf.util import codeDir
 
+try:
+    from serf.config import RUN_NET_TEST
+except ImportError:
+    RUN_NET_TEST = True
+
 SERV = '127.0.0.1:6512'
 
 NOSERV = '127.0.0.1:6514'
@@ -20,6 +25,8 @@ SSL = {
 
 class NetTest(unittest.TestCase):
     def test(self):
+        if not RUN_NET_TEST:
+            return
         server = Net(SERV, use_ssl=True, **SSL)
         handler = TestHandler(server)
 
