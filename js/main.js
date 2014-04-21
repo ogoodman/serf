@@ -8,7 +8,8 @@ require(['when/when'], function(when) {
 	    o: oid,
 	    i: callId,
 	    m: method,
-	    a: args
+	    a: args,
+	    r: 'browser'
 	};
 	var deferred = pendingCalls[callId] = when.defer();
 	connect().done(function() {

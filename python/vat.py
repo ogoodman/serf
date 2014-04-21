@@ -53,7 +53,7 @@ class SendErrorCb(object):
         self.cb_id = sender_cb_id
 
     def failure(self, exc):
-        self.vat.put('R', self.cb_id, {'exc': exc})
+        self.vat.lput(self.cb_id, {'e': exc})
 
 class Vat(object):
     def __init__(self, node_id, vat_id, storage, node=None, t_model=None):
@@ -64,6 +64,8 @@ class Vat(object):
         self.node = node
         self.callbacks = {}
         self.thread_model = thread_model
+        if node is not None:
+            node.subscribe('message', self.on_message)
 
     def setNode(self, node):
         self.node = node
@@ -81,14 +83,14 @@ class Vat(object):
             try:
                 cls = EXCEPTIONS[data['type']]
             except:
-                return RemoteException('%s%r' % (data['type'], data['args']))
-            return cls(*data['args'])
+                return RemoteException('%s%r' % (data['type'], data['a']))
+            return cls(*data['a'])
         raise SerializationError(name)
 
     def encodeRemote(self, inst, lev):
         t = type(inst)
         if isinstance(inst, Exception):
-            return 'exc', {'type': t.__name__, 'args': inst.args}
+            return 'exc', {'type': t.__name__, 'a': inst.args}
         ref = getattr(inst, 'ref', None)
         if type(ref) is Ref:
             t, inst = Ref, ref
@@ -99,42 +101,50 @@ class Vat(object):
             return 'ref', {'path': inst._path, 'node': inst._node}
         raise SerializationError(str(t))
 
-    def put(self, what, addr, msg):
-        if what == 'n':
-            func = self.nhandle
-        elif what == 'r':
-            func = self.rhandle
-        elif what == 'R':
-            func = self.handleReply
-        self.thread_model.callFromThread(func, addr, msg)
+    def handle(self, ev, msg):
+        """Handler for encoded message data.
 
-    def nhandle(self, addr, msg):
-        # call from event loop, pulling from a queue
+        Args:
+            ev: the event (not used)
+            msg: encoded message data
+        """
+        self.thread_model.callFromThread(self._rhandle, msg)
+
+    def lput(self, addr, msg):
+        """Handler for unencoded data from a different thread.
+
+        Args:
+            addr: instance to which message is addressed
+            msg: python data (not encoded)
+        """
+        self.thread_model.callFromThread(self._nhandle, addr, msg)
+
+    def _nhandle(self, addr, msg):
         msg = rmap(self.localize, msg)
         self._handle(addr, msg)
 
-    def rhandle(self, addr, msg_data):
-        # call from event loop, pulling from a queue
-        msg = decode(msg_data, self.decodeRemote)
+    def _rhandle(self, msg_data):
+        f = StringIO(msg_data)
+        addr = decode(f) # msg is addr, body
+        msg = decode(f, self.decodeRemote)
         self._handle(addr, msg)
 
     def _handle(self, addr, msg):
-        if 'method' in msg:
-            # make a green thread to run this call
+        if 'm' in msg:
             self.thread_model.call(self.handleCall, addr, msg)
         else:
             self.handleReply(addr, msg)
 
     def handleReply(self, addr, msg):
         cb = self.callbacks.pop(addr)
-        if 'result' in msg:
-            cb.success(msg['result'])
+        if 'r' in msg:
+            cb.success(msg['r'])
         else:
-            cb.failure(msg['exc'])
+            cb.failure(msg['e'])
 
     def handleCall(self, addr, msg):
-        method = msg['method']
-        args = msg['args']
+        method = msg['m']
+        args = msg['a']
         exc = None
         if addr:
             try:
@@ -150,31 +160,33 @@ class Vat(object):
             # Empty addr string can be used to ping the node.
             result = None
         try:
-            reply_addr = msg['reply_addr']
-            reply_node = msg['reply_node']
+            reply_addr = msg['i']
+            reply_node = msg['r']
         except KeyError:
             if exc is not None:
                 print 'Exc (no reply addr):', addr, msg, exc
             return
         if exc is None:
-            msg = {'result': result}
+            msg = {'r': result}
         else:
-            msg = {'exc': exc}
+            msg = {'e': exc}
         try:
             # serialization errors can occur here.
             self.send(reply_node, reply_addr, msg)
         except SerializationError, exc:
-            self.send(reply_node, reply_addr, {'exc': exc})
+            self.send(reply_node, reply_addr, {'e': exc})
 
     def send(self, node, addr, msg, errh=None):
+        assert(self.node_id == self.node.node_id)
         if node == self.node_id:
             msg = rmap(self.delocalize, msg)
-            self.node.nsend(addr, msg)
+            msg['o'] = addr
+            self.node.send(node, msg, errh)
         else:
             f = StringIO()
             encode(f, addr)
             encode(f, msg, self.encodeRemote)
-            self.node.send(node, f.getvalue(), errh=errh)
+            self.node.send(node, f.getvalue(), errh)
 
     def provide(self, addr, obj):
         self.storage[addr] = obj
@@ -184,10 +196,10 @@ class Vat(object):
         cb = self.thread_model.makeCallback()
         reply_addr = '@' + self.vat_id + '/' + randomString()
         self.callbacks[reply_addr] = cb
-        msg = {'method': method,
-               'args': args,
-               'reply_addr': reply_addr,
-               'reply_node': self.node_id}
+        msg = {'m': method,
+               'a': args,
+               'i': reply_addr,
+               'r': self.node_id}
         send_err_cb = SendErrorCb(self, reply_addr)
         self.send(node, addr, msg, send_err_cb.failure)
         return cb

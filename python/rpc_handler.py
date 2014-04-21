@@ -57,7 +57,7 @@ class RPCHandler(object):
         try:
             print self.transport.client_ip, 'Out', data
             json = traverse(data, self.preEncodeFn)
-            self.transport.send_message(cjson.encode(json))
+            self.transport.send('browser', cjson.encode(json))
         except Exception, e:
             print self.transport.client_ip, 'Not sent:', e, json
             return False

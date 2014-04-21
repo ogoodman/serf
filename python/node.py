@@ -59,28 +59,33 @@ class Node(object):
                 pass
 
     def handle(self, ev, msg):
+        """Peeks at address to find which vat to deliver it to."""
         f = StringIO(msg)
         addr = decode(f) # msg is addr, body
         vat_id = self.getVatId(addr)
-        self.vats[vat_id].put('r', addr, f)
+        self.vats[vat_id].handle('message', msg)
 
     def send(self, node, msg, errh=None):
-        self.net.send(node, msg, errh=errh)
-
-    def nsend(self, addr, msg):
-        vat_id = self.getVatId(addr)
-        self.vats[vat_id].put('n', addr, msg)
+        if node == self.node_id:
+            addr = msg['o']
+            vat_id = self.getVatId(addr)
+            self.vats[vat_id].lput(addr, msg)
+        else:
+            self.net.send(node, msg, errh=errh)
 
     def sendToName(self, name, msg):
         # The name must be a name owned by the default vat.
         vat = self.vats[self.default_vat_id]
         ref = vat.storage.getn(name)
-        vat.put('n', ref._path, msg)
+        vat.lput(ref._path, msg)
 
     def online(self, ev, node_id):
-        msg = {'method': 'online', 'args': (node_id,)}
+        msg = {'m': 'online', 'a': (node_id,)}
         self.sendToName('node_observer', msg)
 
     def connected(self, ev, node_id):
-        msg = {'method': 'connected', 'args': (node_id,)}
+        msg = {'m': 'connected', 'a': (node_id,)}
         self.sendToName('node_observer', msg)
+
+    def subscribe(self, event, cb):
+        pass

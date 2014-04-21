@@ -60,7 +60,7 @@ class WebSocketHandler(StreamRequestHandler, Publisher):
             else:
                 close_buf = ''
             try:
-                self.send_message(close_buf, 0x88)
+                self.send('browser', close_buf, code=0x88)
                 print self.client_ip, 'sent CLOSE'
             except:
                 pass
@@ -70,7 +70,7 @@ class WebSocketHandler(StreamRequestHandler, Publisher):
             self.on_message(decoded)
         return True
 
-    def send_message(self, message, code=0x81):
+    def send(self, node, message, errh=None, code=0x81):
         self.request.send(chr(code))
         length = len(message)
         if length <= 125:

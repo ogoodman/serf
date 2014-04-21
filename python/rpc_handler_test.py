@@ -10,7 +10,7 @@ from model import Model
 
 class MockTransport(Publisher):
     client_ip = 'ip'
-    def send_message(self, message):
+    def send(self, node, message, errh=None):
         self.peer.notify('message', message)
 
 class RPCHandlerTest(unittest.TestCase):
