@@ -3,6 +3,7 @@
 """Tests for class Vat."""
 
 import unittest
+import weakref
 from serf.vat import Vat, convert
 from serf.mock_net import MockNet
 from serf.proxy import Proxy
@@ -16,6 +17,16 @@ from serf.worker import Worker
 from serf.test_handler import TestHandler
 from serf.eventlet_thread import EventletThread
 from serf.storage import Storage
+from serf.json_codec import makeBoundMethod
+from serf.publisher import Publisher
+from serf.model import Model
+
+class MockTransport(Publisher):
+    client_ip = 'ip'
+    node_id = 'browser'
+
+    def send(self, node, message, errh=None):
+        self.peer.notify('message', {'node': self.node_id, 'message': message})
 
 class VatTest(unittest.TestCase):
     def testCall(self):
@@ -169,6 +180,31 @@ class VatTest(unittest.TestCase):
         self.assertEqual(type(r), Ref)
         self.assertEqual(p['a'], 1)
         self.assertEqual(node.getVatId(p._path), '2')
+
+    def testGC(self):
+        h = Vat('browser', '1', {}, Publisher())
+        makeBoundMethod(h, {'o':'shared', 'm':'notify'})
+        hr = weakref.ref(h)
+        self.assertEqual(hr(), h)
+        del h
+        self.assertEqual(hr(), None)
+
+    def testRPC(self):
+        ta = MockTransport()
+        tb = MockTransport()
+        ta.peer = tb
+        tb.peer = ta
+
+        na = Vat('browser', '1', {}, ta)
+        nb = Vat('browser', '2', {}, tb)
+
+        oa = Model()
+        na.provide(1, oa)
+
+        rset = makeBoundMethod(nb, {'o':1, 'm':'set'})
+        rset('x', 1)
+
+        self.assertEqual(oa.get('x'), 1)
 
 if __name__ == '__main__':
     unittest.main()

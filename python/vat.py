@@ -7,6 +7,7 @@ from serf.synchronous import Synchronous
 from serf.util import randomString, rmap
 from serf.proxy import Proxy
 from serf.storage import Storage
+from serf.json_codec import JSON_CODEC
 
 # Most of what happens here is converting stuff, either for
 # passing it to another Vat or for saving to disk.
@@ -66,6 +67,7 @@ class Vat(object):
         self.thread_model = thread_model
         if node is not None:
             node.subscribe('message', self.handle)
+        self.refs = []
 
     def setNode(self, node):
         self.node = node
@@ -124,9 +126,14 @@ class Vat(object):
         self._handle(addr, msg)
 
     def _rhandle(self, msg_data):
-        f = StringIO(msg_data['message'])
-        addr = decode(f) # msg is addr, body
-        msg = decode(f, self.decodeRemote)
+        if msg_data['node'] == 'browser':
+            msg = JSON_CODEC.decode(self, msg_data['message'])
+            addr = msg['o']
+            print self.node.client_ip, 'In', msg
+        else:
+            f = StringIO(msg_data['message'])
+            addr = decode(f) # msg is addr, body
+            msg = decode(f, self.decodeRemote)
         self._handle(addr, msg)
 
     def _handle(self, addr, msg):
@@ -153,6 +160,7 @@ class Vat(object):
                 exc = NoSuchObject(addr)
             else:
                 try:
+                    # FIXME: rpc_handler made _methods private. Should we?
                     result = getattr(obj, method)(*args)
                 except Exception, exc:
                     pass
@@ -177,16 +185,23 @@ class Vat(object):
             self.send(reply_node, reply_addr, {'e': exc})
 
     def send(self, node, addr, msg, errh=None):
-        assert(self.node_id == self.node.node_id)
-        if node == self.node_id:
+        if node == 'browser':
+            if 'm' in msg:
+                msg['o'] = addr
+            else:
+                msg['i'] = addr
+            print self.node.client_ip, 'Out', msg
+            enc = JSON_CODEC.encode(self, msg)
+        elif node == self.node_id:
             msg = rmap(self.delocalize, msg)
             msg['o'] = addr
-            self.node.send(node, msg, errh)
+            enc = msg
         else:
             f = StringIO()
             encode(f, addr)
             encode(f, msg, self.encodeRemote)
-            self.node.send(node, f.getvalue(), errh)
+            enc = f.getvalue()
+        self.node.send(node, enc, errh)
 
     def provide(self, addr, obj):
         self.storage[addr] = obj

@@ -2,17 +2,17 @@
 
 from SocketServer import TCPServer, ThreadingMixIn
 import thread
-from publisher import Publisher
-from websocket_handler import WebSocketHandler
-from rpc_handler import RPCHandler
-from model import Model
+from serf.publisher import Publisher
+from serf.websocket_handler import WebSocketHandler
+from serf.model import Model
+from serf.vat import Vat
 
 SINGLETON_MODEL = Model()
 
 def makeRPCHandler(socket, client_address, server):
     print client_address, 'connected'
     transport = WebSocketHandler(socket, client_address, server)
-    handler = RPCHandler(transport)
+    handler = Vat('server', '', {}, transport)
     handler.provide('shared', SINGLETON_MODEL)
     handler.provide('private', Model())
     try:
