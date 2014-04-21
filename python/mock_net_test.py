@@ -17,7 +17,7 @@ class MockHandler(object):
             transport.subscribe('message', self.handle)
 
     def handle(self, ev, msg):
-        self.received.append(msg)
+        self.received.append(msg['message'])
 
     def failure(self, exc):
         self.exc = exc

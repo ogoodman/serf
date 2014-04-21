@@ -128,7 +128,7 @@ class VatTest(unittest.TestCase):
         th = TestHandler()
 
         def pr(fn, arg):
-            th.handle('message', fn(arg))
+            th.handle('message', {'message': fn(arg)})
 
         # The reason we have to call pa[] in gta (green thread a)
         # is because if the cb.wait() is called by this thread

@@ -10,8 +10,9 @@ from model import Model
 
 class MockTransport(Publisher):
     client_ip = 'ip'
+    node_id = 'browser'
     def send(self, node, message, errh=None):
-        self.peer.notify('message', message)
+        self.peer.notify('message', {'node': self.node_id, 'message': message})
 
 class RPCHandlerTest(unittest.TestCase):
     def testGC(self):

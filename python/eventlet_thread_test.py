@@ -16,13 +16,13 @@ class EventletThreadTest(unittest.TestCase):
         thread.start()
 
         with eth.expect(1):
-            thread.callFromThread(eth.handle, 'message', 'hi')
+            thread.callFromThread(eth.handle, 'message', {'message': 'hi'})
 
         thread.stop()
         thread.start(True) # now in a different thread
 
         with th.expect(1):
-            thread.callFromThread(th.handle, 'message', 'lo')
+            thread.callFromThread(th.handle, 'message', {'message': 'lo'})
 
 
 if __name__ == '__main__':

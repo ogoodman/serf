@@ -24,7 +24,7 @@ class TestHandler(object):
             transport.subscribe('online', self.online)
 
     def handle(self, ev, msg):
-        self.received.append(msg)
+        self.received.append(msg['message'])
         if len(self.received) == self.expected:
             self.event.send()
 

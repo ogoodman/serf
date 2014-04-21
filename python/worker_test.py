@@ -16,7 +16,7 @@ class WorkerTest(unittest.TestCase):
         th = TestHandler()
 
         def waitForCallback():
-            th.handle('message', cb.wait())
+            th.handle('message', {'message': cb.wait()})
 
         # callFromThread is same as call, both are thread-safe.
         worker.callFromThread(waitForCallback)

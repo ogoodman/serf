@@ -65,7 +65,7 @@ class RPCHandler(object):
     def on_message(self, e, message):
         id = None
         try:
-            data = traverse(cjson.decode(message), self.postDecodeFn)
+            data = traverse(cjson.decode(message['message']), self.postDecodeFn)
             print self.transport.client_ip, 'In', data
             id = data.get('i')
             o_id = data['o']

@@ -65,7 +65,7 @@ class Vat(object):
         self.callbacks = {}
         self.thread_model = thread_model
         if node is not None:
-            node.subscribe('message', self.on_message)
+            node.subscribe('message', self.handle)
 
     def setNode(self, node):
         self.node = node
@@ -106,7 +106,7 @@ class Vat(object):
 
         Args:
             ev: the event (not used)
-            msg: encoded message data
+            msg: message event object
         """
         self.thread_model.callFromThread(self._rhandle, msg)
 
@@ -124,7 +124,7 @@ class Vat(object):
         self._handle(addr, msg)
 
     def _rhandle(self, msg_data):
-        f = StringIO(msg_data)
+        f = StringIO(msg_data['message'])
         addr = decode(f) # msg is addr, body
         msg = decode(f, self.decodeRemote)
         self._handle(addr, msg)

@@ -42,7 +42,7 @@ class NetTest(unittest.TestCase):
         self.assertEqual(c_handler.received, ['hello'])
 
         def errh(exc):
-            c_handler.handle('', exc)
+            c_handler.handle('', {'message': exc})
         with c_handler.expect(1):
             client.send(NOSERV, 'anyone there?', errh=errh)
         self.assertEqual(type(c_handler.received[0]), socket.error)

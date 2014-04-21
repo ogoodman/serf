@@ -60,7 +60,7 @@ class Node(object):
 
     def handle(self, ev, msg):
         """Peeks at address to find which vat to deliver it to."""
-        f = StringIO(msg)
+        f = StringIO(msg['message'])
         addr = decode(f) # msg is addr, body
         vat_id = self.getVatId(addr)
         self.vats[vat_id].handle('message', msg)

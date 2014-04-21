@@ -18,7 +18,7 @@ class TestHandler(object):
 
     def handle(self, ev, msg):
         with self.cond:
-            self.received.append(msg)
+            self.received.append(msg['message'])
             self.cond.notify()
 
     def online(self, ev, node):

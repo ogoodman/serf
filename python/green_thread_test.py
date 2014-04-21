@@ -20,11 +20,11 @@ class GreenThreadTest(unittest.TestCase):
         th = TestHandler()
 
         def second():
-            th.handle('message', 'second')
+            th.handle('message', {'message': 'second'})
 
         def first():
             self.thread.call(second)
-            th.handle('message', 'first')
+            th.handle('message', {'message': 'first'})
 
         with th.expect(2):
             self.thread.callFromThread(first)
@@ -35,15 +35,15 @@ class GreenThreadTest(unittest.TestCase):
         th = TestHandler()
 
         def second(cb):
-            th.handle('message', 'first')
+            th.handle('message', {'message': 'first'})
             cb.success('second')
-            th.handle('message', 'fourth')
+            th.handle('message', {'message': 'fourth'})
 
         def first():
             cb = self.thread.makeCallback()
             self.thread.call(second, cb)
-            th.handle('message', cb.wait())
-            th.handle('message', 'third')
+            th.handle('message', {'message': cb.wait()})
+            th.handle('message', {'message': 'third'})
 
         with th.expect(4):
             self.thread.callFromThread(first)
