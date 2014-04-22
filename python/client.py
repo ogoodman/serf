@@ -65,7 +65,6 @@ thread.callFromThread(net.start)
 # A second thread for testing blocking code.
 #s1 = Storage(store, t_model=EventletThread())
 #v1 = Vat(CLIENT, '1', s1, t_model=s1.thread_model)
-#node.addVat(v1)
 #s1.thread_model.start(True)
 
 def wrap(x):

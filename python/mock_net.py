@@ -1,7 +1,6 @@
 """Mock internet."""
 
 import socket
-from serf.node import Node
 from serf.vat import Vat
 from serf.storage import Storage
 from lib.publisher import Publisher
@@ -11,8 +10,8 @@ class MockEndpoint(Publisher):
         Publisher.__init__(self)
         self.node_id = node_id
 
-    def send(self, node, msg, errh=None):
-        self.notify('send', [node, msg, errh, self.node_id])
+    def send(self, node, msg, pcol='serf', errh=None):
+        self.notify('send', [node, msg, pcol, errh, self.node_id])
 
 class MockNet(object):
     def __init__(self):
@@ -20,12 +19,12 @@ class MockNet(object):
         self.node = {}
         self.offline = set()
 
-    def send(self, node, msg, errh=None, frm=''):
+    def send(self, node, msg, pcol='serf', errh=None, frm=''):
         if node in self.offline:
             errh(socket.error())
             return
         try:
-            self.end[node].notify('message', {'from': frm, 'pcol': 'serf', 'message': msg})
+            self.end[node].notify('message', {'from': frm, 'pcol': pcol, 'message': msg})
         except Exception, e:
             if errh is not None:
                 errh(e)
@@ -43,9 +42,7 @@ class MockNet(object):
         assert(node_id not in self.end)
         transport = self.addNode(node_id)
         storage = Storage(store, t_model=t_model)
-        vat = Vat(node_id, vat_id, storage, t_model=t_model)
-        self.node[node_id] = Node(node_id, transport, {})
-        self.node[node_id].addVat(vat)
+        vat = Vat(node_id, vat_id, storage, node=transport, t_model=t_model)
         return storage, vat
 
     def goOffline(self, node):

@@ -131,11 +131,16 @@ class Vat(object):
         self._handle(addr, msg)
 
     def _rhandle(self, msg_data):
-        if msg_data['pcol'] == 'json':
+        pcol = msg_data['pcol']
+        if pcol == 'json':
             msg = JSON_CODEC.decode(self, msg_data['message'])
             addr = msg['o']
             if self.verbose:
                 print self.node.client_ip, 'In', msg
+        elif pcol == 'local':
+            msg = msg_data['message']
+            addr = msg['o']
+            msg = rmap(self.localize, msg)
         else:
             f = StringIO(msg_data['message'])
             addr = decode(f) # msg is addr, body
@@ -199,16 +204,19 @@ class Vat(object):
             if self.verbose:
                 print self.node.client_ip, 'Out', msg
             enc = JSON_CODEC.encode(self, msg)
+            pcol = 'json'
         elif node == self.node_id:
             msg = rmap(self.delocalize, msg)
             msg['o'] = addr
             enc = msg
+            pcol = 'local'
         else:
             f = StringIO()
             encode(f, addr)
             encode(f, msg, self.encodeRemote)
             enc = f.getvalue()
-        self.node.send(node, enc, errh)
+            pcol = 'serf'
+        self.node.send(node, enc, pcol, errh=errh)
 
     def provide(self, addr, obj):
         self.storage[addr] = obj

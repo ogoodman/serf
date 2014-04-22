@@ -6,7 +6,6 @@ import os
 from serf.eventlet_net import Net
 from serf.fs_dict import FSDict
 from serf.eventlet_thread import EventletThread
-from serf.node import Node
 from serf.storage import Storage
 from serf.vat import Vat
 from serf.util import codeDir

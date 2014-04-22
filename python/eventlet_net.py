@@ -120,7 +120,7 @@ class Net(Publisher):
     def doStop(self):
         raise eventlet.StopServe()
 
-    def send(self, node, msg, errh=None):
+    def send(self, node, msg, pcol='serf', errh=None):
         if threading.currentThread() != self.thread:
             return self.callFromThread(self.send, node, msg, errh)
         try:

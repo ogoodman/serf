@@ -70,7 +70,7 @@ class WebSocketHandler(StreamRequestHandler, Publisher):
             self.on_message(decoded)
         return True
 
-    def send(self, node, message, errh=None, code=0x81):
+    def send(self, node, message, pcol='json', errh=None, code=0x81):
         self.request.send(chr(code))
         length = len(message)
         if length <= 125:
