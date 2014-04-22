@@ -31,51 +31,51 @@ class MockTransport(Publisher):
 class VatTest(unittest.TestCase):
     def testCall(self):
         net = MockNet()
-        nodea = net.addVat('A', '1', {})
-        nodeb = net.addVat('B', '1', {})
+        nodea, va = net.addVat('A', '1', {})
+        nodeb, vb = net.addVat('B', '1', {})
 
         nodea['addr'] = TestObject()
 
-        cb = nodeb.rpc.call('A', 'addr', 'incr', [1])
+        cb = vb.call('A', 'addr', 'incr', [1])
 
         self.assertEqual(cb.result, 2)
 
     def testWithStorage(self):
         net = MockNet()
-        na = net.addVat('A', '1', {})
-        nb = net.addVat('B', '1', {})
+        na, va = net.addVat('A', '1', {})
+        nb, vb = net.addVat('B', '1', {})
 
         na['TOB'] = Data({}) # store a data object
 
         # call it from node b
-        c1 = nb.rpc.call('A', 'TOB', '__setitem__', ['foo', 1])
-        c2 = nb.rpc.call('A', 'TOB', 'save', [])
+        c1 = vb.call('A', 'TOB', '__setitem__', ['foo', 1])
+        c2 = vb.call('A', 'TOB', 'save', [])
 
         # simulate restart of node a
         na.clearCache()
 
         # retrieve saved value from node a
-        c3 = nb.rpc.call('A', 'TOB', '__getitem__', ['foo'])
+        c3 = vb.call('A', 'TOB', '__getitem__', ['foo'])
         self.assertEqual([c1.wait(), c2.wait(), c3.wait()], [None, None, 1])
 
     def testNonexistentNode(self):
         net = MockNet()
-        na = net.addVat('A', '0', {})
-        cb = na.rpc.call('B', 'x', 'method', [])
+        na, va = net.addVat('A', '0', {})
+        cb = va.call('B', 'x', 'method', [])
         self.assertRaises(KeyError, cb.wait)
 
     def test(self):
         net = MockNet()
-        na = net.addVat('A', '1', {})
-        nb = net.addVat('B', '1', {})
+        na, va = net.addVat('A', '1', {})
+        nb, vb = net.addVat('B', '1', {})
 
         na['a'] = Time()
         na['o'] = TestObject()
 
         na.clearCache()
 
-        nb['ap'] = nb.makeProxy('a', 'A')
-        nb['op'] = nb.makeProxy('o', 'A')
+        nb['ap'] = vb.makeProxy('a', 'A')
+        nb['op'] = vb.makeProxy('o', 'A')
         nb['d'] = Data({'name': u'Fred'})
         nb['b'] = Time()
         nb['br'] = nb.getRef('b')
@@ -104,15 +104,15 @@ class VatTest(unittest.TestCase):
 
     def testAddVat(self):
         net = MockNet()
-        va = net.addVat('A', '1', {})
-        vb1 = net.addVat('B', '1', {})
-        #vb2 = net.addVat('B', '2', {})
+        va, ra = net.addVat('A', '1', {})
+        vb1, rb1 = net.addVat('B', '1', {})
+        #vb2, rb2 = net.addVat('B', '2', {})
 
         va['df'] = {'name': u'Fred'}
         vb1['db'] = {'name': u'Barney'}
 
-        p = vb1.makeProxy('df', 'A')
-        p2 = vb1.makeProxy('db', 'B')
+        p = rb1.makeProxy('df', 'A')
+        p2 = rb1.makeProxy('db', 'B')
 
         self.assertEqual(p['name'], u'Fred')
         self.assertEqual(p2['name'], u'Barney')
@@ -125,16 +125,16 @@ class VatTest(unittest.TestCase):
     def testGreen(self):
         net = MockNet()
         gta = GreenThread()
-        va = net.addVat('X', 'A', {}, t_model=gta)
+        va, ra = net.addVat('X', 'A', {}, t_model=gta)
         gta.start()
 
         gtb = GreenThread()
-        vb = net.addVat('X', 'B', {}, t_model=gtb)
+        vb, rb = net.addVat('X', 'B', {}, t_model=gtb)
         gtb.start()
 
         va['data'] = {'name': 'Tom'}
 
-        pb = vb.makeProxy('data', 'X')
+        pb = rb.makeProxy('data', 'X')
 
         th = TestHandler()
 
@@ -155,33 +155,17 @@ class VatTest(unittest.TestCase):
     def testWorker(self):
         net = MockNet()
         gta = EventletThread()
-        va = net.addVat('X', 'A', {}, t_model=gta)
+        va, ra = net.addVat('X', 'A', {}, t_model=gta)
         gta.start(True)
 
         worker = EventletThread()
-        vb = net.addVat('X', 'B', {}, t_model=worker)
+        vb, rb = net.addVat('X', 'B', {}, t_model=worker)
         worker.start()
 
         va['data'] = {'name': 'Tom'}
 
-        pb = vb.makeProxy('data', 'X')
+        pb = rb.makeProxy('data', 'X')
         self.assertEqual(pb['name'], 'Tom')
-
-    def testMultipleVats(self):
-        # We're giving up on transparent vat routing.
-        return
-        net = MockNet()
-        store = {}
-        v1 = net.addVat('N', '1', store)
-        v2 = net.addVat('N', '2', store)
-        node = net.node['N']
-
-        p = v1.makeRef({'a': 1}, vat_id='2') # make new object in different vat.
-        self.assertFalse(p._path in v1.cache)
-        r = convert(v1.rpc, v2.rpc, p)
-        self.assertEqual(type(r), Ref)
-        self.assertEqual(p['a'], 1)
-        self.assertEqual(node.getVatId(p._path), '2')
 
     def testGC(self):
         h = Vat('browser', '1', {}, Publisher())

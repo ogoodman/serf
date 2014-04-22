@@ -23,7 +23,7 @@ class NodeObserver(object):
 
     def ping(self, node):
         try:
-            self.vat.rpc.call(node, '', 'ping', ()).wait()
+            self.vat.getRPC().call(node, '', 'ping', ()).wait()
             return True
         except socket.error:
             return False

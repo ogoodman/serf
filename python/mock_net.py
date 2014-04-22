@@ -38,12 +38,11 @@ class MockNet(object):
     def addVat(self, node_id, vat_id, store, t_model=None):
         storage = Storage(store, t_model=t_model)
         vat = Vat(node_id, vat_id, storage, t_model=t_model)
-        storage.rpc = vat
         if node_id not in self.node:
             transport = self.addNode(node_id)
             self.node[node_id] = Node(node_id, transport, {})
         self.node[node_id].addVat(vat)
-        return vat.storage
+        return storage, vat
 
     def goOffline(self, node):
         self.offline.add(node)

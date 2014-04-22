@@ -27,7 +27,6 @@ class TestVat(object):
         self.thread_model = Synchronous()
         self.pinged = []
         self.node_observer = None
-        self.rpc = self
 
     def call(self, node, *rest):
         self.pinged.append(node)
@@ -38,6 +37,9 @@ class TestVat(object):
             cb.success(None)
             self.node_observer.connected(node)
         return cb
+
+    def getRPC(self):
+        return self
 
 class NodeObserverTest(unittest.TestCase):
     def test(self):

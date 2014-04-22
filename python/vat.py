@@ -68,6 +68,8 @@ class Vat(object):
         if node is not None:
             node.subscribe('message', self.handle)
         self.refs = []
+        if hasattr(storage, 'setRPC'):
+            storage.setRPC(self)
 
     def setNode(self, node):
         self.node = node

@@ -16,15 +16,15 @@ from serf.po.node_observer import NodeObserver
 class CallLogTest(unittest.TestCase):
     def test(self):
         net = MockNet()
-        va = net.addVat('A', '1', TestFS())
-        vb = net.addVat('B', '1', TestFS())
+        va, ra = net.addVat('A', '1', TestFS())
+        vb, rb = net.addVat('B', '1', TestFS())
 
         cl = va.makeRef(CallLog(va))
 
         # We'll use a call log as the replication target.
         clb = vb.makeRef(CallLog(vb))
 
-        p = va.rpc.makeProxy(clb._path, 'B')
+        p = ra.makeProxy(clb._path, 'B')
 
         cl.say('hi')
         cl.say('bye')

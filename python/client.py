@@ -56,7 +56,6 @@ thread = EventletThread()
 s0 = Storage(store, t_model=thread)
 v0 = Vat(CLIENT, '0', s0, t_model=thread)
 node.addVat(v0)
-s0.rpc = v0
 
 # thread.start(True) means start a new thread, while False means
 # use the current thread. When RUN_CONSOLE is true we run Net and Vat
@@ -70,7 +69,6 @@ thread.callFromThread(net.start)
 #s1 = Storage(store, t_model=EventletThread())
 #v1 = Vat(CLIENT, '1', s1, t_model=s1.thread_model)
 #node.addVat(v1)
-#s1.rpc = v1
 #s1.thread_model.start(True)
 
 def wrap(x):

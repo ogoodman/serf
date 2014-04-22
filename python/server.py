@@ -24,7 +24,6 @@ if __name__ == '__main__':
     thread = EventletThread()
     storage = Storage(store, t_model=thread)
     vat = Vat(NODE, '0', storage, t_model=thread)
-    storage.rpc = vat
     node.addVat(vat)
 
     thread.start()

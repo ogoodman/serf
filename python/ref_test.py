@@ -55,14 +55,14 @@ class RefTest(unittest.TestCase):
 
     def testFacetProxy(self):
         net = MockNet()
-        va = net.addVat('A', '1', {})
-        vb = net.addVat('B', '1', {})
+        va, ra = net.addVat('A', '1', {})
+        vb, rb = net.addVat('B', '1', {})
 
         main_ref = va.makeRef(TestData(24))
         public = va.makeRef(main_ref._getFacet('public'))
 
         bdata = vb.makeRef(TestData())
-        bproxy = va.rpc.makeProxy(bdata._path, 'B') # proxy for bdata in A.
+        bproxy = ra.makeProxy(bdata._path, 'B') # proxy for bdata in A.
 
         # To test serialization of the public facet we will
         # attempt to pass it to the remote object.

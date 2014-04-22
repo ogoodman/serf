@@ -1,5 +1,6 @@
 """Dictionary of persistent objects."""
 
+import weakref
 from serf.serialize import encodes, decodes, SerializationError
 from serf.po.file import File
 from serf.ref import Ref
@@ -73,10 +74,20 @@ class Storage(object):
     def clearCache(self):
         self.cache = {}
 
+    def setRPC(self, rpc):
+        self.rpc = weakref.ref(rpc)
+
+    def getRPC(self):
+        if self.rpc is not None:
+            return self.rpc()
+
     def decode(self, name, data, lev, save=None):
         if name == 'ref':
             if 'node' in data:
-                return self.rpc.makeProxy(data['path'], data['node'])
+                rpc = self.getRPC()
+                if rpc is None:
+                    raise SerializationError('Cannot create proxy: rpc not set')
+                return rpc.makeProxy(data['path'], data['node'])
             return Ref(self, data['path'], data.get('facet'))
         if name == 'inst':
             cls = importSymbol(mapClass(data['CLS']))
@@ -100,7 +111,6 @@ class Storage(object):
                 data['facet'] = inst._facet
             return 'ref', data
         if t is Proxy:
-            # FIXME: need not save node if node_id is ours.
             return 'ref', {'path': inst._path, 'node': inst._node}
         if type(getattr(t, 'serialize', None)) is tuple:
             data = getDict(inst)
@@ -158,9 +168,6 @@ class Storage(object):
         if svalue is not None:
             ref._set(svalue)
         return ref
-
-    def makeProxy(self, path, node=None):
-        return self.rpc.makeProxy(path, node)
 
     def makeFile(self, ref=False):
         file = File(self, randomString())

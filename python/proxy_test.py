@@ -12,10 +12,10 @@ from serf.proxy import Proxy
 class ProxyTest(unittest.TestCase):
     def testFuture(self):
         net = MockNet()
-        na = net.addVat('A', '1', {})
-        nb = net.addVat('B', '1', {})
+        na, va = net.addVat('A', '1', {})
+        nb, vb = net.addVat('B', '1', {})
 
-        pr = na.rpc.provide('addr', TestObject())
+        pr = va.provide('addr', TestObject())
         ob = na.cache['addr']
 
         f = pr.incr_f(1) # remote call increment
@@ -27,7 +27,7 @@ class ProxyTest(unittest.TestCase):
         f = pr.foo_f()
         self.assertRaises(AttributeError, f.wait)
 
-        pb = nb.rpc.provide('addrb', TestObject())
+        pb = vb.provide('addrb', TestObject())
 
         pr.setProxy_f(pb) # pass pb to ob.
         self.assertNotEqual(ob.proxy, None)
@@ -37,10 +37,10 @@ class ProxyTest(unittest.TestCase):
 
     def testProxy(self):
         net = MockNet()
-        na = net.addVat('A', '1', {})
-        nb = net.addVat('B', '1', {})
+        na, va = net.addVat('A', '1', {})
+        nb, vb = net.addVat('B', '1', {})
 
-        pr = na.rpc.provide('addr', TestObject())
+        pr = va.provide('addr', TestObject())
         ob = na.cache['addr']
 
         self.assertEqual(pr.incr(1), 2) # remote call increment
@@ -51,7 +51,7 @@ class ProxyTest(unittest.TestCase):
         # NOTE: attribute error occurs only when called.
         self.assertRaises(AttributeError, pr.foo)
 
-        pb = nb.rpc.provide('addrb', TestObject())
+        pb = vb.provide('addrb', TestObject())
 
         pr.setProxy(pb) # pass pb to ob.
         self.assertNotEqual(ob.proxy, None)
