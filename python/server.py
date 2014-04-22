@@ -22,12 +22,12 @@ if __name__ == '__main__':
     node = Node(NODE, net, store)
 
     thread = EventletThread()
-    storage = Storage(store, '0', node, t_model=thread)
+    storage = Storage(store, t_model=thread)
     vat = Vat(NODE, '0', storage, t_model=thread)
     storage.rpc = vat
     node.addVat(vat)
 
     thread.start()
-    print 'Fred Server 0.1', NODE
+    print 'Serf Server 0.1', NODE
     net.serve()
     thread.stop()

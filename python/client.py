@@ -53,7 +53,7 @@ net = Net(CLIENT, use_ssl=True, keyfile=KEY, certfile=CERT)
 node = Node(CLIENT, net, store)
 
 thread = EventletThread()
-s0 = Storage(store, '0', node, t_model=thread)
+s0 = Storage(store, t_model=thread)
 v0 = Vat(CLIENT, '0', s0, t_model=thread)
 node.addVat(v0)
 s0.rpc = v0
@@ -67,11 +67,11 @@ thread.callFromThread(net.listen)
 thread.callFromThread(net.start)
 
 # A second thread for testing blocking code.
-s1 = Storage(store, '1', node, t_model=EventletThread())
-v1 = Vat(CLIENT, '1', s1, t_model=s1.thread_model)
-node.addVat(v1)
-s1.rpc = v1
-s1.thread_model.start(True)
+#s1 = Storage(store, t_model=EventletThread())
+#v1 = Vat(CLIENT, '1', s1, t_model=s1.thread_model)
+#node.addVat(v1)
+#s1.rpc = v1
+#s1.thread_model.start(True)
 
 def wrap(x):
     return REPLProxy(x, thread)

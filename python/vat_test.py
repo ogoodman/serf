@@ -106,10 +106,10 @@ class VatTest(unittest.TestCase):
         net = MockNet()
         va = net.addVat('A', '1', {})
         vb1 = net.addVat('B', '1', {})
-        vb2 = net.addVat('B', '2', {})
+        #vb2 = net.addVat('B', '2', {})
 
         va['df'] = {'name': u'Fred'}
-        vb2['db'] = {'name': u'Barney'}
+        vb1['db'] = {'name': u'Barney'}
 
         p = vb1.makeProxy('df', 'A')
         p2 = vb1.makeProxy('db', 'B')
@@ -119,8 +119,8 @@ class VatTest(unittest.TestCase):
 
         self.assertEqual(net.node['A'].getVatId('df'), '1')
 
-        self.assertEqual(type(vb1['db']), Proxy)
-        self.assertEqual(type(vb2['db']), dict)
+        self.assertEqual(type(vb1['db']), dict)
+        #self.assertEqual(type(vb2['db']), dict)
 
     def testGreen(self):
         net = MockNet()
@@ -168,6 +168,8 @@ class VatTest(unittest.TestCase):
         self.assertEqual(pb['name'], 'Tom')
 
     def testMultipleVats(self):
+        # We're giving up on transparent vat routing.
+        return
         net = MockNet()
         store = {}
         v1 = net.addVat('N', '1', store)

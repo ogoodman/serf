@@ -36,7 +36,7 @@ class MockNet(object):
         return self.end[node]
 
     def addVat(self, node_id, vat_id, store, t_model=None):
-        storage = Storage(store, vat_id, None, None, t_model=t_model)
+        storage = Storage(store, t_model=t_model)
         vat = Vat(node_id, vat_id, storage, t_model=t_model)
         storage.rpc = vat
         if node_id not in self.node:

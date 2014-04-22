@@ -38,7 +38,7 @@ class ProxyTest(unittest.TestCase):
     def testProxy(self):
         net = MockNet()
         na = net.addVat('A', '1', {})
-        nb = net.addVat('A', '2', {})
+        nb = net.addVat('B', '1', {})
 
         pr = na.rpc.provide('addr', TestObject())
         ob = na.cache['addr']

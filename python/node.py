@@ -23,7 +23,6 @@ class Node(object):
         if self.default_vat_id is None:
             self.default_vat_id = vat.vat_id
         vat.setNode(self)
-        vat.setVatMap(self)
 
     def getVatId(self, path):
         if path.startswith('@'):

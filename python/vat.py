@@ -263,6 +263,3 @@ class Vat(object):
         if typ is Ref:
             return Proxy(self.node_id, x._path)
         raise SerializationError('cannot delocalize type %s' % typ)
-
-    def setVatMap(self, vat_map):
-        self.storage.setVatMap(vat_map)

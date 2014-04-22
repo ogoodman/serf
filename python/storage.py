@@ -23,30 +23,16 @@ class NoSuchName(Exception):
     pass
 
 class Storage(object):
-    def __init__(self, store, vat_id='0', vat_map=None, rpc=None, t_model=None):
+    def __init__(self, store, t_model=None):
         self.store = store # stuff on disk
-        self.vat_id = vat_id
-        self.vat_map = vat_map
-        self.rpc = rpc
+        self.rpc = None
         self.cache = {} # instantiated
         self.thread_model = Synchronous() if t_model is None else t_model
-
-    def setVatMap(self, vat_map):
-        self.vat_map = vat_map
-
-    def _vatId(self, path):
-        if self.vat_map is None:
-            return self.vat_id
-        return self.vat_map.getVatId(path)
 
     def __getitem__(self, path):
         # we get instantiated values
         if path not in self.cache:
-            vat_id = self._vatId(path)
-            if vat_id == self.vat_id:
-                self._load(path)
-            else:
-                self.cache[path] = self.rpc.makeProxy(path)
+            self._load(path)
         return self.cache[path]
 
     def _addRef(self, path, svalue):
@@ -68,8 +54,6 @@ class Storage(object):
         if type(ref) is Ref and ref._path != path:
             svalue = ref
         self.cache[path] = svalue
-        if self.vat_map is not None:
-            self.vat_map.setVatId(path, self.vat_id)
 
     def save(self, path, svalue=Unique):
         if svalue is Unique:
@@ -93,7 +77,6 @@ class Storage(object):
         if name == 'ref':
             if 'node' in data:
                 return self.rpc.makeProxy(data['path'], data['node'])
-            # FIXME: should be a proxy if vatId(path) is not ours.
             return Ref(self, data['path'], data.get('facet'))
         if name == 'inst':
             cls = importSymbol(mapClass(data['CLS']))
@@ -171,16 +154,9 @@ class Storage(object):
         return Ref(self, path)
 
     def makeRef(self, svalue=None, vat_id=None):
-        if vat_id in (None, self.vat_id):
-            ref = Ref(self, randomString())
-            if svalue is not None:
-                ref._set(svalue)
-        else:
-            ref = self.rpc.makeProxy(randomString())
-            self.vat_map.setVatId(ref._path, vat_id)
-            if svalue is not None:
-                self.save(ref._path, svalue)
-                # could put proxy into cache here.
+        ref = Ref(self, randomString())
+        if svalue is not None:
+            ref._set(svalue)
         return ref
 
     def makeProxy(self, path, node=None):
