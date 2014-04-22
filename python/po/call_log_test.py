@@ -16,8 +16,8 @@ from serf.po.node_observer import NodeObserver
 class CallLogTest(unittest.TestCase):
     def test(self):
         net = MockNet()
-        va, ra = net.addVat('A', '1', TestFS())
-        vb, rb = net.addVat('B', '1', TestFS())
+        va, ra = net.addVat('A', '', TestFS())
+        vb, rb = net.addVat('B', '', TestFS())
 
         cl = va.makeRef(CallLog(va))
 

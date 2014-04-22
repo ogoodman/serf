@@ -5,7 +5,7 @@ import traceback
 import threading
 from serf.worker import Worker
 from serf.net_base import BaseReceiver, NetBase
-from lib.publisher import Publisher
+from serf.publisher import Publisher
 
 DEFAULT_PORT = 6502
 

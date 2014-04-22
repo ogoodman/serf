@@ -3,7 +3,7 @@
 import socket
 from serf.vat import Vat
 from serf.storage import Storage
-from lib.publisher import Publisher
+from serf.publisher import Publisher
 
 class MockEndpoint(Publisher):
     def __init__(self, node_id):
@@ -16,7 +16,6 @@ class MockEndpoint(Publisher):
 class MockNet(object):
     def __init__(self):
         self.end = {}
-        self.node = {}
         self.offline = set()
 
     def send(self, node, msg, pcol='serf', errh=None, frm=''):

@@ -52,7 +52,7 @@ net = Net(CLIENT, use_ssl=True, keyfile=KEY, certfile=CERT)
 
 thread = EventletThread()
 s0 = Storage(store, t_model=thread)
-v0 = Vat(CLIENT, '0', s0, node=net, t_model=thread)
+v0 = Vat(CLIENT, '', s0, node=net, t_model=thread)
 
 # thread.start(True) means start a new thread, while False means
 # use the current thread. When RUN_CONSOLE is true we run Net and Vat
@@ -61,11 +61,6 @@ thread.start(not RUN_CONSOLE)
 
 thread.callFromThread(net.listen)
 thread.callFromThread(net.start)
-
-# A second thread for testing blocking code.
-#s1 = Storage(store, t_model=EventletThread())
-#v1 = Vat(CLIENT, '1', s1, t_model=s1.thread_model)
-#s1.thread_model.start(True)
 
 def wrap(x):
     return REPLProxy(x, thread)

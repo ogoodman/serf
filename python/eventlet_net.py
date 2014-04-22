@@ -8,7 +8,7 @@ from eventlet.green import socket, ssl
 from eventlet.timeout import Timeout
 from eventlet.event import Event
 from eventlet import greenthread
-from lib.publisher import Publisher
+from serf.publisher import Publisher
 
 DEFAULT_PORT = 6502
 
@@ -122,7 +122,7 @@ class Net(Publisher):
 
     def send(self, node, msg, pcol='serf', errh=None):
         if threading.currentThread() != self.thread:
-            return self.callFromThread(self.send, node, msg, errh)
+            return self.callFromThread(self.send, node, msg, pcol, errh)
         try:
             self._send(node, msg)
         except Exception, e:

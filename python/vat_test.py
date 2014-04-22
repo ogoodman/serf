@@ -31,8 +31,8 @@ class MockTransport(Publisher):
 class VatTest(unittest.TestCase):
     def testCall(self):
         net = MockNet()
-        nodea, va = net.addVat('A', '1', {})
-        nodeb, vb = net.addVat('B', '1', {})
+        nodea, va = net.addVat('A', '', {})
+        nodeb, vb = net.addVat('B', '', {})
 
         nodea['addr'] = TestObject()
 
@@ -42,8 +42,8 @@ class VatTest(unittest.TestCase):
 
     def testWithStorage(self):
         net = MockNet()
-        na, va = net.addVat('A', '1', {})
-        nb, vb = net.addVat('B', '1', {})
+        na, va = net.addVat('A', '', {})
+        nb, vb = net.addVat('B', '', {})
 
         na['TOB'] = Data({}) # store a data object
 
@@ -60,14 +60,14 @@ class VatTest(unittest.TestCase):
 
     def testNonexistentNode(self):
         net = MockNet()
-        na, va = net.addVat('A', '0', {})
+        na, va = net.addVat('A', '', {})
         cb = va.call('B', 'x', 'method', [])
         self.assertRaises(KeyError, cb.wait)
 
     def test(self):
         net = MockNet()
-        na, va = net.addVat('A', '1', {})
-        nb, vb = net.addVat('B', '1', {})
+        na, va = net.addVat('A', '', {})
+        nb, vb = net.addVat('B', '', {})
 
         na['a'] = Time()
         na['o'] = TestObject()
@@ -104,8 +104,8 @@ class VatTest(unittest.TestCase):
 
     def testAddVat(self):
         net = MockNet()
-        va, ra = net.addVat('A', '1', {})
-        vb1, rb1 = net.addVat('B', '1', {})
+        va, ra = net.addVat('A', '', {})
+        vb1, rb1 = net.addVat('B', '', {})
         #vb2, rb2 = net.addVat('B', '2', {})
 
         va['df'] = {'name': u'Fred'}
@@ -125,11 +125,11 @@ class VatTest(unittest.TestCase):
     def testGreen(self):
         net = MockNet()
         gta = GreenThread()
-        va, ra = net.addVat('X', 'A', {}, t_model=gta)
+        va, ra = net.addVat('X', '', {}, t_model=gta)
         gta.start()
 
         gtb = GreenThread()
-        vb, rb = net.addVat('Y', 'B', {}, t_model=gtb)
+        vb, rb = net.addVat('Y', '', {}, t_model=gtb)
         gtb.start()
 
         va['data'] = {'name': 'Tom'}
@@ -155,11 +155,11 @@ class VatTest(unittest.TestCase):
     def testWorker(self):
         net = MockNet()
         gta = EventletThread()
-        va, ra = net.addVat('X', 'A', {}, t_model=gta)
+        va, ra = net.addVat('X', '', {}, t_model=gta)
         gta.start(True)
 
         worker = EventletThread()
-        vb, rb = net.addVat('Y', 'B', {}, t_model=worker)
+        vb, rb = net.addVat('Y', '', {}, t_model=worker)
         worker.start()
 
         va['data'] = {'name': 'Tom'}
@@ -168,7 +168,7 @@ class VatTest(unittest.TestCase):
         self.assertEqual(pb['name'], 'Tom')
 
     def testGC(self):
-        h = Vat('browser', '1', {}, Publisher())
+        h = Vat('browser', '', {}, Publisher())
         makeBoundMethod(h, {'o':'shared', 'm':'notify'})
         hr = weakref.ref(h)
         self.assertEqual(hr(), h)
@@ -181,8 +181,8 @@ class VatTest(unittest.TestCase):
         ta.peer = tb
         tb.peer = ta
 
-        na = Vat('server', '1', {}, ta)
-        nb = Vat('browser', '2', {}, tb)
+        na = Vat('server', '', {}, ta)
+        nb = Vat('browser', '', {}, tb)
 
         oa = Model()
         na.provide(1, oa)

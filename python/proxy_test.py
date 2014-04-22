@@ -12,8 +12,8 @@ from serf.proxy import Proxy
 class ProxyTest(unittest.TestCase):
     def testFuture(self):
         net = MockNet()
-        na, va = net.addVat('A', '1', {})
-        nb, vb = net.addVat('B', '1', {})
+        na, va = net.addVat('A', '', {})
+        nb, vb = net.addVat('B', '', {})
 
         pr = va.provide('addr', TestObject())
         ob = na.cache['addr']
@@ -37,8 +37,8 @@ class ProxyTest(unittest.TestCase):
 
     def testProxy(self):
         net = MockNet()
-        na, va = net.addVat('A', '1', {})
-        nb, vb = net.addVat('B', '1', {})
+        na, va = net.addVat('A', '', {})
+        nb, vb = net.addVat('B', '', {})
 
         pr = va.provide('addr', TestObject())
         ob = na.cache['addr']
@@ -60,9 +60,9 @@ class ProxyTest(unittest.TestCase):
         self.assertEqual(pr.callIncr(2), 3)
 
     def testProxyEquality(self):
-        va0 = Vat('A', '0', {})
-        va1 = Vat('A', '1', {})
-        vb0 = Vat('B', '0', {})
+        va0 = Vat('A', '', {})
+        va1 = Vat('A', '', {})
+        vb0 = Vat('B', '', {})
         p1 = Proxy('B', 'x', va0)
         p2 = Proxy('B', 'y', va1)
         p3 = Proxy('B', 'y', va0)
