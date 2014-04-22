@@ -75,8 +75,7 @@ class Node(object):
     def sendToName(self, name, msg):
         # The name must be a name owned by the default vat.
         vat = self.vats[self.default_vat_id]
-        ref = vat.storage.getn(name)
-        vat.lput(ref._path, msg)
+        vat.sendToName(name, msg)
 
     def online(self, ev, node_id):
         msg = {'m': 'online', 'a': (node_id,)}

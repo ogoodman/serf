@@ -19,12 +19,10 @@ if __name__ == '__main__':
     KEY = os.path.join(codeDir(), 'data/host.key')
 
     net = Net(NODE, use_ssl=True, keyfile=KEY, certfile=CERT)
-    node = Node(NODE, net, store)
 
     thread = EventletThread()
     storage = Storage(store, t_model=thread)
-    vat = Vat(NODE, '0', storage, t_model=thread)
-    node.addVat(vat)
+    vat = Vat(NODE, '0', storage, node=net, t_model=thread)
 
     thread.start()
     print 'Serf Server 0.1', NODE

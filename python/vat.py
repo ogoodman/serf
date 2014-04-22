@@ -67,6 +67,8 @@ class Vat(object):
         self.thread_model = thread_model
         if node is not None:
             node.subscribe('message', self.handle)
+            node.subscribe('online', self._notifyNodeObserver)
+            node.subscribe('connected', self._notifyNodeObserver)
         self.refs = []
         if hasattr(storage, 'setRPC'):
             storage.setRPC(self)
@@ -265,3 +267,11 @@ class Vat(object):
         if typ is Ref:
             return Proxy(self.node_id, x._path)
         raise SerializationError('cannot delocalize type %s' % typ)
+
+    def sendToName(self, name, msg):
+        ref = self.storage.getn(name)
+        self.lput(ref._path, msg)
+
+    def _notifyNodeObserver(self, ev, node_id):
+        msg = {'m': ev, 'a': (node_id,)}
+        self.sendToName('node_observer', msg)

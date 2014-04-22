@@ -7,8 +7,12 @@ from serf.storage import Storage
 from lib.publisher import Publisher
 
 class MockEndpoint(Publisher):
+    def __init__(self, node_id):
+        Publisher.__init__(self)
+        self.node_id = node_id
+
     def send(self, node, msg, errh=None):
-        self.notify('send', [node, msg, errh])
+        self.notify('send', [node, msg, errh, self.node_id])
 
 class MockNet(object):
     def __init__(self):
@@ -16,12 +20,12 @@ class MockNet(object):
         self.node = {}
         self.offline = set()
 
-    def send(self, node, msg, errh=None):
+    def send(self, node, msg, errh=None, frm=''):
         if node in self.offline:
             errh(socket.error())
             return
         try:
-            self.end[node].notify('message', {'node': '', 'message':msg})
+            self.end[node].notify('message', {'node': frm, 'message': msg})
         except Exception, e:
             if errh is not None:
                 errh(e)
@@ -31,16 +35,16 @@ class MockNet(object):
 
     def addNode(self, node):
         if node not in self.end:
-            self.end[node] = MockEndpoint()
+            self.end[node] = MockEndpoint(node)
             self.end[node].subscribe('send', self.send0)
         return self.end[node]
 
     def addVat(self, node_id, vat_id, store, t_model=None):
+        assert(node_id not in self.end)
+        transport = self.addNode(node_id)
         storage = Storage(store, t_model=t_model)
         vat = Vat(node_id, vat_id, storage, t_model=t_model)
-        if node_id not in self.node:
-            transport = self.addNode(node_id)
-            self.node[node_id] = Node(node_id, transport, {})
+        self.node[node_id] = Node(node_id, transport, {})
         self.node[node_id].addVat(vat)
         return storage, vat
 

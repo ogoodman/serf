@@ -10,7 +10,6 @@ from code import InteractiveConsole
 from serf.fs_dict import FSDict
 from serf.vat import Vat
 from serf.eventlet_net import Net
-from serf.node import Node
 from serf.eventlet_thread import EventletThread
 from serf.proxy import Proxy
 from serf.util import timeCall, codeDir
@@ -50,12 +49,10 @@ KEY = os.path.join(codeDir(), 'data/host.key')
 store = FSDict(os.path.join(codeDir(), 'data/client'))
 
 net = Net(CLIENT, use_ssl=True, keyfile=KEY, certfile=CERT)
-node = Node(CLIENT, net, store)
 
 thread = EventletThread()
 s0 = Storage(store, t_model=thread)
-v0 = Vat(CLIENT, '0', s0, t_model=thread)
-node.addVat(v0)
+v0 = Vat(CLIENT, '0', s0, node=net, t_model=thread)
 
 # thread.start(True) means start a new thread, while False means
 # use the current thread. When RUN_CONSOLE is true we run Net and Vat

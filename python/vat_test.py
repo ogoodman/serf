@@ -129,7 +129,7 @@ class VatTest(unittest.TestCase):
         gta.start()
 
         gtb = GreenThread()
-        vb, rb = net.addVat('X', 'B', {}, t_model=gtb)
+        vb, rb = net.addVat('Y', 'B', {}, t_model=gtb)
         gtb.start()
 
         va['data'] = {'name': 'Tom'}
@@ -159,7 +159,7 @@ class VatTest(unittest.TestCase):
         gta.start(True)
 
         worker = EventletThread()
-        vb, rb = net.addVat('X', 'B', {}, t_model=worker)
+        vb, rb = net.addVat('Y', 'B', {}, t_model=worker)
         worker.start()
 
         va['data'] = {'name': 'Tom'}
