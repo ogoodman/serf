@@ -27,9 +27,11 @@ def getAddr(node):
     return host, port
 
 class Net(Publisher):
+    """Implements Transport. Connector for serf protocol."""
     def __init__(self, node_id, verbose=False, **kw):
         Publisher.__init__(self)
         self.node_id = node_id
+        self.path = ''
         self.nodes = {}
         self.loop_in = None
         self.cond = threading.Condition()

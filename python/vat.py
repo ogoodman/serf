@@ -136,7 +136,7 @@ class Vat(object):
             msg = JSON_CODEC.decode(self, msg_data['message'])
             addr = msg['o']
             if self.verbose:
-                print self.node.client_ip, 'In', msg
+                print getattr(self.node, 'client_ip', ''), 'In', msg
         elif pcol == 'local':
             msg = msg_data['message']
             addr = msg['o']
@@ -202,7 +202,7 @@ class Vat(object):
             else:
                 msg['i'] = addr
             if self.verbose:
-                print self.node.client_ip, 'Out', msg
+                print getattr(self.node, 'client_ip', ''), 'Out', msg
             enc = JSON_CODEC.encode(self, msg)
             pcol = 'json'
         elif node == self.node_id:

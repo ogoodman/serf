@@ -6,24 +6,26 @@ from serf.storage import Storage
 from serf.publisher import Publisher
 
 class MockEndpoint(Publisher):
+    """Implements Transport. For use in tests."""
     def __init__(self, node_id):
         Publisher.__init__(self)
         self.node_id = node_id
+        self.path = ''
 
     def send(self, node, msg, pcol='serf', errh=None):
-        self.notify('send', [node, msg, pcol, errh, self.node_id])
+        self.notify('send', [node, msg, pcol, errh])
 
 class MockNet(object):
     def __init__(self):
         self.end = {}
         self.offline = set()
 
-    def send(self, node, msg, pcol='serf', errh=None, frm=''):
+    def send(self, node, msg, pcol='serf', errh=None):
         if node in self.offline:
             errh(socket.error())
             return
         try:
-            self.end[node].notify('message', {'from': frm, 'pcol': pcol, 'message': msg})
+            self.end[node].notify('message', {'pcol': pcol, 'message': msg})
         except Exception, e:
             if errh is not None:
                 errh(e)

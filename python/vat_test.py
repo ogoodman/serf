@@ -22,11 +22,13 @@ from serf.publisher import Publisher
 from serf.model import Model
 
 class MockTransport(Publisher):
+    """Implements Transport. For use in tests."""
     client_ip = 'ip'
     node_id = 'browser'
+    path = ''
 
     def send(self, node, message, pcol, errh=None):
-        self.peer.notify('message', {'from': self.node_id, 'pcol': pcol, 'message': message})
+        self.peer.notify('message', {'pcol': pcol, 'message': message})
 
 class VatTest(unittest.TestCase):
     def testCall(self):

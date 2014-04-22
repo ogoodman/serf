@@ -8,6 +8,7 @@ from StringIO import StringIO
 from publisher import Publisher
 
 class WebSocketHandler(StreamRequestHandler, Publisher):
+    """Implements Transport. Connector for WebSocket clients."""
     magic = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
 
     def __init__(self, request, client_address, server):
@@ -19,11 +20,12 @@ class WebSocketHandler(StreamRequestHandler, Publisher):
         self.server = server
         self.setup()
         # Instead, after construction we must call
-        # self.setup()
         # try:
         #    self.handle()
         # finally:
         #    self.finish()
+        self.node_id = '%s:%s' % client_address
+        self.path = ''
 
     def setup(self):
         StreamRequestHandler.setup(self)
