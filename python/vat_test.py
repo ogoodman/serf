@@ -26,7 +26,7 @@ class MockTransport(Publisher):
     node_id = 'browser'
 
     def send(self, node, message, errh=None):
-        self.peer.notify('message', {'node': self.node_id, 'message': message})
+        self.peer.notify('message', {'from': self.node_id, 'pcol': 'json', 'message': message})
 
 class VatTest(unittest.TestCase):
     def testCall(self):
@@ -181,7 +181,7 @@ class VatTest(unittest.TestCase):
         ta.peer = tb
         tb.peer = ta
 
-        na = Vat('browser', '1', {}, ta)
+        na = Vat('server', '1', {}, ta)
         nb = Vat('browser', '2', {}, tb)
 
         oa = Model()

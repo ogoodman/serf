@@ -76,7 +76,7 @@ class Net(Publisher):
                     self.nodes[node] = sock
                     self.notify('connected', node)
             elif what == MSG:
-                self.notify('message', {'node': node, 'message': msg})
+                self.notify('message', {'from': node, 'pcol': 'serf', 'message': msg})
             elif what == CLOSE:
                 if self.verbose:
                     print self.node_id, '%s %s requested close' % (node, address)

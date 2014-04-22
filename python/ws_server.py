@@ -12,7 +12,7 @@ SINGLETON_MODEL = Model()
 def makeRPCHandler(socket, client_address, server):
     print client_address, 'connected'
     transport = WebSocketHandler(socket, client_address, server)
-    handler = Vat('server', '', {}, transport)
+    handler = Vat('server', '', {}, transport, verbose=True)
     handler.provide('shared', SINGLETON_MODEL)
     handler.provide('private', Model())
     try:

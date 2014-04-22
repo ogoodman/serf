@@ -25,7 +25,7 @@ class MockNet(object):
             errh(socket.error())
             return
         try:
-            self.end[node].notify('message', {'node': frm, 'message': msg})
+            self.end[node].notify('message', {'from': frm, 'pcol': 'serf', 'message': msg})
         except Exception, e:
             if errh is not None:
                 errh(e)

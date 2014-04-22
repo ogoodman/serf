@@ -53,7 +53,7 @@ class Receiver(BaseReceiver):
                 if self.net.verbose:
                     print 'already connected:', self.node
         elif self.what == MSG:
-            self.net.notify('message', {'node': '', 'message': msg})
+            self.net.notify('message', {'from': '', 'pcol': 'serf', 'message': msg})
         elif self.what == CLOSE:
             if self.net.verbose:
                 print 'disconnect request from', self.node

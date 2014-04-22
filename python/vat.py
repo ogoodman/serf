@@ -57,7 +57,7 @@ class SendErrorCb(object):
         self.vat.lput(self.cb_id, {'e': exc})
 
 class Vat(object):
-    def __init__(self, node_id, vat_id, storage, node=None, t_model=None):
+    def __init__(self, node_id, vat_id, storage, node=None, t_model=None, verbose=False):
         thread_model = Synchronous() if t_model is None else t_model
         self.storage = storage
         self.node_id = node_id
@@ -65,6 +65,7 @@ class Vat(object):
         self.node = node
         self.callbacks = {}
         self.thread_model = thread_model
+        self.verbose = verbose
         if node is not None:
             node.subscribe('message', self.handle)
             node.subscribe('online', self._notifyNodeObserver)
@@ -130,10 +131,11 @@ class Vat(object):
         self._handle(addr, msg)
 
     def _rhandle(self, msg_data):
-        if msg_data['node'] == 'browser':
+        if msg_data['pcol'] == 'json':
             msg = JSON_CODEC.decode(self, msg_data['message'])
             addr = msg['o']
-            print self.node.client_ip, 'In', msg
+            if self.verbose:
+                print self.node.client_ip, 'In', msg
         else:
             f = StringIO(msg_data['message'])
             addr = decode(f) # msg is addr, body
@@ -194,7 +196,8 @@ class Vat(object):
                 msg['o'] = addr
             else:
                 msg['i'] = addr
-            print self.node.client_ip, 'Out', msg
+            if self.verbose:
+                print self.node.client_ip, 'Out', msg
             enc = JSON_CODEC.encode(self, msg)
         elif node == self.node_id:
             msg = rmap(self.delocalize, msg)

@@ -99,7 +99,7 @@ class WebSocketHandler(StreamRequestHandler, Publisher):
             self.on_handshake()
 
     def on_message(self, message):
-        self.notify('message', {'node': 'browser', 'message': message})
+        self.notify('message', {'from': self.client_ip, 'pcol': 'json', 'message': message})
 
     def on_close(self):
         self.notify('close', None)
