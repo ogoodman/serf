@@ -3,7 +3,7 @@
 from SocketServer import TCPServer, ThreadingMixIn
 import thread
 from serf.publisher import Publisher
-from serf.websocket_handler import WebSocketHandler
+from serf.websocket_handler import WebSocketHandler, CURRENT
 from serf.model import Model
 from serf.vat import Vat
 
@@ -36,5 +36,7 @@ if __name__ == '__main__':
     try:
         server.serve_forever()
     except KeyboardInterrupt:
+        for conn in CURRENT.items():
+            conn.send('browser', '', code=0x88) # send CLOSE.
         server.server_close();
         print '\nBye'

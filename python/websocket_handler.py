@@ -5,7 +5,10 @@ from base64 import b64encode
 from hashlib import sha1
 from mimetools import Message
 from StringIO import StringIO
-from publisher import Publisher
+from serf.publisher import Publisher
+from serf.weak_list import WeakList
+
+CURRENT = WeakList()
 
 class WebSocketHandler(StreamRequestHandler, Publisher):
     """Implements Transport. Connector for WebSocket clients."""
@@ -26,6 +29,8 @@ class WebSocketHandler(StreamRequestHandler, Publisher):
         #    self.finish()
         self.node_id = '%s:%s' % client_address
         self.path = ''
+        self.close_sent = False
+        CURRENT.add(self)
 
     def setup(self):
         StreamRequestHandler.setup(self)
@@ -57,6 +62,8 @@ class WebSocketHandler(StreamRequestHandler, Publisher):
             decoded += chr(ord(char) ^ masks[len(decoded) % 4])
         if ctrl == 8:
             print self.client_ip, 'CLOSE', repr(decoded)
+            if self.close_sent:
+                return False
             if len(decoded) >= 2:
                 close_buf = decoded[:2]
             else:
@@ -82,6 +89,8 @@ class WebSocketHandler(StreamRequestHandler, Publisher):
         else:
             self.request.send(struct.pack('>bQ', 127, length))
         self.request.send(message)
+        if code == 0x88:
+            self.close_sent = True
 
     def handshake(self):
         data = self.request.recv(1024).strip()

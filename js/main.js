@@ -69,12 +69,6 @@ require(['when/when'], function(when) {
     };
     window.logEvent = logEvent;
 
-    window.model = new Proxy('shared');
-    window.model.addMethod('get');
-    window.model.addMethod('set');
-    window.model.addMethod('notify');
-    window.model.addMethod('subscribers');
-
     function traverse(data, fn) {
 	var r = traverse0(data, fn);
 	if (r != undefined) return r;
@@ -158,6 +152,26 @@ require(['when/when'], function(when) {
 
     window.h = new HookCls("hi");
 
+    // set up binding.
+    var input = document.getElementById('input1');
+    var bound = false;
+    function doBind() {
+	if (!bound) {
+	    window.model = new Proxy('shared');
+	    window.model.addMethod('get');
+	    window.model.addMethod('set');
+	    window.model.addMethod('notify');
+	    window.model.addMethod('subscribers');
+
+	    bindInput(input, model, 'name');
+	    bound = true;
+	} else {
+	    console.log('already bound');
+	}
+    }
+
+    var st = document.getElementById('status');
+
     var conn;
     function connect() {
 	if (window.ws !== undefined) {
@@ -166,7 +180,8 @@ require(['when/when'], function(when) {
 	window.ws = new WebSocket('ws://' + location.hostname + '/ws/');
 	conn = when.promise(function(resolve) {
 	    ws.onopen = function(event) {
-		console.log('connected');
+		st.style.color = 'green';
+		st.textContent = 'connected';
 		resolve();
 	    };
 	});
@@ -189,21 +204,18 @@ require(['when/when'], function(when) {
 		}
 	    }
 	};
+	ws.onclose = function(event) {
+	    // console.log('connection closed');
+	    bound = false;
+	    window.ws = undefined;
+	    st.style.color = 'red';
+	    st.textContent = 'disconnected';
+	};
 	return conn;
     };
     window.rlog = function(result) { console.log('got:', result); }
     window.elog = function(err) { console.log('error:', err); }
 
-    // set up binding.
-    var input = document.getElementsByName('name')[0];
-    var bound = false;
-    function doBind() {
-	if (!bound) {
-	    bindInput(input, model, 'name');
-	    bound = true;
-	} else {
-	    console.log('already bound');
-	}
-    }
+    doBind();
     window.doBind = doBind;
 });
