@@ -4,15 +4,28 @@ import eventlet
 from serf.eventlet_thread import EventletThread
 from serf.websocket_handler import WebSocketHandler, CURRENT
 from serf.model import Model
+from serf.bound_method import BoundMethod
 from serf.vat import Vat
 
 SINGLETON_MODEL = Model()
 
 class SquareCaller(object):
+    def __init__(self, vat, oid):
+        self.vat = vat
+        self.oid = oid
     def useSquarer(self, sq, n):
         r = sq.square(n)
         print 'square of %s is %s' % (n, r)
         return r
+    def callSquare(self, square, n):
+        r = square(n)
+        print 'square of %s is %s' % (n, r)
+        return r
+    def subscribeToClient(self, prx):
+        method = BoundMethod(self.vat, self.oid, 'onClientEvent', 'server')
+        prx.subscribe('event', method)
+    def onClientEvent(self, ev, info):
+        print 'got event', ev, info
 
 def handle(socket, client_address):
     print client_address, 'connected'
@@ -22,7 +35,7 @@ def handle(socket, client_address):
     handler = Vat('server', '', {}, transport, t_model=thread, verbose=True)
     handler.provide('shared', SINGLETON_MODEL)
     handler.provide('private', Model())
-    handler.provide('sqcaller', SquareCaller())
+    handler.provide('sqcaller', SquareCaller(handler, 'sqcaller'))
     transport.handle()
     return handler
 

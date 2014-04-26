@@ -21,7 +21,7 @@ def traverse0(data, fn):
             r = traverse0(v, fn)
             if r is not None:
                 data[k] = r
-    elif t is list:
+    elif t in (list, tuple):
         for i, v in enumerate(data):
             r = traverse0(v, fn)
             if r is not None:
@@ -37,7 +37,7 @@ def traverse(data, fn):
         new = {}
         for k, v in data.iteritems():
             new[k] = traverse(v, fn)
-    elif t is list:
+    elif t in (list, tuple):
         new = [traverse(v, fn) for v in data]
     else:
         new = data

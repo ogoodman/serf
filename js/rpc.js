@@ -49,7 +49,7 @@ define(['when/when'], function(when) {
 	    if (Object.prototype.toString.call(data) !=
 		'[object Object]') return undefined;
 	    if (!(data.__ext__name_ in that.hooks)) return undefined;
-	    return that.hooks[data.__ext__name_](data.__ext__args_);
+	    return that.hooks[data.__ext__name_](that, data.__ext__args_);
 	}
 
 	if (this.ws !== undefined) {
@@ -82,7 +82,7 @@ define(['when/when'], function(when) {
 			that.sendRemote({
 			    n: data.N, // reply node
 			    o: data.O, // reply object (callback id)
-			    r: result
+			    r: result || null
 			});
 		    }
 		} catch (ex) {
@@ -118,7 +118,9 @@ define(['when/when'], function(when) {
     // JSON extension:
     // use __ext__name_, __ext__args_ and .ext_encoding
     function preEncodeFn(data) {
-	if (typeof data != 'object') return undefined;
+	if (data === null) return undefined;
+	var t = typeof data;
+	if ((t != 'object') && (t != 'function')) return undefined;
 	if (typeof data.ext_encoding != 'function') return undefined;
 	var info = data.ext_encoding();
 	return {__ext__name_: info.name, __ext__args_: info.args};
@@ -157,9 +159,30 @@ define(['when/when'], function(when) {
     BoundMethod.prototype.ext_encoding = function() {
 	return {name: 'BoundMethod', args:{o: this.oid, m: this.method}};
     };
-    WSServer.prototype.hooks['BoundMethod'] = function(args) {
-	return new BoundMethod(args.o, args.m);
+    WSServer.prototype.hooks['BoundMethod'] = function(server, args) {
+	return makeBoundMethod(server, args.o, args.m, args.n, args.t);
+	// return new BoundMethod(args.o, args.m);
     };
+
+    function makeBoundMethod(server, oid, method, node, twoway) {
+	function mcall() {
+	    if (node == 'browser') {
+		var ob = server.obj[oid];
+		return ob[method].apply(ob, arguments);
+	    } else {
+		var args = Array.prototype.slice.call(arguments);
+		if (twoway) {
+		    return server.callRemote(oid, method, args);
+		} else {
+		    return server.sendRemote({o: oid, m: method, a:args});
+		}
+	    }
+	}
+	mcall.ext_encoding = function() {
+	    return {name: 'BoundMethod', args:{o: oid, m: method, n: node}};
+	}
+	return mcall;
+    }
 
     function Proxy(server, objId, node) {
 	this.server = server;
@@ -197,17 +220,18 @@ define(['when/when'], function(when) {
 	return {name: 'Proxy', args:{o: this.objId, n:this.node}}
     };
 
-    WSServer.prototype.hooks['Proxy'] = function(args) {
+    WSServer.prototype.hooks['Proxy'] = function(server, args) {
 	// Unlikely that server would send us proxy to our own object
 	// but nonetheless there should be no harm in resolving it
 	// to a direct reference to the object.
 	if (args.n == 'browser') return this.obj[args.o];
-	return new Proxy(this, args.o);
+	return new Proxy(server, args.o);
     };
 
     return {
 	WSServer: WSServer,
 	BoundMethod: BoundMethod,
+	makeBoundMethod: makeBoundMethod,
 	Proxy: Proxy
     };
 });

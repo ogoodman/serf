@@ -160,10 +160,8 @@ class Vat(object):
         else:
             cb.failure(msg['e'])
 
-    def handleCall(self, addr, msg):
-        method = msg['m']
-        args = msg['a']
-        exc = None
+    def localCall(self, addr, method, args):
+        result, exc = None, None
         if addr:
             try:
                 obj = self.storage[addr]
@@ -175,9 +173,12 @@ class Vat(object):
                     result = getattr(obj, method)(*args)
                 except Exception, exc:
                     pass
-        else:
-            # Empty addr string can be used to ping the node.
-            result = None
+        return result, exc
+
+    def handleCall(self, addr, msg):
+        method = msg['m']
+        args = msg['a']
+        result, exc = self.localCall(addr, method, args)
         try:
             reply_node = msg['N']
             reply_addr = msg['O']

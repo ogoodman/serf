@@ -1,4 +1,7 @@
-require(['when/when', 'app/rpc'], function(when, rpc) {
+require(['when/when', 'app/rpc', 'app/publisher'],
+function(when, rpc, publisher) {
+
+    var Publisher = publisher.Publisher;
 
     var serv = new rpc.WSServer('ws://' + location.hostname + '/ws/');
 
@@ -45,7 +48,7 @@ require(['when/when', 'app/rpc'], function(when, rpc) {
     HookCls.prototype.ext_encoding = function() {
 	return {name: 'HookCls', args: [this.val]};
     };
-    rpc.WSServer.prototype.hooks['HookCls'] = function(args) {
+    rpc.WSServer.prototype.hooks['HookCls'] = function(server, args) {
 	return new HookCls(args[0]);
     };
 
@@ -78,21 +81,47 @@ require(['when/when', 'app/rpc'], function(when, rpc) {
 	console.log('squaring', n);
 	return n * n;
     };
+
+    var sqc = new rpc.Proxy(serv, 'sqcaller');
+    sqc.addMethod('useSquarer');
+    sqc.addMethod('subscribeToClient');
+
+    serv.obj['pub'] = new Publisher();
+    var pp = new rpc.Proxy(serv, 'pub', 'browser');
+
     function sendProxyToServer() {
 	serv.obj['squarer'] = new Squarer();
 	console.log('serv.obj.squarer', serv.obj['squarer']);
 	var sq = new rpc.Proxy(serv, 'squarer', 'browser');
-	var sqc = new rpc.Proxy(serv, 'sqcaller');
-	sqc.addMethod('useSquarer');
 	sqc.useSquarer(sq, 3).done(rlog);
     }
-    window.sendProxyToServer = sendProxyToServer
+
+    function testBoundMethod() {
+	window.shget = makeBoundMethod(serv, 'shared', 'get', 'server', true);
+	console.log('doing shget("name")', shget('name').done(rlog));
+	serv.obj['squarer'] = new Squarer();
+	window.square = makeBoundMethod(serv, 'squarer', 'square', 'browser');
+	console.log('square(6)', square(6));
+    }
+
+    function testSubscribeToClient() {
+	sqc.subscribeToClient(pp).done(function() {
+	    serv.obj['pub'].notify('event', 'foobar');
+	});
+    }
+
+    window.Publisher = Publisher;
+    window.sendProxyToServer = sendProxyToServer;
+    window.makeBoundMethod = rpc.makeBoundMethod;
+    window.testBoundMethod = testBoundMethod;
+    window.testSubscribeToClient = testSubscribeToClient;
 
     window.rlog = function(result) { console.log('got:', result); }
     window.elog = function(err) { console.log('error:', err); }
 
     window.WSServer = rpc.WSServer;
     window.serv = serv;
+    window.sqc = sqc
 
     doBind();
     window.doBind = doBind;
