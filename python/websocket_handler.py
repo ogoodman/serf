@@ -1,64 +1,93 @@
 import sys, traceback
 import struct
-from SocketServer import StreamRequestHandler
 from base64 import b64encode
 from hashlib import sha1
 from mimetools import Message
-from StringIO import StringIO
+from cStringIO import StringIO
 from serf.publisher import Publisher
 from serf.weak_list import WeakList
 
 CURRENT = WeakList()
 
-class WebSocketHandler(StreamRequestHandler, Publisher):
+class SocketBuffer(object):
+    def __init__(self, sock):
+        self.sock = sock
+        self.buff = ''
+
+    def _buffer(self, n):
+        data = self.sock.recv(n)
+        if not data: # at EOF
+            if self.buff:
+                print >>sys.stderr, 'Truncated read %r' % self.buff
+            return False
+        # FIXME: this will be inefficient for very large, highly
+        # fragmented reads.
+        self.buff += data
+        return True
+
+    def read(self, n):
+        """Reads exactly n bytes from the socket.
+
+        If the socket reaches EOF before n bytes are read, returns
+        an empty string, discarding any partial read.
+        """
+        while len(self.buff) < n:
+            if not self._buffer(n - len(self.buff)):
+                return ''
+        data, self.buff = self.buff[:n], self.buff[n:]
+        return data
+
+    def readTo(self, s):
+        """Reads from the socket until the string s is found.
+
+        Returns data ending with s or an empty string if EOF reached
+        before s was found.
+        """
+        while s not in self.buff:
+            if not self._buffer(1024):
+                return ''
+        n = self.buff.index(s) + len(s)
+        data, self.buff = self.buff[:n], self.buff[n:]
+        return data
+
+    def send(self, data):
+        return self.sock.send(data)
+        
+
+class WebSocketHandler(Publisher):
     """Implements Transport. Connector for WebSocket clients."""
     magic = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
 
-    def __init__(self, request, client_address, server):
+    def __init__(self, sock, address):
         Publisher.__init__(self)
-        # This is the initialization in SocketServer.py minus the actual
-        # main processing loop, which should not be being called in the __init__ method.
-        self.request = request
-        self.client_address = client_address
-        self.server = server
-        self.setup()
-        # Instead, after construction we must call
-        # try:
-        #    self.handle()
-        # finally:
-        #    self.finish()
-        self.node_id = '%s:%s' % client_address
+        self.sock = SocketBuffer(sock)
+        self.client_address = address
+        self.client_ip = address[0]
+        self.node_id = '%s:%s' % address
         self.path = ''
         self.close_sent = False
         CURRENT.add(self)
 
-    def setup(self):
-        StreamRequestHandler.setup(self)
-        self.handshake_done = False
-
     def handle(self):
-        while True:
-            if not self.handshake_done:
-                self.handshake()
-            else:
-                if not self.read_next_message():
-                    break
+        if not self.handshake():
+            return
+        while self.read_next_message():
+            pass
 
     def read_next_message(self):
-        data = self.rfile.read(2)
-        if len(data) < 2:
+        data = self.sock.read(2)
+        if not data:
             print self.client_ip, 'EOF', repr(data)
             return False
         ctrl = ord(data[0]) & 0xF
-        # print 'ctrl=%d' % ctrl
         length = ord(data[1]) & 127
         if length == 126:
-            length = struct.unpack(">H", self.rfile.read(2))[0]
+            length = struct.unpack(">H", self.sock.read(2))[0]
         elif length == 127:
-            length = struct.unpack(">Q", self.rfile.read(8))[0]
-        masks = [ord(byte) for byte in self.rfile.read(4)]
+            length = struct.unpack(">Q", self.sock.read(8))[0]
+        masks = [ord(byte) for byte in self.sock.read(4)]
         decoded = ""
-        for char in self.rfile.read(length):
+        for char in self.sock.read(length):
             decoded += chr(ord(char) ^ masks[len(decoded) % 4])
         if ctrl == 8:
             print self.client_ip, 'CLOSE', repr(decoded)
@@ -80,34 +109,34 @@ class WebSocketHandler(StreamRequestHandler, Publisher):
         return True
 
     def send(self, node, message, pcol='json', errh=None, code=0x81):
-        self.request.send(chr(code))
+        self.sock.send(chr(code))
         length = len(message)
         if length <= 125:
-            self.request.send(chr(length))
+            self.sock.send(chr(length))
         elif length >= 126 and length <= 65535:
-            self.request.send(struct.pack('>bH', 126, length))
+            self.sock.send(struct.pack('>bH', 126, length))
         else:
-            self.request.send(struct.pack('>bQ', 127, length))
-        self.request.send(message)
+            self.sock.send(struct.pack('>bQ', 127, length))
+        self.sock.send(message)
         if code == 0x88:
             self.close_sent = True
 
     def handshake(self):
-        data = self.request.recv(1024).strip()
+        data = self.sock.readTo('\r\n\r\n').strip()
         headers = Message(StringIO(data.split('\r\n', 1)[1]))
-        self.client_ip = headers.get('X-Forwarded-For', self.client_address[0])
         if headers.get('Upgrade', None).lower() != 'websocket':
-            print self.client_ip, 'missing header "Upgrade: websocket"'
-            return
+            print self.client_address, 'missing header "Upgrade: websocket"'
+            return False
+        self.client_ip = headers.get('X-Forwarded-For', self.client_address[0])
         key = headers['Sec-WebSocket-Key']
         digest = b64encode(sha1(key + self.magic).hexdigest().decode('hex'))
         response = 'HTTP/1.1 101 Switching Protocols\r\n'
         response += 'Upgrade: websocket\r\n'
         response += 'Connection: Upgrade\r\n'
         response += 'Sec-WebSocket-Accept: %s\r\n\r\n' % digest
-        self.handshake_done = self.request.send(response)
-        if self.handshake_done:
-            self.on_handshake()
+        self.sock.send(response)
+        self.on_handshake()
+        return True
 
     def on_message(self, message):
         self.notify('message', {'from': self.client_ip, 'pcol': 'json', 'message': message})

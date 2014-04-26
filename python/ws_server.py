@@ -1,42 +1,39 @@
 #!/usr/bin/python
 
-from SocketServer import TCPServer, ThreadingMixIn
-import thread
-from serf.publisher import Publisher
+import eventlet
+from serf.eventlet_thread import EventletThread
 from serf.websocket_handler import WebSocketHandler, CURRENT
 from serf.model import Model
 from serf.vat import Vat
 
 SINGLETON_MODEL = Model()
 
-def makeRPCHandler(socket, client_address, server):
+class SquareCaller(object):
+    def useSquarer(self, sq, n):
+        r = sq.square(n)
+        print 'square of %s is %s' % (n, r)
+        return r
+
+def handle(socket, client_address):
     print client_address, 'connected'
-    transport = WebSocketHandler(socket, client_address, server)
-    handler = Vat('server', '', {}, transport, verbose=True)
+    transport = WebSocketHandler(socket, client_address)
+    thread = EventletThread()
+    thread.callFromThread = thread.call
+    handler = Vat('server', '', {}, transport, t_model=thread, verbose=True)
     handler.provide('shared', SINGLETON_MODEL)
     handler.provide('private', Model())
-    try:
-        transport.handle()
-    finally:
-        transport.finish()
+    handler.provide('sqcaller', SquareCaller())
+    transport.handle()
     return handler
 
-class ThreadingTCPServer(ThreadingMixIn, TCPServer):
-    allow_reuse_address = True
-
-def startServer():
-    """Run server in Python REPL."""
-    server = ThreadingTCPServer(("localhost", 9999), makeRPCHandler)
-    tid = thread.start_new_thread(server.serve_forever, ())
-    print 'thread id:', tid
-    return server
-
 if __name__ == '__main__':
-    server = ThreadingTCPServer(('', 9999), makeRPCHandler)
+    server = eventlet.listen(('0.0.0.0', 9999))
+    pool = eventlet.GreenPool(10000)
     try:
-        server.serve_forever()
+        while True:
+            new_sock, address = server.accept()
+            pool.spawn_n(handle, new_sock, address)
     except KeyboardInterrupt:
         for conn in CURRENT.items():
             conn.send('browser', '', code=0x88) # send CLOSE.
-        server.server_close();
         print '\nBye'

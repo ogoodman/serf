@@ -179,8 +179,8 @@ class Vat(object):
             # Empty addr string can be used to ping the node.
             result = None
         try:
-            reply_addr = msg['i']
-            reply_node = msg['r']
+            reply_node = msg['N']
+            reply_addr = msg['O']
         except KeyError:
             if exc is not None:
                 print 'Exc (no reply addr):', addr, msg, exc
@@ -197,10 +197,7 @@ class Vat(object):
 
     def send(self, node, addr, msg, errh=None):
         if node == 'browser':
-            if 'm' in msg:
-                msg['o'] = addr
-            else:
-                msg['i'] = addr
+            msg['o'] = addr
             if self.verbose:
                 print getattr(self.node, 'client_ip', ''), 'Out', msg
             enc = JSON_CODEC.encode(self, msg)
@@ -228,8 +225,8 @@ class Vat(object):
         self.callbacks[reply_addr] = cb
         msg = {'m': method,
                'a': args,
-               'i': reply_addr,
-               'r': self.node_id}
+               'O': reply_addr,
+               'N': self.node_id}
         send_err_cb = SendErrorCb(self, reply_addr)
         self.send(node, addr, msg, send_err_cb.failure)
         return cb

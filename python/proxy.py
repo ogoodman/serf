@@ -43,3 +43,6 @@ class Proxy(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def _ext_encoding(self):
+        return 'Proxy', {'n': self._node, 'o': self._path}

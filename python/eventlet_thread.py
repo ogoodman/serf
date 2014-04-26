@@ -71,6 +71,11 @@ class EventletThread(object):
         return EventletCallback()
 
     def callFromThread(self, *args):
+        # FIXME: some code is calling this when it doesn't need to.
+        # Some other code is patching this to self.call because
+        # it doesn't need to start the thread. There is a simpler
+        # thread model than this that uses an existing reactor and
+        # might not even need callFromThread to handle other threads.
         with self.lock:
             self.queue.append(args)
         self.loop_in.send('\x01')

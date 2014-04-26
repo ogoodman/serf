@@ -68,15 +68,38 @@ define(['when/when'], function(when) {
 	this.ws.onmessage = function(event) {
 	    // console.log(event.data);
 	    var data = traverse(JSON.parse(event.data), postDecodeFn);
-	    if ('o' in data) { // reply
-		// call (currently one-way only from server)
+	    if ('m' in data) { // call (currently one-way only from server)
 		var prx = that.obj[data.o];
 		var method = prx[data.m];
 		var args = data.a;
-		method.apply(prx, args);
-	    } else {
-		var deferred = that.pendingCalls[data.i];
-		delete that.pendingCalls[data.i];
+		// FIXME: this should eventually handle promises too.
+		// If result were known to be a promise, we'd just
+		// call the sendRemote in a .done callback.
+		var msg;
+		try {
+		    var result = method.apply(prx, args);
+		    if (data.N && data.O) {
+			that.sendRemote({
+			    n: data.N, // reply node
+			    o: data.O, // reply object (callback id)
+			    r: result
+			});
+		    }
+		} catch (ex) {
+		    if (data.N && data.O) {
+			that.sendRemote({
+			    n: data.N, // reply node
+			    o: data.O, // reply object (callback id)
+			    e: [ex.constructor.name, [ex.message]]
+			});
+		    } else {
+			// FIXME: What can we do here? Ignoring it means the
+			// one-way call silently swallows exceptions.
+		    }
+		}
+	    } else { // reply
+		var deferred = that.pendingCalls[data.o];
+		delete that.pendingCalls[data.o];
 		if ('e' in data) {
 		    deferred.reject(data.e);
 		} else {
@@ -101,17 +124,24 @@ define(['when/when'], function(when) {
 	return {__ext__name_: info.name, __ext__args_: info.args};
     }
 
+    WSServer.prototype.sendRemote = function(msg) {
+	var that = this;
+	this.connect().done(function() {
+	    that.ws.send(JSON.stringify(traverse(msg, preEncodeFn)));
+	});
+    };
+
     WSServer.prototype.callRemote = function(oid, method, args) {
 	var that = this;
 	this.callId += 1;
 	var msg = {
 	    o: oid,
-	    i: that.callId,
 	    m: method,
 	    a: args,
-	    r: 'browser'
+	    O: this.callId,
+	    N: 'browser'
 	};
-	var deferred = this.pendingCalls[that.callId] = when.defer();
+	var deferred = this.pendingCalls[this.callId] = when.defer();
 	this.connect().done(function() {
 	    that.ws.send(JSON.stringify(traverse(msg, preEncodeFn)));
 	}, function(error) {
@@ -131,10 +161,13 @@ define(['when/when'], function(when) {
 	return new BoundMethod(args.o, args.m);
     };
 
-    function Proxy(server, objId) {
+    function Proxy(server, objId, node) {
 	this.server = server;
 	this.objId = objId;
-	this.server.obj[objId] = this; // register.
+	this.node = node || 'server';
+	if (this.node == 'server') {
+	    this.server.obj[objId] = this; // register.
+	}
 	this._subs = {};
     }
 
@@ -158,6 +191,18 @@ define(['when/when'], function(when) {
 	} else {
 	    this._subs[event].push(cb);
 	}
+    };
+
+    Proxy.prototype.ext_encoding = function() {
+	return {name: 'Proxy', args:{o: this.objId, n:this.node}}
+    };
+
+    WSServer.prototype.hooks['Proxy'] = function(args) {
+	// Unlikely that server would send us proxy to our own object
+	// but nonetheless there should be no harm in resolving it
+	// to a direct reference to the object.
+	if (args.n == 'browser') return this.obj[args.o];
+	return new Proxy(this, args.o);
     };
 
     return {

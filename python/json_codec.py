@@ -1,6 +1,9 @@
 import weakref
 import cjson
-from traverse import traverse
+from serf.traverse import traverse
+from serf.proxy import Proxy
+
+# A proxy comes with an arg of {'o':objId}
 
 class BoundMethod(object):
     def __init__(self, handler, data):
@@ -14,7 +17,7 @@ class BoundMethod(object):
             return False
         return h.send('browser', self.oid, {'m':self.method, 'a':list(args)})
 
-    def ext_encoding(self):
+    def _ext_encoding(self):
         return 'BoundMethod', {'o':self.oid, 'm':self.method}
 
 def makeBoundMethod(rpc_handler, data):
@@ -22,14 +25,19 @@ def makeBoundMethod(rpc_handler, data):
     rpc_handler.refs.append(method)
     return method
 
+def makeProxy(vat, data):
+    return Proxy(data['n'], data['o'], vat)
+
 class JSONCodec(object):
-    hooks = {'BoundMethod': makeBoundMethod}
+    hooks = {
+        'BoundMethod': makeBoundMethod,
+        'Proxy': makeProxy}
 
     def preEncodeFn(self, data):
         if isinstance(data, Exception):
             return [data.__class__.__name__, data.args]
         try:
-            name, value = data.ext_encoding()
+            name, value = data._ext_encoding()
         except:
             return None
         return {'__ext__name_': name, '__ext__args_': value}

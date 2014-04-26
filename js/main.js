@@ -71,6 +71,23 @@ require(['when/when', 'app/rpc'], function(when, rpc) {
 	}
     }
 
+    // Test for passing proxy to server.
+    function Squarer() { // for Maud
+    }
+    Squarer.prototype.square = function(n) {
+	console.log('squaring', n);
+	return n * n;
+    };
+    function sendProxyToServer() {
+	serv.obj['squarer'] = new Squarer();
+	console.log('serv.obj.squarer', serv.obj['squarer']);
+	var sq = new rpc.Proxy(serv, 'squarer', 'browser');
+	var sqc = new rpc.Proxy(serv, 'sqcaller');
+	sqc.addMethod('useSquarer');
+	sqc.useSquarer(sq, 3).done(rlog);
+    }
+    window.sendProxyToServer = sendProxyToServer
+
     window.rlog = function(result) { console.log('got:', result); }
     window.elog = function(err) { console.log('error:', err); }
 
