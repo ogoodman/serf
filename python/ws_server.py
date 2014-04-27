@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import eventlet
+import weakref
 from serf.eventlet_thread import EventletThread
 from serf.websocket_handler import WebSocketHandler, CURRENT
 from serf.model import Model
@@ -11,7 +12,7 @@ SINGLETON_MODEL = Model()
 
 class SquareCaller(object):
     def __init__(self, vat, oid):
-        self.vat = vat
+        self.vat = weakref.ref(vat)
         self.oid = oid
     def useSquarer(self, sq, n):
         r = sq.square(n)
@@ -22,7 +23,7 @@ class SquareCaller(object):
         print 'square of %s is %s' % (n, r)
         return r
     def subscribeToClient(self, prx):
-        method = BoundMethod(self.vat, self.oid, 'onClientEvent', 'server')
+        method = BoundMethod(self.vat(), self.oid, 'onClientEvent', 'server')
         prx.subscribe('event', method)
     def onClientEvent(self, ev, info):
         print 'got event', ev, info
