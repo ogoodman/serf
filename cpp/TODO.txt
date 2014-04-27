@@ -1,0 +1,7 @@
+Move Printer and TypeRegistry to their own files.
+
+The following files are affected when a codec is added:
+  Printer,      currently in var.cpp
+  TypeRegistry, currently in type_codec.cpp,
+  AnyEncoder,   currently in any_codec.cpp.
+
