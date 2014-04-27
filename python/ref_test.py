@@ -3,7 +3,7 @@
 """Tests for Refs."""
 
 import unittest
-from serf.serialize import SerializationError
+from serf.serializer import SerializationError
 from serf.ref import Ref, ReferenceError
 from serf.mock_net import MockNet
 from serf.obj import obj

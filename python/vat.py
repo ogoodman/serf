@@ -1,7 +1,8 @@
 """Another attempt to model persistence."""
 
+import weakref
 from cStringIO import StringIO
-from serf.serialize import encode, decode, encodes, decodes, SerializationError, POD_TYPES
+from serf.serializer import encode, decode, encodes, decodes, SerializationError, POD_TYPES, Record
 from serf.ref import Ref
 from serf.synchronous import Synchronous
 from serf.util import randomString, rmap
@@ -56,6 +57,46 @@ class SendErrorCb(object):
     def failure(self, exc):
         self.vat.lput(self.cb_id, {'e': exc})
 
+class RemoteCtx(object):
+    def __init__(self, vat):
+        self.vat = weakref.ref(vat)
+        self.node_id = vat.node_id
+
+    def custom(self, name, data):
+        if name == 'ref':
+            node = data['node']
+            if node == self.node_id:
+                return Ref(self.vat().storage, data['path'])
+            return Proxy(node, data['path'], self.vat())
+        if name == 'exc':
+            try:
+                cls = EXCEPTIONS[data['type']]
+            except:
+                return RemoteException('%s%r' % (data['type'], data['a']))
+            return cls(*data['a'])
+        raise SerializationError(name)
+
+    def record(self, inst):
+        t = type(inst)
+        if isinstance(inst, Exception):
+            return Record('exc', {'type': t.__name__, 'a': inst.args})
+        ref = getattr(inst, 'ref', None)
+        if type(ref) is Ref:
+            t, inst = Ref, ref
+        if t is Ref and not inst._facet:
+            # TODO: make a slot property for storing facet ref slots.
+            return Record('ref', {'path': inst._path, 'node': self.node_id})
+        if t is Proxy:
+            return Record('ref', {'path': inst._path, 'node': inst._node})
+        raise SerializationError(str(t))
+
+    def codec(self, type_id):
+        return None
+
+    def namedCodec(self, type_name):
+        return None, None
+
+
 class Vat(object):
     def __init__(self, node_id, vat_id, storage, node=None, t_model=None, verbose=False):
         thread_model = Synchronous() if t_model is None else t_model
@@ -73,40 +114,13 @@ class Vat(object):
         self.refs = []
         if hasattr(storage, 'setRPC'):
             storage.setRPC(self)
+        self.remote_ctx = RemoteCtx(self)
 
     def setNode(self, node):
         self.node = node
 
     def makeProxy(self, path, node=None):
         return Proxy(node or self.node_id, path, self)
-
-    def decodeRemote(self, name, data, lev):
-        if name == 'ref':
-            node = data['node']
-            if node == self.node_id:
-                return Ref(self.storage, data['path'])
-            return Proxy(node, data['path'], self)
-        if name == 'exc':
-            try:
-                cls = EXCEPTIONS[data['type']]
-            except:
-                return RemoteException('%s%r' % (data['type'], data['a']))
-            return cls(*data['a'])
-        raise SerializationError(name)
-
-    def encodeRemote(self, inst, lev):
-        t = type(inst)
-        if isinstance(inst, Exception):
-            return 'exc', {'type': t.__name__, 'a': inst.args}
-        ref = getattr(inst, 'ref', None)
-        if type(ref) is Ref:
-            t, inst = Ref, ref
-        if t is Ref and not inst._facet:
-            # TODO: make a slot property for storing facet ref slots.
-            return 'ref', {'path': inst._path, 'node': self.node_id}
-        if t is Proxy:
-            return 'ref', {'path': inst._path, 'node': inst._node}
-        raise SerializationError(str(t))
 
     def handle(self, ev, msg):
         """Handler for encoded message data.
@@ -144,7 +158,10 @@ class Vat(object):
         else:
             f = StringIO(msg_data['message'])
             addr = decode(f) # msg is addr, body
-            msg = decode(f, self.decodeRemote)
+            msg = decode(f, self.remote_ctx)
+        # Subtract transport path from incoming message.
+        assert(addr.startswith(self.node.path))
+        addr = addr[len(self.node.path):]
         self._handle(addr, msg)
 
     def _handle(self, addr, msg):
@@ -211,7 +228,7 @@ class Vat(object):
         else:
             f = StringIO()
             encode(f, addr)
-            encode(f, msg, self.encodeRemote)
+            encode(f, msg, self.remote_ctx)
             enc = f.getvalue()
             pcol = 'serf'
         self.node.send(node, enc, pcol, errh=errh)

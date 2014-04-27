@@ -10,7 +10,7 @@ from serf.proxy import Proxy
 from serf.ref import Ref
 from serf.po.data import Data
 from serf.test_object import TestObject
-from serf.serialize import SerializationError
+from serf.serializer import SerializationError
 from serf.test_time import Time
 from serf.green_thread import GreenThread
 from serf.worker import Worker
@@ -187,12 +187,12 @@ class VatTest(unittest.TestCase):
         nb = Vat('browser', '', {}, tb)
 
         oa = Model()
-        na.provide(1, oa)
+        na.provide('1', oa)
 
-        rset = makeBoundMethod(nb, {'o':1, 'm':'set'})
-        rset('x', 1)
+        rset = makeBoundMethod(nb, {'o':'1', 'm':'set'})
+        rset('x', '1')
 
-        self.assertEqual(oa.get('x'), 1)
+        self.assertEqual(oa.get('x'), '1')
 
 if __name__ == '__main__':
     unittest.main()

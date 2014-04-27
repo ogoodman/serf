@@ -1,7 +1,7 @@
 """Dictionary of persistent objects."""
 
 import weakref
-from serf.serialize import encodes, decodes, SerializationError
+from serf.serializer import encodes, decodes, SerializationError, Record
 from serf.po.file import File
 from serf.ref import Ref
 from serf.proxy import Proxy
@@ -23,6 +23,64 @@ Unique = []
 class NoSuchName(Exception):
     pass
 
+class StorageCtx(object):
+    def __init__(self, storage, path=None):
+        self.storage = weakref.ref(storage)
+        self.path = path
+
+    def save(self):
+        if self.path is not None:
+            storage = self.storage()
+            if storage is not None:
+                storage.save(self.path)
+
+    def custom(self, name, data):
+        if name == 'ref':
+            if 'node' in data:
+                rpc = self.storage().getRPC()
+                if rpc is None:
+                    raise SerializationError('Cannot create proxy: rpc not set')
+                return rpc.makeProxy(data['path'], data['node'])
+            return Ref(self.storage(), data['path'], data.get('facet'))
+        if name == 'inst':
+            cls = importSymbol(mapClass(data['CLS']))
+            data['_vat'] = self.storage()
+            args = [data.get(key) for key in cls.serialize]
+            inst = cls(*args)
+            if hasattr(cls, '_save'):
+                inst._save = self.save
+            return inst
+        raise SerializationError(name)
+
+    def record(self, inst):
+        t = type(inst)
+        # Replace any instance having a slot somewhere with its Ref.
+        ref = getattr(inst, 'ref', None)
+        if type(ref) is Ref and ref._path != self.path:
+            t, inst = Ref, ref
+        if t is Ref:
+            data = {'path': inst._path}
+            if inst._facet:
+                data['facet'] = inst._facet
+            return Record('ref', data)
+        if t is Proxy:
+            return Record('ref', {'path': inst._path, 'node': inst._node})
+        if type(getattr(t, 'serialize', None)) is tuple:
+            data = getDict(inst)
+            cls = inst.__class__
+            data['CLS'] = '%s.%s' % (cls.__module__, cls.__name__)
+            if hasattr(cls, '_save'):
+                inst._save = self.save
+            return Record('inst', data)
+        raise SerializationError(str(t))
+
+    def codec(self, type_id):
+        return None
+
+    def namedCodec(self, type_name):
+        return None, None
+
+
 class Storage(object):
     def __init__(self, store, t_model=None):
         self.store = store # stuff on disk
@@ -42,10 +100,8 @@ class Storage(object):
                 svalue.ref = Ref(self, path)
 
     def _load(self, path):
-        save = lambda: self.save(path)
-        def dec(name, data, lev):
-            return self.decode(name, data, lev, save)
-        self.cache[path] = decodes(self.store['caps/' + path], dec)
+        ctx = StorageCtx(self, path)
+        self.cache[path] = decodes(self.store['caps/' + path], ctx)
         self._addRef(path, self.cache[path])
 
     def __setitem__(self, path, svalue):
@@ -59,10 +115,8 @@ class Storage(object):
     def save(self, path, svalue=Unique):
         if svalue is Unique:
             svalue = self.cache[path]
-        save = lambda: self.save(path)
-        def enc(inst, lev):
-            return self.encode(inst, lev, path, save)
-        self.store['caps/' + path] = encodes(svalue, enc)
+        ctx = StorageCtx(self, path)
+        self.store['caps/' + path] = encodes(svalue, ctx)
 
     def __delitem__(self, path):
         del self.store['caps/' + path]
@@ -81,46 +135,6 @@ class Storage(object):
         if self.rpc is not None:
             return self.rpc()
 
-    def decode(self, name, data, lev, save=None):
-        if name == 'ref':
-            if 'node' in data:
-                rpc = self.getRPC()
-                if rpc is None:
-                    raise SerializationError('Cannot create proxy: rpc not set')
-                return rpc.makeProxy(data['path'], data['node'])
-            return Ref(self, data['path'], data.get('facet'))
-        if name == 'inst':
-            cls = importSymbol(mapClass(data['CLS']))
-            data['_vat'] = self
-            args = [data.get(key) for key in cls.serialize]
-            inst = cls(*args)
-            if hasattr(cls, '_save'):
-                inst._save = save
-            return inst
-        raise SerializationError(name)
-
-    def encode(self, inst, lev, path=None, save=None):
-        t = type(inst)
-        # Replace any instance having a slot somewhere with its Ref.
-        ref = getattr(inst, 'ref', None)
-        if type(ref) is Ref and ref._path != path:
-            t, inst = Ref, ref
-        if t is Ref:
-            data = {'path': inst._path}
-            if inst._facet:
-                data['facet'] = inst._facet
-            return 'ref', data
-        if t is Proxy:
-            return 'ref', {'path': inst._path, 'node': inst._node}
-        if type(getattr(t, 'serialize', None)) is tuple:
-            data = getDict(inst)
-            cls = inst.__class__
-            data['CLS'] = '%s.%s' % (cls.__module__, cls.__name__)
-            if hasattr(cls, '_save'):
-                inst._save = save
-            return 'inst', data
-        raise SerializationError(str(t))
-
     def _autoMake(self, name):
         # This should only really be allowed to happen in the default vat.
         # Code in Node assumes that system names are in the default vat.
@@ -130,8 +144,9 @@ class Storage(object):
         return self.makeRef(cls(self)) # Add default_vat_id here?
 
     def getn(self, name):
+        ctx = StorageCtx(self)
         try:
-            return decodes(self.store['names/' + name], self.decode)
+            return decodes(self.store['names/' + name], ctx)
         except KeyError:
             pass
         ref = self._autoMake(name)
@@ -151,9 +166,8 @@ class Storage(object):
 
     def setn(self, name, ref_or_value):
         ref = self._asRef(ref_or_value)
-        def enc(inst, lev):
-            return self.encode(inst, lev, '')
-        self.store['names/' + name] = encodes(ref, enc)
+        ctx = StorageCtx(self)
+        self.store['names/' + name] = encodes(ref, ctx)
 
     def deln(self, name, erase=False):
         if erase:

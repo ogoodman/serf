@@ -32,18 +32,18 @@ class CallLogTest(unittest.TestCase):
         r = cl.addReader('1', p, 0)
 
         self.assertEqual(cl.end(), 2)
-        self.assertEqual(cl[0], ('say', ('hi',)))
+        self.assertEqual(cl[0], ['say', ['hi']])
         self.assertEqual(clb.end(), 0)
 
         r.start()
 
         self.assertEqual(clb.end(), 2)
-        self.assertEqual(clb[0], ('say', ('hi',)))
+        self.assertEqual(clb[0], ['say', ['hi']])
 
         cl.say('foo')
 
         self.assertEqual(clb.end(), 3)
-        self.assertEqual(clb[2], ('say', ('foo',)))
+        self.assertEqual(clb[2], ['say', ['foo']])
 
         net.goOffline('B')
 
@@ -55,7 +55,7 @@ class CallLogTest(unittest.TestCase):
         net.goOnline('B')
 
         self.assertEqual(clb.end(), 4)
-        self.assertEqual(clb[3], ('say', ('bar',)))
+        self.assertEqual(clb[3], ['say', ['bar']])
 
         # Check everything is persistent.
         va.clearCache()
@@ -64,7 +64,7 @@ class CallLogTest(unittest.TestCase):
         cl.say('baz')
 
         self.assertEqual(clb.end(), 5)
-        self.assertEqual(clb[4], ('say', ('baz',)))
+        self.assertEqual(clb[4], ['say', ['baz']])
 
         r = cl.getReader('1')
         r.stop()
@@ -81,7 +81,7 @@ class CallLogTest(unittest.TestCase):
         net.goOnline('B')
 
         self.assertEqual(clb.end(), 6)
-        self.assertEqual(clb[5], ('say', ('garply',)))
+        self.assertEqual(clb[5], ['say', ['garply']])
 
         cl.removeReader('1')
 

@@ -1,7 +1,7 @@
 """Transfers messages received to the best matching endpoint."""
 
 import cjson
-from serf.serialize import decodes
+from serf.serializer import decodes
 from serf.publisher import Publisher
 
 class Endpoint(Publisher):

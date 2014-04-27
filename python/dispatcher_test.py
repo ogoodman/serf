@@ -5,7 +5,7 @@
 import unittest
 from serf.dispatcher import Dispatcher
 from serf.publisher import Publisher
-from serf.serialize import encodes
+from serf.serializer import encodes
 from serf.mock_net import MockEndpoint
 
 class Listener(object):

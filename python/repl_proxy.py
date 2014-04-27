@@ -6,7 +6,7 @@ Read-Eval-Print-Loop.
 
 import types
 from serf.worker import Callback
-from serf.serialize import POD_TYPES
+from serf.serializer import POD_TYPES
 
 class REPLProxy(object):
     def __init__(self, target, tm):
