@@ -3,6 +3,8 @@
 
 #include <sstream>
 
+using namespace serf;
+
 class BoolCodecTest : public CxxTest::TestSuite
 {
 public:

@@ -6,6 +6,7 @@
 
 using namespace boost;
 using namespace std;
+using namespace serf;
 
 class VarTest : public CxxTest::TestSuite
 {

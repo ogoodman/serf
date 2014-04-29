@@ -6,6 +6,7 @@
 
 using namespace std;
 using namespace boost;
+using namespace serf;
 
 class IntCodecTest : public CxxTest::TestSuite
 {

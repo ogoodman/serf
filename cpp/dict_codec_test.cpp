@@ -5,6 +5,7 @@
 #include <type_codec.h>
 
 using namespace std;
+using namespace serf;
 
 class DictCodecTest : public CxxTest::TestSuite
 {

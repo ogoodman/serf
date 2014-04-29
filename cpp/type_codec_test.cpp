@@ -6,6 +6,7 @@
 using namespace std;
 using namespace boost::posix_time;
 using namespace boost::gregorian;
+using namespace serf;
 
 class TypeCodecTest : public CxxTest::TestSuite
 {

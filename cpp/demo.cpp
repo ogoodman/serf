@@ -14,6 +14,7 @@ using namespace std;
 using namespace boost;
 using namespace boost::posix_time;
 using namespace boost::gregorian;
+using namespace serf;
 
 int main(int argc, char* argv[])
 {

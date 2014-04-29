@@ -4,6 +4,8 @@
 #include <sstream>
 #include <stdexcept>
 
+using namespace serf;
+
 class StringCodecTest : public CxxTest::TestSuite
 {
 public:

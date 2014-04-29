@@ -1,6 +1,8 @@
 #include <float_codec.h>
 #include <cxxtest/TestSuite.h>
 
+using namespace serf;
+
 class FloatCodecTest : public CxxTest::TestSuite
 {
 public:

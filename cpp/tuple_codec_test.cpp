@@ -3,6 +3,8 @@
 
 #include <sstream>
 
+using namespace serf;
+
 class TupleCodecTest : public CxxTest::TestSuite
 {
 public:

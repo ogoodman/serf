@@ -3,6 +3,7 @@
 
 using namespace boost::posix_time;
 using namespace boost::gregorian;
+using namespace serf;
 
 class AnyCodecTest : public CxxTest::TestSuite
 {

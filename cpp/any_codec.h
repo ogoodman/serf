@@ -3,20 +3,23 @@
 
 #include <codec.h>
 
-class AnyCodec;
+namespace serf {
 
-class AnyCodec : public Codec {
-public:
-    virtual std::string typeName();
-    virtual void encodeType(std::ostream& out);
-    virtual void encode(std::ostream& out, Var const& value, Context& ctx);
-    virtual void decode(std::istream& in, Var& value, Context& ctx);
-
-    class Factory : public CodecFactory {
+    class AnyCodec;
+    
+    class AnyCodec : public Codec {
     public:
-        virtual CodecP decodeType(std::istream& in, Context& ctx);
-        virtual char typeByte() const;
+        virtual std::string typeName();
+        virtual void encodeType(std::ostream& out);
+        virtual void encode(std::ostream& out, Var const& value, Context& ctx);
+        virtual void decode(std::istream& in, Var& value, Context& ctx);
+    
+        class Factory : public CodecFactory {
+        public:
+            virtual CodecP decodeType(std::istream& in, Context& ctx);
+            virtual char typeByte() const;
+        };
     };
-};
+}
 
 #endif // ANY_CODEC_HGUARD_

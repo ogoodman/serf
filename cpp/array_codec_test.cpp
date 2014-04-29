@@ -1,6 +1,8 @@
 #include <array_codec.h>
 #include <cxxtest/TestSuite.h>
 
+using namespace serf;
+
 class ArrayCodecTest : public CxxTest::TestSuite
 {
 public:

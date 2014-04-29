@@ -4,6 +4,7 @@
 #include <sstream>
 
 using namespace std;
+using namespace serf;
 
 class NullCodecTest : public CxxTest::TestSuite
 {

@@ -4,6 +4,8 @@
 #include <type_codec.h>
 #include <sstream>
 
+using namespace serf;
+
 class StructCodecTest : public CxxTest::TestSuite
 {
 public:
