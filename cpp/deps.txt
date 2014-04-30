@@ -1,184 +1,184 @@
-build/any_codec.o: \
-	any_codec.h \
-	array_codec.h \
-	bool_codec.h \
-	codec.h \
-	dict_codec.h \
-	float_codec.h \
-	int_codec.h \
-	null_codec.h \
-	string_codec.h \
-	time_codec.h \
-	type_codec.h \
-	var.h
-build/any_codec_test.o: \
-	any_codec.h \
-	codec.h \
-	var.h
-build/array_codec.o: \
-	array_codec.h \
-	codec.h \
-	int_codec.h \
-	type_codec.h \
-	var.h
-build/array_codec_test.o: \
-	array_codec.h \
-	codec.h \
-	var.h
-build/bool_codec.o: \
-	bool_codec.h \
-	codec.h \
-	var.h
-build/bool_codec_test.o: \
-	bool_codec.h \
-	codec.h \
-	var.h
 build/test_runner.o: \
-	any_codec.h \
-	any_codec_test.cpp \
-	array_codec.h \
-	array_codec_test.cpp \
-	bool_codec.h \
-	bool_codec_test.cpp \
-	codec.h \
 	debug.h \
-	dict_codec.h \
-	dict_codec_test.cpp \
-	float_codec.h \
-	float_codec_test.cpp \
-	int_codec.h \
-	int_codec_test.cpp \
-	null_codec.h \
-	null_codec_test.cpp \
-	string_codec.h \
-	string_codec_test.cpp \
-	struct_codec.h \
-	struct_codec_test.cpp \
-	time_codec.h \
-	time_codec_test.cpp \
-	tuple_codec.h \
-	tuple_codec_test.cpp \
-	type_codec.h \
-	type_codec_test.cpp \
-	var.h \
+	serializer/any_codec.h \
+	serializer/any_codec_test.cpp \
+	serializer/array_codec.h \
+	serializer/array_codec_test.cpp \
+	serializer/bool_codec.h \
+	serializer/bool_codec_test.cpp \
+	serializer/codec.h \
+	serializer/dict_codec.h \
+	serializer/dict_codec_test.cpp \
+	serializer/float_codec.h \
+	serializer/float_codec_test.cpp \
+	serializer/int_codec.h \
+	serializer/int_codec_test.cpp \
+	serializer/null_codec.h \
+	serializer/null_codec_test.cpp \
+	serializer/string_codec.h \
+	serializer/string_codec_test.cpp \
+	serializer/struct_codec.h \
+	serializer/struct_codec_test.cpp \
+	serializer/time_codec.h \
+	serializer/time_codec_test.cpp \
+	serializer/tuple_codec.h \
+	serializer/tuple_codec_test.cpp \
+	serializer/type_codec.h \
+	serializer/type_codec_test.cpp \
+	serializer/var.h \
 	var_test.cpp
-build/codec.o: \
-	codec.h \
-	debug.h \
-	var.h
 build/demo.o: \
-	any_codec.h \
-	codec.h \
 	debug.h \
-	int_codec.h \
-	time_codec.h \
-	type_codec.h \
-	var.h
+	serializer/any_codec.h \
+	serializer/codec.h \
+	serializer/int_codec.h \
+	serializer/time_codec.h \
+	serializer/type_codec.h \
+	serializer/var.h
+build/any_codec.o: \
+	serializer/any_codec.h \
+	serializer/array_codec.h \
+	serializer/bool_codec.h \
+	serializer/codec.h \
+	serializer/dict_codec.h \
+	serializer/float_codec.h \
+	serializer/int_codec.h \
+	serializer/null_codec.h \
+	serializer/string_codec.h \
+	serializer/time_codec.h \
+	serializer/type_codec.h \
+	serializer/var.h
+build/any_codec_test.o: \
+	serializer/any_codec.h \
+	serializer/codec.h \
+	serializer/var.h
+build/array_codec.o: \
+	serializer/array_codec.h \
+	serializer/codec.h \
+	serializer/int_codec.h \
+	serializer/type_codec.h \
+	serializer/var.h
+build/array_codec_test.o: \
+	serializer/array_codec.h \
+	serializer/codec.h \
+	serializer/var.h
+build/bool_codec.o: \
+	serializer/bool_codec.h \
+	serializer/codec.h \
+	serializer/var.h
+build/bool_codec_test.o: \
+	serializer/bool_codec.h \
+	serializer/codec.h \
+	serializer/var.h
+build/codec.o: \
+	debug.h \
+	serializer/codec.h \
+	serializer/var.h
 build/dict_codec.o: \
-	codec.h \
-	dict_codec.h \
-	int_codec.h \
-	string_codec.h \
-	type_codec.h \
-	var.h
+	serializer/codec.h \
+	serializer/dict_codec.h \
+	serializer/int_codec.h \
+	serializer/string_codec.h \
+	serializer/type_codec.h \
+	serializer/var.h
 build/dict_codec_test.o: \
-	codec.h \
-	dict_codec.h \
-	type_codec.h \
-	var.h
+	serializer/codec.h \
+	serializer/dict_codec.h \
+	serializer/type_codec.h \
+	serializer/var.h
 build/float_codec.o: \
-	codec.h \
-	float_codec.h \
-	var.h
+	serializer/codec.h \
+	serializer/float_codec.h \
+	serializer/var.h
 build/float_codec_test.o: \
-	codec.h \
-	float_codec.h \
-	var.h
+	serializer/codec.h \
+	serializer/float_codec.h \
+	serializer/var.h
 build/int_codec.o: \
-	codec.h \
 	debug.h \
-	int_codec.h \
-	var.h
+	serializer/codec.h \
+	serializer/int_codec.h \
+	serializer/var.h
 build/int_codec_test.o: \
-	codec.h \
-	int_codec.h \
-	var.h
+	serializer/codec.h \
+	serializer/int_codec.h \
+	serializer/var.h
 build/null_codec.o: \
-	codec.h \
-	null_codec.h \
-	var.h
+	serializer/codec.h \
+	serializer/null_codec.h \
+	serializer/var.h
 build/null_codec_test.o: \
-	codec.h \
-	null_codec.h \
-	var.h
+	serializer/codec.h \
+	serializer/null_codec.h \
+	serializer/var.h
 build/string_codec.o: \
-	codec.h \
-	int_codec.h \
-	string_codec.h \
-	var.h
+	serializer/codec.h \
+	serializer/int_codec.h \
+	serializer/string_codec.h \
+	serializer/var.h
 build/string_codec_test.o: \
-	codec.h \
-	string_codec.h \
-	var.h
+	serializer/codec.h \
+	serializer/string_codec.h \
+	serializer/var.h
 build/struct_codec.o: \
-	codec.h \
 	debug.h \
-	int_codec.h \
-	string_codec.h \
-	struct_codec.h \
-	type_codec.h \
-	var.h
+	serializer/codec.h \
+	serializer/int_codec.h \
+	serializer/string_codec.h \
+	serializer/struct_codec.h \
+	serializer/type_codec.h \
+	serializer/var.h
 build/struct_codec_test.o: \
-	codec.h \
-	struct_codec.h \
-	type_codec.h \
-	var.h
+	serializer/codec.h \
+	serializer/struct_codec.h \
+	serializer/type_codec.h \
+	serializer/var.h
 build/time_codec.o: \
-	codec.h \
-	int_codec.h \
-	time_codec.h \
-	var.h
+	serializer/codec.h \
+	serializer/int_codec.h \
+	serializer/time_codec.h \
+	serializer/var.h
 build/time_codec_test.o: \
-	codec.h \
 	debug.h \
-	time_codec.h \
-	var.h
+	serializer/codec.h \
+	serializer/time_codec.h \
+	serializer/var.h
 build/tuple_codec.o: \
-	codec.h \
-	int_codec.h \
-	tuple_codec.h \
-	type_codec.h \
-	var.h
+	serializer/codec.h \
+	serializer/int_codec.h \
+	serializer/tuple_codec.h \
+	serializer/type_codec.h \
+	serializer/var.h
 build/tuple_codec_test.o: \
-	codec.h \
-	tuple_codec.h \
-	var.h
+	serializer/codec.h \
+	serializer/tuple_codec.h \
+	serializer/var.h
 build/type_codec.o: \
-	any_codec.h \
-	array_codec.h \
-	bool_codec.h \
-	codec.h \
 	debug.h \
-	dict_codec.h \
-	float_codec.h \
-	int_codec.h \
-	null_codec.h \
-	string_codec.h \
-	struct_codec.h \
-	time_codec.h \
-	tuple_codec.h \
-	type_codec.h \
-	var.h
+	serializer/any_codec.h \
+	serializer/array_codec.h \
+	serializer/bool_codec.h \
+	serializer/codec.h \
+	serializer/dict_codec.h \
+	serializer/float_codec.h \
+	serializer/int_codec.h \
+	serializer/null_codec.h \
+	serializer/string_codec.h \
+	serializer/struct_codec.h \
+	serializer/time_codec.h \
+	serializer/tuple_codec.h \
+	serializer/type_codec.h \
+	serializer/var.h
 build/type_codec_test.o: \
-	codec.h \
-	type_codec.h \
-	var.h
+	serializer/codec.h \
+	serializer/type_codec.h \
+	serializer/var.h
 build/var.o: \
-	codec.h \
 	debug.h \
-	var.h
+	serializer/codec.h \
+	serializer/var.h
 build/var_test.o: \
-	codec.h \
 	debug.h \
-	null_codec.h \
-	var.h
+	serializer/codec.h \
+	serializer/null_codec.h \
+	serializer/var.h

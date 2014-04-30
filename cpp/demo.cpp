@@ -2,13 +2,13 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <var.h>
-#include <int_codec.h>
-#include <any_codec.h>
-#include <time_codec.h>
-#include <type_codec.h>
+#include <serf/serializer/var.h>
+#include <serf/serializer/int_codec.h>
+#include <serf/serializer/any_codec.h>
+#include <serf/serializer/time_codec.h>
+#include <serf/serializer/type_codec.h>
 
-#include <debug.h>
+#include <serf/debug.h>
 
 using namespace std;
 using namespace boost;
