@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <strings.h>
+#include <unistd.h>
 #include <serf/reactor/reactor.h>
 #include <serf/debug.h>
 

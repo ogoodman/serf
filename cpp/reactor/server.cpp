@@ -1,3 +1,5 @@
+#include <cstdio>
+#include <unistd.h>
 #include <serf/reactor/data_reader.h>
 #include <serf/reactor/accept_reader.h>
 #include <serf/reactor/data_handler.h>

@@ -1,5 +1,17 @@
 build/test_runner.o: \
 	debug.h \
+	reactor/accept_reader.h \
+	reactor/accept_reader_test.cpp \
+	reactor/data_handler.h \
+	reactor/data_handler_test.cpp \
+	reactor/data_reader.h \
+	reactor/data_reader_test.cpp \
+	reactor/line_handler.h \
+	reactor/line_handler_test.cpp \
+	reactor/reactor.h \
+	reactor/reactor_test.cpp \
+	reactor/reader.h \
+	reactor/reader_test.cpp \
 	serializer/any_codec.h \
 	serializer/any_codec_test.cpp \
 	serializer/array_codec.h \
@@ -35,32 +47,56 @@ build/demo.o: \
 	serializer/time_codec.h \
 	serializer/type_codec.h \
 	serializer/var.h
-build/dispatch_demo.o: \
+build/accept_reader.o: \
 	debug.h \
-	dispatch_demo.h \
-	serializer/codec.h \
-	serializer/float_codec.h \
-	serializer/int_codec.h \
-	serializer/var.h
-build/dispatch_demo_test.o: \
-	dispatch_demo.h
-build/esfut.o:
-build/future.o: \
-	future.h
-build/future_test.o: \
-	future.h
-build/mdisp.o: \
+	reactor/accept_reader.h \
+	reactor/reactor.h \
+	reactor/reader.h
+build/accept_reader_test.o: \
 	debug.h \
-	dispatch_demo.h \
-	serializer/codec.h \
-	serializer/float_codec.h \
-	serializer/int_codec.h \
-	serializer/var.h
-build/pmf.o: \
-	dispatch_demo.h \
-	serializer/codec.h \
-	serializer/int_codec.h \
-	serializer/var.h
+	reactor/accept_reader.h \
+	reactor/reader.h
+build/data_handler.o: \
+	reactor/data_handler.h
+build/data_handler_test.o: \
+	debug.h \
+	reactor/data_handler.h
+build/data_reader.o: \
+	debug.h \
+	reactor/data_handler.h \
+	reactor/data_reader.h \
+	reactor/reactor.h \
+	reactor/reader.h
+build/data_reader_test.o: \
+	debug.h \
+	reactor/data_reader.h \
+	reactor/reader.h
+build/line_handler.o: \
+	reactor/data_handler.h \
+	reactor/line_handler.h
+build/line_handler_test.o: \
+	debug.h \
+	reactor/data_handler.h \
+	reactor/line_handler.h
+build/reactor.o: \
+	reactor/reactor.h \
+	reactor/reader.h
+build/reactor_test.o: \
+	debug.h \
+	reactor/reactor.h
+build/reader.o: \
+	reactor/reader.h
+build/reader_test.o: \
+	debug.h \
+	reactor/reader.h
+build/server.o: \
+	debug.h \
+	reactor/accept_reader.h \
+	reactor/data_handler.h \
+	reactor/data_reader.h \
+	reactor/line_handler.h \
+	reactor/reactor.h \
+	reactor/reader.h
 build/any_codec.o: \
 	serializer/any_codec.h \
 	serializer/array_codec.h \
@@ -208,5 +244,3 @@ build/var_test.o: \
 	serializer/codec.h \
 	serializer/null_codec.h \
 	serializer/var.h
-build/sfut.o:
-build/tfut.o:

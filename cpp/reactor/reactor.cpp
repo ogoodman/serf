@@ -1,5 +1,6 @@
 #include <serf/reactor/reactor.h>
 
+#include <cstddef>
 #include <vector>
 #include <sys/select.h>
 #include <sys/time.h>
