@@ -1,11 +1,11 @@
-#include <data_reader.h>
-#include <accept_reader.h>
-#include <data_handler.h>
-#include <line_handler.h>
-#include <reactor.h>
-#include <debug.h>
+#include <serf/reactor/data_reader.h>
+#include <serf/reactor/accept_reader.h>
+#include <serf/reactor/data_handler.h>
+#include <serf/reactor/line_handler.h>
+#include <serf/reactor/reactor.h>
+#include <serf/debug.h>
 
-namespace demo {
+namespace serf {
     class Quitter : public DataHandler {
     public:
         Quitter(Reactor* reactor) : reactor_(reactor) {}
@@ -53,7 +53,7 @@ namespace demo {
     };
 }
 
-using namespace demo;
+using namespace serf;
 
 int main(int argc, char* argv[])
 {

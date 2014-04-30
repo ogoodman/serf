@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace demo {
+namespace serf {
 
     /** \brief Interface for all handlers.
      *

@@ -1,9 +1,9 @@
 #ifndef LINE_HANDLER_HPP_
 #define LINE_HANDLER_HPP_
 
-#include <data_handler.h>
+#include <serf/reactor/data_handler.h>
 
-namespace demo {
+namespace serf {
 
     /** \brief Assembles fragmented input data into complete lines.
      *

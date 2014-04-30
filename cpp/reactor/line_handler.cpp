@@ -1,6 +1,6 @@
-#include <line_handler.h>
+#include <serf/reactor/line_handler.h>
 
-namespace demo {
+namespace serf {
 
     void LineHandler::handle(std::string const& data) {
         acc_ += data;

@@ -1,12 +1,12 @@
-#include <accept_reader.h>
+#include <serf/reactor/accept_reader.h>
 
 #include <stdexcept>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <reactor.h>
-#include <debug.h>
+#include <serf/reactor/reactor.h>
+#include <serf/debug.h>
 
-namespace demo {
+namespace serf {
 
     const int MAX_QUEUED = 10;
 

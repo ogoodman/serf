@@ -1,11 +1,11 @@
-#include <reactor.h>
+#include <serf/reactor/reactor.h>
 
 #include <vector>
 #include <sys/select.h>
 #include <sys/time.h>
-#include <reader.h>
+#include <serf/reactor/reader.h>
 
-namespace demo {
+namespace serf {
     Reactor::Reactor() : stop_(false) {
     }
     Reactor::~Reactor() {

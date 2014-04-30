@@ -1,14 +1,13 @@
-#include <accept_reader.h>
+#include <serf/reactor/accept_reader.h>
 #include <cxxtest/TestSuite.h>
-#include <debug.h>
+#include <serf/debug.h>
 
-// using namespace demo;
+// using namespace serf;
 
 class AcceptReaderTest : public CxxTest::TestSuite
 {
 public:
     void testAcceptReader() {
-        SAY("Hello from test");
         TS_ASSERT(true);
     }
 };

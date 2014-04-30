@@ -1,14 +1,13 @@
-#include <data_reader.h>
+#include <serf/reactor/data_reader.h>
 #include <cxxtest/TestSuite.h>
-#include <debug.h>
+#include <serf/debug.h>
 
-// using namespace demo;
+// using namespace serf;
 
 class DataReaderTest : public CxxTest::TestSuite
 {
 public:
     void testDataReader() {
-        SAY("Hello from test");
         TS_ASSERT(true);
     }
 };

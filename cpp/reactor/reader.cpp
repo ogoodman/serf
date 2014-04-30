@@ -1,7 +1,10 @@
-#include <reader.h>
+#include <serf/reactor/reader.h>
 
-namespace demo {
+namespace serf {
 
     Reader::~Reader() {
+    }
+
+    ReaderFactory::~ReaderFactory() {
     }
 }

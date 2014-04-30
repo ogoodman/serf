@@ -1,14 +1,13 @@
-#include <reactor.h>
+#include <serf/reactor/reactor.h>
 #include <cxxtest/TestSuite.h>
-#include <debug.h>
+#include <serf/debug.h>
 
-// using namespace demo;
+// using namespace serf;
 
 class ReactorTest : public CxxTest::TestSuite
 {
 public:
     void testReactor() {
-        SAY("Hello from test");
         TS_ASSERT(true);
     }
 };

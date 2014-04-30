@@ -3,7 +3,7 @@
 
 #include <map>
 
-namespace demo {
+namespace serf {
     class Reader;
 
     typedef std::map<int, Reader*> ReaderMap;

@@ -1,15 +1,15 @@
-#include <data_reader.h>
+#include <serf/reactor/data_reader.h>
 
 #include <errno.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <data_handler.h>
-#include <reactor.h>
-#include <debug.h>
+#include <serf/reactor/data_handler.h>
+#include <serf/reactor/reactor.h>
+#include <serf/debug.h>
 
 using namespace std;
 
-namespace demo {
+namespace serf {
 
     const size_t BSIZE=4096;
     char buf[BSIZE];

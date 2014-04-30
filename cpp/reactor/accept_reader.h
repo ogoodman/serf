@@ -1,9 +1,9 @@
 #ifndef ACCEPT_READER_HPP_
 #define ACCEPT_READER_HPP_
 
-#include <reader.h>
+#include <serf/reactor/reader.h>
 
-namespace demo {
+namespace serf {
     class Reactor;
 
     /** \brief Listens on a port and creates a new reader for each connection.

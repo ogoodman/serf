@@ -1,14 +1,13 @@
-#include <line_handler.h>
+#include <serf/reactor/line_handler.h>
 #include <cxxtest/TestSuite.h>
-#include <debug.h>
+#include <serf/debug.h>
 
-// using namespace demo;
+// using namespace serf;
 
 class LineHandlerTest : public CxxTest::TestSuite
 {
 public:
     void testLineHandler() {
-        SAY("Hello from test");
         TS_ASSERT(true);
     }
 };
