@@ -9,6 +9,11 @@
 #include <serf/debug.h>
 
 namespace serf {
+
+    /** \brief Example DataHandler.
+     *
+     * When this receives any data at all, it tells the reactor to stop.
+     */
     class Quitter : public DataHandler {
     public:
         Quitter(Reactor* reactor) : reactor_(reactor) {}
@@ -20,23 +25,35 @@ namespace serf {
         Reactor* reactor_;
     };
 
+    /** \brief Example ReaderFactory.
+     *
+     * This responds to any connection by sending the string "hello\n"
+     * and then closing it. There is no need to create any Reader if
+     * nothing needs to be read.
+     */
     class HelloWriter : public ReaderFactory {
     public:
         Reader* makeReader(std::string const& host, unsigned short port, int fd) {
             SHOW(fd);
-            write(fd, "hello", 5);
+            write(fd, "hello\n", 6);
             close(fd);
             return NULL;
         }
     };
 
+    /** \brief Example DataHandler.
+     *
+     * This prints each string it is passed. It will be a child DataHandler
+     * of the LineHandler which defragments its input into newline terminated
+     * lines.
+     *
+     * It also scans each line for a couple of key words and carries out
+     * extra actions to add a bit of interest.
+     */
     class LinePrinter : public DataHandler {
     public:
         LinePrinter(int fd, Reactor* reactor)
             : fd_(fd), count_(0), reactor_(reactor) {}
-        ~LinePrinter() {
-            SAY("LinePrinter deleted");
-        }
 
         void handle(std::string const& line);
 
@@ -46,12 +63,13 @@ namespace serf {
         Reactor* reactor_;
     };
 
+    /** \brief Example ReaderFactory.
+     *
+     * This hooks sets up a chain DataReader -> LineHandler -> LinePrinter.
+     */
     class LinePrinterFactory : public ReaderFactory {
     public:
         LinePrinterFactory(Reactor* reactor) : reactor_(reactor) {}
-        ~LinePrinterFactory() {
-            SAY("LinePrinterFactory deleted");
-        }
 
         Reader* makeReader(std::string const& host, unsigned short port, int fd) {
             LinePrinter* printer = new LinePrinter(fd, reactor_);
@@ -63,6 +81,13 @@ namespace serf {
         Reactor* reactor_;
     };
 
+    /** \brief Handles data from a LineHandler.
+     *
+     * In addition to printing the line it scans for the string "foo"
+     * and the string "connect". If it finds "foo" it sends a message back.
+     * If it finds "connect" it makes a new outgoing connection with
+     * an attached LinePrinter.
+     */
     void LinePrinter::handle(std::string const& line) {
         cout << count_ << "\t" << line;
         if (line.find("foo") != std::string::npos) {
@@ -82,6 +107,7 @@ int main(int argc, char* argv[])
 {
     Reactor reactor;
     reactor.addReader(new AcceptReader(6667, new LinePrinterFactory(&reactor)));
+    reactor.addReader(new AcceptReader(6668, new HelloWriter));
     reactor.addReader(new DataReader(fileno(stdin), new Quitter(&reactor)));
     reactor.run();
 

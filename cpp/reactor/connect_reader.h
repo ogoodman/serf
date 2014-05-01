@@ -5,6 +5,12 @@
 
 namespace serf {
 
+    /** \brief Reader which creates a new client connection.
+     *
+     * It will call the factory once, either when the connection is successful
+     * to obtain a Reader, or when it has failed to notify it of the error.
+     * It will then delete the factory and itself.
+     */
     class ConnectReader : public Reader
     {
     public:

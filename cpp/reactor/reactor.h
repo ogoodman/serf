@@ -8,6 +8,9 @@ namespace serf {
 
     typedef std::map<int, Reader*> ReaderMap;
 
+    /** \brief Holds a set of Readers, running each one when its associated
+     *  file descriptor becomes readable.
+     */
     class Reactor {
     public:
         Reactor();
