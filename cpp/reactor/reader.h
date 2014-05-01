@@ -1,6 +1,8 @@
 #ifndef READER_HPP_
 #define READER_HPP_
 
+#include <string>
+
 namespace serf {
 
     class Reactor;
@@ -17,7 +19,8 @@ namespace serf {
     public:
         virtual ~ReaderFactory();
 
-        virtual Reader* makeReader(int fd) = 0;
+        virtual void error(std::string const& host, unsigned short port, int code);
+        virtual Reader* makeReader(std::string const& host, unsigned short port, int fd) = 0;
     };
 }
 

@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <serf/reactor/data_reader.h>
 #include <serf/reactor/accept_reader.h>
+#include <serf/reactor/connect_reader.h>
 #include <serf/reactor/data_handler.h>
 #include <serf/reactor/line_handler.h>
 #include <serf/reactor/reactor.h>
@@ -21,7 +22,7 @@ namespace serf {
 
     class HelloWriter : public ReaderFactory {
     public:
-        Reader* makeReader(int fd) {
+        Reader* makeReader(std::string const& host, unsigned short port, int fd) {
             SHOW(fd);
             write(fd, "hello", 5);
             close(fd);
@@ -31,28 +32,48 @@ namespace serf {
 
     class LinePrinter : public DataHandler {
     public:
-        LinePrinter(int fd) : fd_(fd), count_(0) {}
-
-        void handle(std::string const& line) {
-            cout << count_ << "\t" << line;
-            if (line.find("foo") != std::string::npos) {
-                write(fd_, "you said foo!\n", 14);
-            }
-            ++count_;
+        LinePrinter(int fd, Reactor* reactor)
+            : fd_(fd), count_(0), reactor_(reactor) {}
+        ~LinePrinter() {
+            SAY("LinePrinter deleted");
         }
+
+        void handle(std::string const& line);
+
     private:
         int fd_;
         int count_;
+        Reactor* reactor_;
     };
 
     class LinePrinterFactory : public ReaderFactory {
     public:
-        Reader* makeReader(int fd) {
-            LinePrinter* printer = new LinePrinter(fd);
+        LinePrinterFactory(Reactor* reactor) : reactor_(reactor) {}
+        ~LinePrinterFactory() {
+            SAY("LinePrinterFactory deleted");
+        }
+
+        Reader* makeReader(std::string const& host, unsigned short port, int fd) {
+            LinePrinter* printer = new LinePrinter(fd, reactor_);
             LineHandler* line_handler = new LineHandler(printer);
             return new DataReader(fd, line_handler);
         }
+
+    private:
+        Reactor* reactor_;
     };
+
+    void LinePrinter::handle(std::string const& line) {
+        cout << count_ << "\t" << line;
+        if (line.find("foo") != std::string::npos) {
+            write(fd_, "you said foo!\n", 14);
+        }
+        if (line.find("connect") != std::string::npos) {
+            reactor_->addReader(new ConnectReader("127.0.0.1", 6668, new LinePrinterFactory(reactor_)));
+        }
+        ++count_;
+    }
+
 }
 
 using namespace serf;
@@ -60,7 +81,7 @@ using namespace serf;
 int main(int argc, char* argv[])
 {
     Reactor reactor;
-    reactor.addReader(new AcceptReader(6666, new LinePrinterFactory));
+    reactor.addReader(new AcceptReader(6667, new LinePrinterFactory(&reactor)));
     reactor.addReader(new DataReader(fileno(stdin), new Quitter(&reactor)));
     reactor.run();
 

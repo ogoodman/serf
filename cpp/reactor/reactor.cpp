@@ -19,6 +19,7 @@ namespace serf {
         stop_ = true;
     }
     void Reactor::addReader(Reader* reader) {
+        delete readers_[reader->fd()];
         readers_[reader->fd()] = reader;
     }
     void Reactor::removeReader(int fd) {

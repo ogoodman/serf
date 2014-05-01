@@ -18,9 +18,6 @@ namespace serf {
         fd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         SHOW(fd_);
 
-        struct in_addr address;
-        int ret = inet_aton("0.0.0.0", &address);
-
         // Looks like addr, of type sockaddr_storage can be reinterpreted
         // as sockaddr and passed to bind.
         // size will be sizeof(sockaddr(in)).
@@ -29,7 +26,7 @@ namespace serf {
         bzero(&socket_address, sizeof(socket_address));
         socket_address.sin_family = AF_INET;
         socket_address.sin_port = htons(port);
-        socket_address.sin_addr.s_addr = address.s_addr;
+        int ret = inet_aton("0.0.0.0", &socket_address.sin_addr);
 
         ret = bind(fd_, (struct sockaddr*)&socket_address,
                    sizeof(struct sockaddr_in));
@@ -57,7 +54,8 @@ namespace serf {
         struct sockaddr client_address;
         socklen_t client_address_len;
         int conn_fd = accept(fd_, &client_address, &client_address_len);
-        Reader* reader = factory_->makeReader(conn_fd);
+        // FIXME: extract the client address here..
+        Reader* reader = factory_->makeReader("", 0, conn_fd);
         if (reader) reactor->addReader(reader);
     }
 }

@@ -4,7 +4,6 @@
 #include <serf/reactor/reader.h>
 
 namespace serf {
-    class Reactor;
 
     /** \brief Listens on a port and creates a new reader for each connection.
      *
