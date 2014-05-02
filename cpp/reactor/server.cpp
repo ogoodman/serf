@@ -94,7 +94,8 @@ namespace serf {
             write(fd_, "you said foo!\n", 14);
         }
         if (line.find("connect") != std::string::npos) {
-            reactor_->addReader(new ConnectReader("127.0.0.1", 6668, new LinePrinterFactory(reactor_)));
+            LinePrinterFactory* f = new LinePrinterFactory(reactor_);
+            reactor_->addReader(new ConnectReader("127.0.0.1", 6668, f));
         }
         ++count_;
     }

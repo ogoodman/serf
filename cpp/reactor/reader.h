@@ -18,7 +18,17 @@ namespace serf {
     public:
         virtual ~Reader();
 
+        /** \brief Implementation must return a selectable descriptor.
+         */
         virtual int fd() const = 0;
+        /** \brief Override to return true if we want to run when fd is writable.
+         */
+        virtual bool wantWrite() const;
+        /** \brief Will be called when fd() is readable.
+         *
+         * In the event that wantWrite() is true, run() will also be
+         * called whenever fd() is writable.
+         */
         virtual void run(Reactor* reactor) = 0;
     };
 

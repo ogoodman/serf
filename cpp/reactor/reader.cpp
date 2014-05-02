@@ -6,6 +6,10 @@ namespace serf {
 
     Reader::~Reader() {
     }
+    
+    bool Reader::wantWrite() const {
+        return false;
+    }
 
     ReaderFactory::~ReaderFactory() {
     }

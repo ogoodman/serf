@@ -28,24 +28,26 @@ namespace serf {
     }
     void Reactor::run() {
         while (!stop_) {
-            fd_set descriptors;
-            FD_ZERO(&descriptors);
+            fd_set desc_r, desc_w;
+            FD_ZERO(&desc_r);
+            FD_ZERO(&desc_w);
             ReaderMap::const_iterator i, e=readers_.end();
             int fd_max = 0;
             for (i=readers_.begin(); i != e; ++i) {
                 int fd = i->first;
-                FD_SET(fd, &descriptors);
+                FD_SET(fd, &desc_r);
+                if (i->second->wantWrite()) FD_SET(fd, &desc_w);
                 if (fd > fd_max) fd_max = fd;
             }
-            select(fd_max + 1, &descriptors, NULL, NULL, NULL);
+            select(fd_max + 1, &desc_r, &desc_w, NULL, NULL);
 
-            // Copy list of ready descriptors: we don't want to be
+            // Make a list of ready descriptors. We don't want to be
             // iterating over readers_ while running them since they
             // might make changes to it.
             std::vector<int> ready;
             for (i=readers_.begin(); i != e; ++i) {
                 int fd = i->first;
-                if (FD_ISSET(fd, &descriptors)) {
+                if (FD_ISSET(fd, &desc_r) || FD_ISSET(fd, &desc_w)) {
                     ready.push_back(fd);
                 }
             }

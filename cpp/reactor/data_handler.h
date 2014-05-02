@@ -10,7 +10,7 @@ namespace serf {
      * Starting with the fragmented data passed by the DataReader
      * to its DataHandler, we will typically assemble the data into
      * a sequence of messages and pass them on to higher level
-     * handlers. The basic example is the LineHandler which assembles
+     * handlers. A basic example is the LineHandler which assembles
      * data into lines, terminated by the newline character.
      */
     class DataHandler {

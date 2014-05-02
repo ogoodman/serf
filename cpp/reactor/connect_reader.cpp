@@ -20,7 +20,10 @@ namespace serf {
      * This generally won't throw but it may if host is illegal.
      * Takes ownership of the factory.
      */
-    ConnectReader::ConnectReader(std::string const& host, unsigned short port, ReaderFactory* factory) : host_(host), port_(port), factory_(factory), count_(0) {
+    ConnectReader::ConnectReader(std::string const& host, unsigned short port, ReaderFactory* factory) : host_(host), port_(port), factory_(factory), count_(0), want_write_(true) {
+        // Setting want_write_ true ensures we will run as soon as the
+        // connection is established.
+
         // Make a socket and set fd_
         fd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         SHOW(fd_);
@@ -61,10 +64,17 @@ namespace serf {
         return fd_;
     }
 
+    bool ConnectReader::wantWrite() const {
+        return want_write_;
+    }
+
     void ConnectReader::run(Reactor* reactor) {
         int err = 0;
         socklen_t optlen;
         getsockopt(fd_, SOL_SOCKET, SO_ERROR, &err, &optlen);
+
+        // Now we're started, don't need to run on writeable again.
+        want_write_ = false;
 
         if (err == 0) {
             int fd = fd_;

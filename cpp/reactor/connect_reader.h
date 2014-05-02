@@ -18,6 +18,7 @@ namespace serf {
         ~ConnectReader();
 
         int fd() const;
+        bool wantWrite() const;
         void run(Reactor* reactor);
 
     private:
@@ -26,6 +27,7 @@ namespace serf {
         int fd_;
         ReaderFactory* factory_;
         int count_;
+        bool want_write_;
     };
 }
 
