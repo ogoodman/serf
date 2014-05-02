@@ -100,6 +100,28 @@ namespace serf {
         ++count_;
     }
 
+    class HeartBeat : public Task {
+    public:
+        HeartBeat(int64_t first) : due_(first) {
+        }
+        ~HeartBeat() {
+            SAY("HeartBeat stopped");
+        }
+
+        int64_t due() const {
+            return due_;
+        }
+
+        bool run(int64_t now, Reactor* reactor) {
+            SAY("bip.");
+            due_ = now + Clock::seconds(3);
+            return true;
+        }
+
+    private:
+        int64_t due_;
+    };
+
 }
 
 using namespace serf;
@@ -110,6 +132,7 @@ int main(int argc, char* argv[])
     reactor.addReader(new AcceptReader(6667, new LinePrinterFactory(&reactor)));
     reactor.addReader(new AcceptReader(6668, new HelloWriter));
     reactor.addReader(new DataReader(fileno(stdin), new Quitter(&reactor)));
+    reactor.addTask(new HeartBeat(reactor.time()));
     reactor.run();
 
     return 0;
