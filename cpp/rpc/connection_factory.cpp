@@ -45,7 +45,6 @@ namespace serf {
         if (conn_) {
             conn = conn_;
             conn_ = NULL;
-            SAY("ConnectionMade " << fd);
             conn->connected(fd);
         } else {
             conn = new Connection(router_, reactor_, fd);

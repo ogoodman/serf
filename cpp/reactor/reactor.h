@@ -1,6 +1,7 @@
 #ifndef REACTOR_HPP_
 #define REACTOR_HPP_
 
+#include <unistd.h>
 #include <map>
 #include <vector>
 #include <serf/reactor/task.h>

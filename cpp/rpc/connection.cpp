@@ -1,5 +1,6 @@
 #include <serf/rpc/connection.h>
 
+#include <stdint.h>
 #include <sys/socket.h>
 #include <serf/reactor/reactor.h>
 #include <serf/rpc/message_router.h>

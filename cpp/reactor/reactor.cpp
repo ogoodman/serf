@@ -4,6 +4,7 @@
 #include <vector>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <serf/reactor/task.h>
 #include <serf/reactor/system_clock.h>
 #include <serf/reactor/reader.h>
 
@@ -16,7 +17,10 @@ namespace serf {
             delete i->second;
         }
         size_t j, n = tasks_.size();
-        for (j = 0; j < n; ++j) delete tasks_[j];
+        for (j = 0; j < n; ++j) {
+			Task* task = tasks_[j];
+			if (task) task->dispose();
+		}
     }
     void Reactor::stop() {
         stop_ = true;
@@ -40,7 +44,7 @@ namespace serf {
         size_t j, n = tasks_.size();
         for (j = 0; j < n; ++j) {
             if (tasks_[j] == task) {
-                delete task;
+                task->dispose();
                 tasks_[j] = NULL;
                 return true;
             }
@@ -48,6 +52,7 @@ namespace serf {
         return false;
     }
     void Reactor::run() {
+		stop_ = false;
         while (!stop_) {
             fd_set desc_r, desc_w;
             FD_ZERO(&desc_r);
@@ -112,7 +117,7 @@ namespace serf {
                 if (task->due() <= now) {
                     bool keep = task->run(now, this);
                     if (!keep) {
-                        delete task;
+                        task->dispose();
                         tasks_[j] = NULL;
                     }
                 }

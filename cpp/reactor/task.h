@@ -55,6 +55,15 @@ namespace serf {
          * and the Task should return false.
          */
         virtual bool run(int64_t now, Reactor* reactor) = 0;
+
+		/** \brief Deletes the task. Implementation may override.
+		 *
+		 * Rather than deleting its Tasks the reactor calls dispose
+		 * on them. If not overridden, dispose calls delete this.
+		 * In cases where it is useful to keep a task around after
+		 * it has been run, dispose can be overridden to do nothing.
+		 */
+		virtual void dispose();
     };
 }
 

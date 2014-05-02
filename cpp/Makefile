@@ -43,6 +43,9 @@ demo: $(OBJ:%=build/%) build/demo.o
 server: $(REACTOR_OBJ:%=build/%) build/server.o
 	g++ $(LIBS) -o $@ $^
 
+timeout: $(REACTOR_OBJ:%=build/%) build/timeout.o
+	g++ $(LIBS) -o $@ $^
+
 serf_server: $(OBJ:%=build/%) build/serf_server.o
 	g++ $(LIBS) -o $@ $^
 # PROGRAMS - END
