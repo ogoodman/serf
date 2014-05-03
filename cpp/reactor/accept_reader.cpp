@@ -16,11 +16,6 @@ namespace serf {
         factory_(factory)
     {
         fd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-        SHOW(fd_);
-
-        // Looks like addr, of type sockaddr_storage can be reinterpreted
-        // as sockaddr and passed to bind.
-        // size will be sizeof(sockaddr(in)).
 
         struct sockaddr_in socket_address;
         bzero(&socket_address, sizeof(socket_address));
@@ -33,6 +28,7 @@ namespace serf {
         if (ret) throw std::runtime_error("bind failed");
 
         if (!port) {
+            // Not sure this works.
             struct sockaddr_storage sock_addr;
             socklen_t len;
             getsockname(fd_, (struct sockaddr*)&sock_addr, &len);
@@ -45,7 +41,6 @@ namespace serf {
     }
 
     AcceptReader::~AcceptReader() {
-        SAY("closing fd: " << fd_);
         close(fd_);
         delete factory_;
     }

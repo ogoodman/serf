@@ -4,11 +4,11 @@ SERIALIZER_OBJ = var.o codec.o int_codec.o string_codec.o array_codec.o type_cod
 
 REACTOR_OBJ = accept_reader.o data_handler.o data_reader.o line_handler.o reactor.o reader.o connect_reader.o task.o system_clock.o
 
-RPC_OBJ = connection.o connection_factory.o message_handler.o message_router.o
+RPC_OBJ = connection.o connection_factory.o message_handler.o message_router.o var_callable.o
 
-OBJ = $(SERIALIZER_OBJ) $(REACTOR_OBJ) $(RPC_OBJ)
+OBJ = $(SERIALIZER_OBJ) $(REACTOR_OBJ) $(RPC_OBJ) var_callable_example.o
 
-TEST_SRCS = var_test.cpp int_codec_test.cpp string_codec_test.cpp array_codec_test.cpp type_codec_test.cpp any_codec_test.cpp null_codec_test.cpp bool_codec_test.cpp float_codec_test.cpp time_codec_test.cpp dict_codec_test.cpp tuple_codec_test.cpp struct_codec_test.cpp accept_reader_test.cpp data_handler_test.cpp data_reader_test.cpp line_handler_test.cpp reactor_test.cpp reader_test.cpp connect_reader_test.cpp connection_test.cpp connection_factory_test.cpp message_handler_test.cpp message_router_test.cpp task_test.cpp system_clock_test.cpp
+TEST_SRCS = var_test.cpp int_codec_test.cpp string_codec_test.cpp array_codec_test.cpp type_codec_test.cpp any_codec_test.cpp null_codec_test.cpp bool_codec_test.cpp float_codec_test.cpp time_codec_test.cpp dict_codec_test.cpp tuple_codec_test.cpp struct_codec_test.cpp accept_reader_test.cpp data_handler_test.cpp data_reader_test.cpp line_handler_test.cpp reactor_test.cpp reader_test.cpp connect_reader_test.cpp connection_test.cpp connection_factory_test.cpp message_handler_test.cpp message_router_test.cpp task_test.cpp system_clock_test.cpp var_callable_example_test.cpp
 
 VPATH = .:build:serializer:reactor:rpc
 

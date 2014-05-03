@@ -65,7 +65,7 @@ namespace serf {
             reactor_->addReader(cr);
 
             // FIXME: this is not always my node name!
-            conn->send(int(NODE_NAME), "localhost:6669");
+            conn->send(int(NODE_NAME), "127.0.0.1:6502");
         }
         conn_[node]->send(int(MSG), msg);
     }

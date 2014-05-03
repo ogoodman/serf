@@ -13,13 +13,15 @@ using namespace serf;
 
 int main(int argc, char* argv[])
 {
+    unsigned short port = 6502;
     Reactor reactor;
     MessageHandler mh;
     MessageRouter r(&mh, &reactor);
     mh.setRouter(&r);
 
     ConnectionFactory* f = new ConnectionFactory(&r, &reactor);
-    reactor.addReader(new AcceptReader(6669, f));
+    reactor.addReader(new AcceptReader(port, f));
+    SAY("listening on " << port);
 
     reactor.run();
 

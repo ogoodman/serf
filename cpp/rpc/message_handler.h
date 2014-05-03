@@ -6,11 +6,13 @@
 namespace serf {
 
     class MessageRouter;
+    class VarCallable;
 
     class MessageHandler
     {
     public:
         MessageHandler(MessageRouter* router=NULL);
+        ~MessageHandler();
 
         void setRouter(MessageRouter* router);
 
@@ -18,6 +20,7 @@ namespace serf {
         void handle(std::string const& node, std::string const& msg);
     private:
         MessageRouter* router_; // not owned.
+        VarCallable* servant_; // owned.
     };
 }
 
