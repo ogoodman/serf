@@ -63,7 +63,8 @@ class WebSocketHandler(Publisher):
         self.sock = SocketBuffer(sock)
         self.client_address = address
         self.client_ip = address[0]
-        self.node_id = '%s:%s' % address
+        #self.node_id = '%s:%s' % address
+        self.node_id = 'server'
         self.path = ''
         self.close_sent = False
         CURRENT.add(self)

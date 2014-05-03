@@ -3,7 +3,7 @@
 """Tests for class Proxy."""
 
 import unittest
-from serf.mock_net import MockNet
+from serf.mock_net import MockNet, MockTransport
 from serf.vat import Vat
 from serf.test_object import TestObject
 from serf.proxy import Proxy
@@ -60,9 +60,9 @@ class ProxyTest(unittest.TestCase):
         self.assertEqual(pr.callIncr(2), 3)
 
     def testProxyEquality(self):
-        va0 = Vat('A', '', {})
-        va1 = Vat('A', '', {})
-        vb0 = Vat('B', '', {})
+        va0 = Vat(MockTransport('A'), {})
+        va1 = Vat(MockTransport('A'), {})
+        vb0 = Vat(MockTransport('B'), {})
         p1 = Proxy('B', 'x', va0)
         p2 = Proxy('B', 'y', va1)
         p3 = Proxy('B', 'y', va0)

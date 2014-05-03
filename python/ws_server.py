@@ -33,7 +33,7 @@ def handle(socket, client_address):
     transport = WebSocketHandler(socket, client_address)
     thread = EventletThread()
     thread.callFromThread = thread.call
-    handler = Vat('server', '', {}, transport, t_model=thread, verbose=True)
+    handler = Vat(transport, {}, t_model=thread, verbose=True)
     handler.provide('shared', SINGLETON_MODEL)
     handler.provide('private', Model())
     handler.provide('sqcaller', SquareCaller(handler, 'sqcaller'))

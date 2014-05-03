@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
     thread = EventletThread()
     storage = Storage(store, t_model=thread)
-    vat = Vat(NODE, '', storage, node=net, t_model=thread)
+    vat = Vat(net, storage, t_model=thread)
 
     thread.start()
     print 'Serf Server 0.1', NODE

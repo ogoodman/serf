@@ -5,7 +5,7 @@
 import unittest
 import weakref
 from serf.vat import Vat, convert
-from serf.mock_net import MockNet
+from serf.mock_net import MockNet, MockTransport
 from serf.proxy import Proxy
 from serf.ref import Ref
 from serf.po.data import Data
@@ -20,15 +20,6 @@ from serf.storage import Storage
 from serf.json_codec import makeBoundMethod
 from serf.publisher import Publisher
 from serf.model import Model
-
-class MockTransport(Publisher):
-    """Implements Transport. For use in tests."""
-    client_ip = 'ip'
-    node_id = 'browser'
-    path = ''
-
-    def send(self, node, message, pcol, errh=None):
-        self.peer.notify('message', {'pcol': pcol, 'message': message})
 
 class VatTest(unittest.TestCase):
     def testCall(self):
@@ -170,7 +161,7 @@ class VatTest(unittest.TestCase):
         self.assertEqual(pb['name'], 'Tom')
 
     def testGC(self):
-        h = Vat('browser', '', {}, Publisher())
+        h = Vat(MockTransport('browser'), {})
         makeBoundMethod(h, {'o':'shared', 'm':'notify'})
         hr = weakref.ref(h)
         self.assertEqual(hr(), h)
@@ -178,13 +169,12 @@ class VatTest(unittest.TestCase):
         self.assertEqual(hr(), None)
 
     def testRPC(self):
-        ta = MockTransport()
-        tb = MockTransport()
-        ta.peer = tb
-        tb.peer = ta
+        net = MockNet()
+        ta = net.addNode('browser')
+        tb = net.addNode('server')
 
-        na = Vat('server', '', {}, ta)
-        nb = Vat('browser', '', {}, tb)
+        na = Vat(ta, {})
+        nb = Vat(tb, {})
 
         oa = Model()
         na.provide('1', oa)

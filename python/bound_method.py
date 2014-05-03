@@ -29,7 +29,7 @@ class BoundMethod(object):
             # This is a one-way send, so also geared to event handlers.
             h.send('browser', self.oid, {'m':self.method, 'a':list(args)})
         else:
-            return h.callLocal(self.oid, self.method, args)
+            return h.localCall(self.oid, self.method, args)
 
     def _ext_encoding(self):
         return 'BoundMethod', {'o':self.oid, 'm':self.method, 'n':self.node, 't': self.twoway}

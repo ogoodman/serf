@@ -98,19 +98,18 @@ class RemoteCtx(object):
 
 
 class Vat(object):
-    def __init__(self, node_id, vat_id, storage, node=None, t_model=None, verbose=False):
+    def __init__(self, transport, storage, t_model=None, verbose=False):
         thread_model = Synchronous() if t_model is None else t_model
         self.storage = storage
-        self.node_id = node_id
-        self.vat_id = vat_id
-        self.node = node
+        self.node_id = transport.node_id
+        self.vat_id = transport.path
+        self.node = transport
         self.callbacks = {}
         self.thread_model = thread_model
         self.verbose = verbose
-        if node is not None:
-            node.subscribe('message', self.handle)
-            node.subscribe('online', self._notifyNodeObserver)
-            node.subscribe('connected', self._notifyNodeObserver)
+        transport.subscribe('message', self.handle)
+        transport.subscribe('online', self._notifyNodeObserver)
+        transport.subscribe('connected', self._notifyNodeObserver)
         self.refs = []
         if hasattr(storage, 'setRPC'):
             storage.setRPC(self)

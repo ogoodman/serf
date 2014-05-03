@@ -6,11 +6,11 @@ from serf.vat import Vat
 from serf.storage import Storage
 from serf.publisher import Publisher
 
-class MockEndpoint(Publisher):
+class MockTransport(Publisher):
     """Implements Transport. For use in tests."""
-    def __init__(self, net, node_id):
+    def __init__(self, node_id, net=None):
         Publisher.__init__(self)
-        self.net = weakref.ref(net)
+        self.net = weakref.ref(net) if net is not None else None
         self.node_id = node_id
         self.path = ''
 
@@ -34,13 +34,13 @@ class MockNet(object):
 
     def addNode(self, node):
         if node not in self.end:
-            self.end[node] = MockEndpoint(self, node)
+            self.end[node] = MockTransport(node, self)
         return self.end[node]
 
     def addVat(self, node_id, vat_id, store, t_model=None):
         transport = self.addNode(node_id)
         storage = Storage(store, t_model=t_model)
-        vat = Vat(node_id, vat_id, storage, node=transport, t_model=t_model)
+        vat = Vat(transport, storage, t_model=t_model)
         return storage, vat
 
     def goOffline(self, node):
