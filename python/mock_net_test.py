@@ -25,15 +25,17 @@ class MockHandler(object):
 class MockNetTest(unittest.TestCase):
     def test(self):
         net = MockNet()
-        handler = MockHandler(net.addNode('A'))
-        net.send('A', {'foo':'bar'})
+        node_a = net.addNode('A')
+        handler = MockHandler(node_a)
+        node_a.send('A', {'foo':'bar'})
         self.assertEqual(handler.received, [{'foo':'bar'}])
 
     def testSendFailure(self):
         net = MockNet()
+        node = net.addNode('B')
         cb = MockHandler()
-        net.send('A', {}) # no such node, no callback, fail silently.
-        net.send('A', {}, errh=cb.failure)
+        node.send('A', {}) # no such node, no callback, fail silently.
+        node.send('A', {}, errh=cb.failure)
         self.assertEqual(type(cb.exc), KeyError)
 
 if __name__ == '__main__':

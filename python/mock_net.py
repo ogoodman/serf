@@ -1,46 +1,43 @@
 """Mock internet."""
 
 import socket
+import weakref
 from serf.vat import Vat
 from serf.storage import Storage
 from serf.publisher import Publisher
 
 class MockEndpoint(Publisher):
     """Implements Transport. For use in tests."""
-    def __init__(self, node_id):
+    def __init__(self, net, node_id):
         Publisher.__init__(self)
+        self.net = weakref.ref(net)
         self.node_id = node_id
         self.path = ''
 
     def send(self, node, msg, pcol='serf', errh=None):
-        self.notify('send', [node, msg, pcol, errh])
+        self.net().send(node, msg, self.node_id, pcol=pcol, errh=errh)
 
 class MockNet(object):
     def __init__(self):
         self.end = {}
         self.offline = set()
 
-    def send(self, node, msg, pcol='serf', errh=None):
+    def send(self, node, msg, from_, pcol='serf', errh=None):
         if node in self.offline:
             errh(socket.error())
             return
         try:
-            self.end[node].notify('message', {'pcol': pcol, 'message': msg})
+            self.end[node].notify('message', {'from':from_, 'pcol': pcol, 'message': msg})
         except Exception, e:
             if errh is not None:
                 errh(e)
 
-    def send0(self, ev, info):
-        self.send(*info)
-
     def addNode(self, node):
         if node not in self.end:
-            self.end[node] = MockEndpoint(node)
-            self.end[node].subscribe('send', self.send0)
+            self.end[node] = MockEndpoint(self, node)
         return self.end[node]
 
     def addVat(self, node_id, vat_id, store, t_model=None):
-        assert(node_id not in self.end)
         transport = self.addNode(node_id)
         storage = Storage(store, t_model=t_model)
         vat = Vat(node_id, vat_id, storage, node=transport, t_model=t_model)

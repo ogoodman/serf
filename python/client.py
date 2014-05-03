@@ -9,7 +9,7 @@ from eventlet.green import select
 from code import InteractiveConsole
 from serf.fs_dict import FSDict
 from serf.vat import Vat
-from serf.eventlet_net import Net
+from serf.transport import Transport
 from serf.eventlet_thread import EventletThread
 from serf.proxy import Proxy
 from serf.util import timeCall, codeDir
@@ -23,10 +23,10 @@ from serf.repl_proxy import REPLProxy
 # the Python REPL) is that raw_input does a blocking read which prevents
 # any work from happening in the eventlet main thread Hub.
 # This is a particular problem when input may be received at any
-# time through the Net object. The peer created in the REPL will be
+# time through the Transport object. The peer created in the REPL will be
 # unable to respond. This module implements two partial fixes.
 #
-# 1. Run the Net and main Vat in a thread. Wrap all references to these
+# 1. Run the Transport and main Vat in a thread. Wrap all references to these
 #    objects in a proxy that transfers all calls into their thread.
 #
 # 2. Use code.InteractiveConsole to set up a replica of Python's REPL
@@ -48,14 +48,14 @@ KEY = os.path.join(codeDir(), 'data/host.key')
 
 store = FSDict(os.path.join(codeDir(), 'data/client'))
 
-net = Net(CLIENT, use_ssl=True, keyfile=KEY, certfile=CERT)
+net = Transport(CLIENT, use_ssl=True, keyfile=KEY, certfile=CERT)
 
 thread = EventletThread()
 s0 = Storage(store, t_model=thread)
 v0 = Vat(CLIENT, '', s0, node=net, t_model=thread)
 
 # thread.start(True) means start a new thread, while False means
-# use the current thread. When RUN_CONSOLE is true we run Net and Vat
+# use the current thread. When RUN_CONSOLE is true we run Transport and Vat
 # calls in the main thread.
 thread.start(not RUN_CONSOLE)
 

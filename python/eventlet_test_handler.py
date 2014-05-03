@@ -1,4 +1,4 @@
-"""Test handler for eventlet_net.Net.
+"""Test handler for transport.Transport.
 
 Regular condition variables don't work because a greenlet blocked on a normal
 condition variable cannot yield.

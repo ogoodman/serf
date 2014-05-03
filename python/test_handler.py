@@ -1,4 +1,4 @@
-"""Thread-safe handler for testing Net.
+"""Thread-safe handler for testing Transport.
 
 See: net_test.py for usage example.
 """

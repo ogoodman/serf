@@ -6,7 +6,7 @@ import unittest
 from serf.dispatcher import Dispatcher
 from serf.publisher import Publisher
 from serf.serializer import encodes
-from serf.mock_net import MockEndpoint
+from serf.mock_net import MockNet
 
 class Listener(object):
     def __init__(self, endpoint):
@@ -18,7 +18,8 @@ class Listener(object):
 
 class DispatcherTest(unittest.TestCase):
     def test(self):
-        e = MockEndpoint('node')
+        net = MockNet()
+        e = net.addNode('node')
         d = Dispatcher(e)
 
         hfb = d.addEndpoint('foo/bar')

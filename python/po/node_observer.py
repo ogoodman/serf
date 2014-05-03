@@ -29,7 +29,7 @@ class NodeObserver(object):
             return False
 
     def connected(self, node):
-        # Called by the Net transport object.
+        # Called by the Transport transport object.
         if node in self.observers:
             self.observers[node].online(node)
 

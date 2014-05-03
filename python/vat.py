@@ -295,8 +295,11 @@ class Vat(object):
         raise SerializationError('cannot delocalize type %s' % typ)
 
     def sendToName(self, name, msg):
-        ref = self.storage.getn(name)
-        self.lput(ref._path, msg)
+        try:
+            getn = self.storage.getn
+        except AttributeError:
+            return
+        self.lput(getn(name)._path, msg)
 
     def _notifyNodeObserver(self, ev, node_id):
         msg = {'m': ev, 'a': (node_id,)}

@@ -1,13 +1,13 @@
 #!/usr/bin/python
 
-"""Tests for Net."""
+"""Tests for Transport."""
 
 import time
 import os
 import unittest
 import socket
 from serf.util import codeDir
-from serf.eventlet_net import Net
+from serf.transport import Transport
 from serf.eventlet_test_handler import TestHandler
 
 SERV = '127.0.0.1:6512'
@@ -22,12 +22,12 @@ t0 = time.time()
 def elapsed():
     print '  ---  ', time.time() - t0
 
-class NetTest(unittest.TestCase):
+class TransportTest(unittest.TestCase):
     def test(self):
-        server = Net(SERV, use_ssl=True, **SSL)
+        server = Transport(SERV, use_ssl=True, **SSL)
         handler = TestHandler(server)
 
-        client = Net('CLIENT', use_ssl=True, **SSL)
+        client = Transport('CLIENT', use_ssl=True, **SSL)
         c_handler = TestHandler(client)
 
         server.listen()

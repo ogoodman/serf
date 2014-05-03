@@ -1,4 +1,4 @@
-"""Net object using eventlet."""
+"""Transport object using eventlet."""
 
 import eventlet
 import struct
@@ -26,7 +26,7 @@ def getAddr(node):
         host, port = node, DEFAULT_PORT
     return host, port
 
-class Net(Publisher):
+class Transport(Publisher):
     """Implements Transport. Connector for serf protocol."""
     def __init__(self, node_id, verbose=False, **kw):
         Publisher.__init__(self)
