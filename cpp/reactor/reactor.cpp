@@ -7,6 +7,7 @@
 #include <serf/reactor/task.h>
 #include <serf/reactor/system_clock.h>
 #include <serf/reactor/reader.h>
+#include <errno.h>
 
 namespace serf {
     Reactor::Reactor(Clock* clock) : stop_(false), clock_(clock) {
@@ -87,7 +88,10 @@ namespace serf {
                 timeout_p = &timeout;
             }
 
-            select(fd_max + 1, &desc_r, &desc_w, NULL, timeout_p);
+            if (select(fd_max + 1, &desc_r, &desc_w, NULL, timeout_p) < 0) {
+                if (errno == EINTR) continue;
+                break;
+            }
 
             // Make a list of ready descriptors. We don't want to be
             // iterating over readers_ while running them since they

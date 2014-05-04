@@ -40,9 +40,6 @@ namespace serf {
 
     private:
         void send_(std::string const& data);
-        void serverSendSSLOpts();
-        void serverReceiveSSLChoice();
-        void clientChooseSSLOpt();
 
         MessageRouter* router_; // not owned.
         Reactor* reactor_; // not owned.

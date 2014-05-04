@@ -116,10 +116,7 @@ class Transport(Publisher):
                 if self.verbose:
                     print self.node_id, '%s %s requested close' % (node, address)
                 break
-        if node in self.nodes:
-            del self.nodes[node]
-        if not self.nodes:
-            self._nobodyConnected()
+        self.closeConnection(node)
             
     def _nobodyConnected(self):
         el = self.wait_for_close

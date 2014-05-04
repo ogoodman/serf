@@ -174,6 +174,9 @@ class Vat(object):
         if 'r' in msg:
             cb.success(msg['r'])
         else:
+            # Temporary work-around for C++ sending lists.
+            if type(msg['e']) is list:
+                msg['e'] = Exception(*msg['e'][1])
             cb.failure(msg['e'])
 
     def localCall(self, addr, method, args):

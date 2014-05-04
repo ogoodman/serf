@@ -42,6 +42,12 @@ namespace serf {
 
         void handle(Connection* conn, int what, std::string const& msg);
         void closing(Connection* conn, int code=0);
+
+        /** \brief Sends CLOSE to all connected parties, then stops the reactor.
+         *
+         * This helps to avoid "bind failed" errors after a server restart.
+         */
+        void shutdown();
     private:
         typedef std::map<Connection*, std::string> node_map;
         typedef std::map<std::string, Connection*> conn_map;
@@ -51,6 +57,7 @@ namespace serf {
 
         node_map node_;
         conn_map conn_;
+        bool shutdown_;
     };
 }
 
