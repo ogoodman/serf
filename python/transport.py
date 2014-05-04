@@ -12,11 +12,19 @@ from serf.publisher import Publisher
 
 DEFAULT_PORT = 6502
 
+DISCONNECTED = -1
 MSG = 0
 NODE_NAME = 1
 CLOSE = 2
+SSL_OPTIONS = 3
+SSL_CHOICE = 4
 
 SSL_OPTS = ['keyfile', 'certfile', 'cert_reqs', 'ssl_version', 'ca_certs']
+
+# The SSL/plain handshake. On connection the server sends the client
+# a list of supported options. The client sends back an SSL choice
+# choosing one of the options. If the choice is SSL, both ends then
+# upgrade to SSL before continuing.
 
 def getAddr(node):
     parts = node.split(':', 1)
@@ -28,7 +36,7 @@ def getAddr(node):
 
 class Transport(Publisher):
     """Implements Transport. Connector for serf protocol."""
-    def __init__(self, node_id, verbose=False, **kw):
+    def __init__(self, node_id, verbose=False, ssl=None):
         Publisher.__init__(self)
         self.node_id = node_id
         self.path = ''
@@ -41,29 +49,54 @@ class Transport(Publisher):
         self.lsock = None
         self.thread = threading.currentThread()
         self.verbose = verbose
-        self.ssl = kw.get('use_ssl', False)
-        self.ssl_kw = dict([(k, v) for k, v in kw.items() if k in SSL_OPTS])
+        self.ssl = ssl
+
+    def read(self, socket):
+        """Receive a single control-byte, message pair."""
+        header = socket.recv(5)
+        if len(header) < 5:
+            return DISCONNECTED, ''
+        what, msg_len = struct.unpack('>bI', header)
+        if msg_len > 0:
+            msg = socket.recv(msg_len)
+        else:
+            msg = ''
+        if len(msg) < msg_len:
+            return DISCONNECTED, ''
+        return what, msg
+
+    def write(self, socket, what, msg):
+        """Write a single control-byte and message."""
+        socket.send(struct.pack('>bI', what, len(msg)))
+        socket.send(msg)
         
-    def processWrap(self, socket, address):
-        if self.ssl:
-            socket = ssl.wrap_socket(socket, server_side=True, **self.ssl_kw)
+    def accept(self, socket, address):
+        """Called when listening with new client connections."""
+
+        # This could be made more flexible but that is an implementation
+        # detail of the server and does not affect the protocol.
+        ssl_opts = 'SP' if self.ssl else 'P'
+
+        self.write(socket, SSL_OPTIONS, ssl_opts)
+        what, choice = self.read(socket)
+        if what != SSL_CHOICE or len(choice) != 1 or (choice not in ssl_opts):
+            print 'invalid response to SSL_OPTIONS from', address
+            return
+        if choice == 'S':
+            socket = ssl.wrap_socket(socket, server_side=True, **self.ssl)
         self.process(socket, address)
 
     def process(self, sock, address, node=None):
+        """Handler for all established connections.
+
+        This processes all incoming messages, including the node-name
+        part of the handshake.
+        """
         if self.verbose:
             print self.node_id, 'connection from %s:%s' % address
         while True:
-            header = sock.recv(5)
-            if len(header) < 5:
-                if self.verbose:
-                    print self.node_id, '%s %s disconnected' % (node, address)
-                break
-            what, msg_len = struct.unpack('>bI', header)
-            if msg_len:
-                msg = sock.recv(msg_len)
-            else:
-                msg = ''
-            if len(msg) < msg_len:
+            what, msg = self.read(sock)
+            if what == DISCONNECTED:
                 if self.verbose:
                     print self.node_id, '%s %s disconnected' % (node, address)
                 break
@@ -123,32 +156,41 @@ class Transport(Publisher):
         raise eventlet.StopServe()
 
     def send(self, node, msg, pcol='serf', errh=None):
+        """Send a message to a node."""
         if threading.currentThread() != self.thread:
             return self.callFromThread(self.send, node, msg, pcol, errh)
         try:
-            self._send(node, msg)
+            if node not in self.nodes:
+                sock = self.connect(node)
+            else:
+                sock = self.nodes[node]
+            self.write(sock, MSG, msg)
         except Exception, e:
-            # self.notify('error', e)
             if errh is not None:
                 errh(e)
             else:
                 traceback.print_exc()
 
-    def _send(self, node, msg):
-        if node not in self.nodes:
-            address = getAddr(node)
-            sock = eventlet.connect(address)
-            if self.ssl:
-                sock = ssl.wrap_socket(sock)
-            sock.send(struct.pack('>bI', NODE_NAME, len(self.node_id)))
-            sock.send(self.node_id)
-            self.nodes[node] = sock
-            self.notify('connected', node)
-            eventlet.spawn(self.process, sock, address, node)
+    def connect(self, node):
+        """Connect with a new node."""
+        address = getAddr(node)
+        sock = eventlet.connect(address)
+        what, ssl_opts = self.read(sock)
+        if what != SSL_OPTIONS or (
+            'S' not in ssl_opts and 'P' not in ssl_opts):
+            raise Exception('%s gave no acceptable SSL options' % node)
+        # We could make this more flexible, having preferences based
+        # on the IP range of the server etc.
+        if 'S' in ssl_opts:
+            self.write(sock, SSL_CHOICE, 'S')
+            sock = ssl.wrap_socket(sock)
         else:
-            sock = self.nodes[node]
-        sock.send(struct.pack('>bI', MSG, len(msg)))
-        sock.send(msg)
+            self.write(sock, SSL_CHOICE, 'P')
+        self.write(sock, NODE_NAME, self.node_id)
+        self.nodes[node] = sock
+        self.notify('connected', node)
+        eventlet.spawn(self.process, sock, address, node)
+        return sock
 
     def sendDisconnect(self, node):
         self.nodes[node].send(struct.pack('>bI', CLOSE, 0))
@@ -173,13 +215,13 @@ class Transport(Publisher):
     def start(self):
         self.startLoopback()
         if self.lsock is not None:
-            self.loop = eventlet.spawn(eventlet.serve, self.lsock, self.processWrap)
+            self.loop = eventlet.spawn(eventlet.serve, self.lsock, self.accept)
 
     def serve(self, noblock=True):
         self.startLoopback()
         self.listen()
         try:
-            eventlet.serve(self.lsock, self.processWrap)
+            eventlet.serve(self.lsock, self.accept)
         except KeyboardInterrupt:
             pass
 

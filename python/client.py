@@ -43,12 +43,14 @@ RUN_CONSOLE = (__name__ == '__main__')
 SERVER = '127.0.0.1:6502'
 CLIENT = '127.0.0.1:6503'
 
-CERT = os.path.join(codeDir(), 'data/host.cert')
-KEY = os.path.join(codeDir(), 'data/host.key')
+SSL = {
+    'certfile': os.path.join(codeDir(), 'data/host.cert'),
+    'keyfile': os.path.join(codeDir(), 'data/host.key')
+}
 
 store = FSDict(os.path.join(codeDir(), 'data/client'))
 
-net = Transport(CLIENT, use_ssl=True, keyfile=KEY, certfile=CERT)
+net = Transport(CLIENT, ssl=SSL)
 
 thread = EventletThread()
 s0 = Storage(store, t_model=thread)

@@ -24,10 +24,10 @@ def elapsed():
 
 class TransportTest(unittest.TestCase):
     def test(self):
-        server = Transport(SERV, use_ssl=True, **SSL)
+        server = Transport(SERV, ssl=SSL)
         handler = TestHandler(server)
 
-        client = Transport('CLIENT', use_ssl=True, **SSL)
+        client = Transport('CLIENT', ssl=SSL)
         c_handler = TestHandler(client)
 
         server.listen()
