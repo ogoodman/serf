@@ -10,10 +10,12 @@ namespace serf {
     class MessageHandler;
     class Reactor;
 
-    enum {
+    enum Code {
         MSG = 0,
         NODE_NAME = 1,
-        CLOSE = 2
+        CLOSE = 2,
+        SSL_OPTIONS = 3,
+        SSL_CHOICE = 4
     };
 
     /** \brief Hides peer connections behind a send-to-node abstraction.

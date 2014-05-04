@@ -13,7 +13,7 @@ using namespace serf;
 
 int main(int argc, char* argv[])
 {
-    unsigned short port = 6502;
+    unsigned short port = 6504;
     Reactor reactor;
     MessageHandler mh;
     MessageRouter r(&mh, &reactor);

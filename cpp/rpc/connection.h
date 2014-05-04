@@ -10,6 +10,12 @@ namespace serf {
     class MessageRouter;
     class Reactor;
 
+    enum State {
+        ESTABLISHED = 0,
+        CLIENT_WAIT_SSL_OPTIONS = 1,
+        SERVER_WAIT_SSL_CHOICE = 2
+    };
+
     /** \brief Encapsulates peer connections for a MessageRouter.
      *
      * Defragments incoming data getting the control byte and message
@@ -23,7 +29,7 @@ namespace serf {
     class Connection : public DataHandler
     {
     public:
-        Connection(MessageRouter* handler, Reactor* reactor, int fd=-1);
+        Connection(MessageRouter* handler, Reactor* reactor, int fd=-1, State state=CLIENT_WAIT_SSL_OPTIONS);
         ~Connection();
 
         virtual void handle(std::string const& data);
@@ -34,6 +40,9 @@ namespace serf {
 
     private:
         void send_(std::string const& data);
+        void serverSendSSLOpts();
+        void serverReceiveSSLChoice();
+        void clientChooseSSLOpt();
 
         MessageRouter* router_; // not owned.
         Reactor* reactor_; // not owned.
@@ -41,6 +50,7 @@ namespace serf {
         std::string buffer_;
         // If fd_ is not yet set messages to be sent are queued.
         std::vector<std::string> queued_;
+        State state_;
     };
 }
 

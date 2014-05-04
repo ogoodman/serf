@@ -43,11 +43,15 @@ namespace serf {
     Reader* ConnectionFactory::makeReader(std::string const& host, unsigned short port, int fd) {
         Connection* conn;
         if (conn_) {
+            // This is the client case. Should perhaps make it explicit
+            // when constructing this factory.
             conn = conn_;
             conn_ = NULL;
             conn->connected(fd);
         } else {
-            conn = new Connection(router_, reactor_, fd);
+            // Server case.
+            conn = new Connection(router_, reactor_, fd, SERVER_WAIT_SSL_CHOICE);
+            conn->send(SSL_OPTIONS, "P"); // TODO: enable "SP".
         }
         return new DataReader(fd, conn);
     }

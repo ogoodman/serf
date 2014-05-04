@@ -26,11 +26,10 @@ static std::string encode_uint32(uint32_t value) {
     return result;
 }
 
-
 namespace serf {
 
-    Connection::Connection(MessageRouter* router, Reactor* reactor, int fd)
-        : router_(router), reactor_(reactor), fd_(fd) {}
+    Connection::Connection(MessageRouter* router, Reactor* reactor, int fd, State state)
+        : router_(router), reactor_(reactor), fd_(fd), state_(state) {}
 
     Connection::~Connection() {
         router_->closing(this);
@@ -48,8 +47,32 @@ namespace serf {
             size_t len = decode_uint32(buffer_.substr(1, 4));
 
             if (buffer_.size() < len + 5) break;
+            std::string msg = buffer_.substr(5, len);
 
-            router_->handle(this, what, buffer_.substr(5, len));
+            switch (state_) {
+            case CLIENT_WAIT_SSL_OPTIONS:
+                if (what != int(SSL_OPTIONS) ||
+                    msg.find('P') == std::string::npos) {
+                    SAY("SSL negotiation failure");
+                    router_->handle(this, int(CLOSE), "");
+                } else {
+                    // Continuing with non SSL connection.
+                    state_ = ESTABLISHED;
+                }
+                break;
+            case SERVER_WAIT_SSL_CHOICE:
+                if (what != int(SSL_CHOICE) || msg != "P") {
+                    SAY("SSL negotiation failure");
+                    router_->handle(this, int(CLOSE), "");
+                } else {
+                    // Continuing with non SSL (plain) connection.
+                    state_ = ESTABLISHED;
+                }
+                break;
+            case ESTABLISHED:
+                router_->handle(this, what, msg);
+            }
+
             buffer_.erase(0, len + 5);
         }
     }
@@ -84,11 +107,6 @@ namespace serf {
      */
     void Connection::connected(int fd) {
         fd_ = fd;
-        size_t i, n = queued_.size();
-        for (i = 0; i < n; ++i) {
-            send_(queued_[i]);
-        }
-        queued_.resize(0);
     }
 
     int Connection::fd() const {
