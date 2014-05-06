@@ -2,8 +2,10 @@
 #define VAR_CALLABLE_EXAMPLE_HGUARD_
 
 #include <serf/rpc/var_callable.h>
+#include <serf/rpc/var_proxy.h>
 
 namespace serf {
+    class VarCaller;
 
     // Base class generated from IDL file.
     class Example : public VarCallable
@@ -16,17 +18,14 @@ namespace serf {
         virtual FVarP varCall_a_(std::string const& method, std::vector<Var> const& args);
     };
 
-    class ExamplePrx : public VarExceptionDecoder
+    // Proxy class generated from IDL file.
+    class ExamplePrx : public VarProxy
     {
     public:
-        ExamplePrx(VarCallable* remote);
+        ExamplePrx(VarCaller* remote);
 
         Future<void>::Ptr fun_a(double x);
         Future<int>::Ptr fun_b(int x);
-
-        void varDecodeExc_(Var const& exc);
-    private:
-        VarCallable* remote_;
     };
 
     // Our implementation.

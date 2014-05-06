@@ -45,16 +45,6 @@ namespace serf {
     public:
         NotEnoughArgs(std::string const& method, int provided, int required);
     };
-
-    /** \brief Interface for things which decode exceptions and throw them.
-     */
-    class VarExceptionDecoder
-    {
-    public:
-        virtual ~VarExceptionDecoder();
-
-        virtual void varDecodeExc_(Var const& exc) = 0;
-    };
 }
 
 #endif // VAR_CALLABLE_HGUARD_

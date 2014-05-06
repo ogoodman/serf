@@ -1,6 +1,46 @@
 #include <serf/rpc/var_callable_example.h>
 #include <cxxtest/TestSuite.h>
 
+#include <serf/rpc/var_caller.h>
+
+namespace serf {
+    /** \brief Implements VarCaller for the benefit of tests.
+     *
+     * Rather than implementing a realistic VarCaller from scratch
+     * we take a (synchronously callable) VarCallable and wrap a bit
+     * of extra code around it to implement the expected callRemote
+     * protocol.
+     */
+    class MockVarCaller : public VarCaller
+    {
+    public:
+        MockVarCaller(VarCallable* servant) : servant_(servant) {}
+        
+        // We get {"o":.., "m":.., "a":..}.
+        Future<Var>::Ptr callRemote(std::string const& node, Var const& call) {
+            Future<Var>::Ptr reply(new Future<Var>);
+            std::string method = boost::get<std::string>(M(call).at("m"));
+        
+            std::map<std::string, Var> reply_m;
+            try {
+                reply_m["r"] = servant_->varCall_(method, V(M(call).at("a")));
+            } catch (std::exception& e) {
+                std::vector<Var> e_args;
+                e_args.push_back(std::string(e.what()));
+                std::vector<Var> e_info;
+                e_info.push_back(std::string("Exception"));
+                e_info.push_back(e_args);
+                reply_m["e"] = e_info;
+            }
+            reply->resolve(Var(reply_m));
+            return reply;
+        }
+        
+    private:
+        VarCallable* servant_; // not owned.
+    };
+}
+
 using namespace serf;
 
 class VarCallableExampleTest : public CxxTest::TestSuite
@@ -27,20 +67,38 @@ public:
         TS_ASSERT_THROWS(inst.varCall_("fun_a", args), NotEnoughArgs);
     }
 
-    void callback(Result<void>::Ptr r) {
+    void callbackv(Result<void>::Ptr r) {
         r->get();
         n = 1;
     }
 
+    void callbacki(Result<int>::Ptr r) {
+        try {
+            n = r->get();
+        } catch (std::exception& e) {
+            e_what = e.what();
+        }
+    }
+
     void testVarCallableExamplePrx() {
         n = 0;
-        ExampleImpl inst;
-        ExamplePrx prx(&inst);
+        e_what = "";
 
-        prx.fun_a(-3.5)->then(this, &VarCallableExampleTest::callback);
+        ExampleImpl inst;
+        MockVarCaller caller(&inst);
+        ExamplePrx prx(&caller);
+
+        prx.fun_a(-3.5)->then(this, &VarCallableExampleTest::callbackv);
         TS_ASSERT_EQUALS(n, 1);
+
+        prx.fun_b(5)->then(this, &VarCallableExampleTest::callbacki);
+        TS_ASSERT_EQUALS(n, 10);
+
+        prx.fun_b(42)->then(this, &VarCallableExampleTest::callbacki);
+        TS_ASSERT_EQUALS(e_what, "too big");
     }
 
 private:
     int n;
+    std::string e_what;
 };
