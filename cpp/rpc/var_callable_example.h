@@ -13,6 +13,20 @@ namespace serf {
         virtual int fun_b(int x) = 0;
 
         virtual Var varCall_(std::string const& method, std::vector<Var> const& args);
+        virtual FVarP varCall_a_(std::string const& method, std::vector<Var> const& args);
+    };
+
+    class ExamplePrx : public VarExceptionDecoder
+    {
+    public:
+        ExamplePrx(VarCallable* remote);
+
+        Future<void>::Ptr fun_a(double x);
+        Future<int>::Ptr fun_b(int x);
+
+        void varDecodeExc_(Var const& exc);
+    private:
+        VarCallable* remote_;
     };
 
     // Our implementation.

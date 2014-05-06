@@ -26,4 +26,21 @@ public:
         args.resize(0);
         TS_ASSERT_THROWS(inst.varCall_("fun_a", args), NotEnoughArgs);
     }
+
+    void callback(Result<void>::Ptr r) {
+        r->get();
+        n = 1;
+    }
+
+    void testVarCallableExamplePrx() {
+        n = 0;
+        ExampleImpl inst;
+        ExamplePrx prx(&inst);
+
+        prx.fun_a(-3.5)->then(this, &VarCallableExampleTest::callback);
+        TS_ASSERT_EQUALS(n, 1);
+    }
+
+private:
+    int n;
 };

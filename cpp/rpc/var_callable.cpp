@@ -18,4 +18,6 @@ namespace serf {
         out << "method \"" << method << "\" called with " << provided << " arg(s). " << required << " required.";
         msg_ = out.str();
     }
+
+    VarExceptionDecoder::~VarExceptionDecoder() {}
 }

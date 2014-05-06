@@ -3,8 +3,11 @@
 
 #include <stdexcept>
 #include <serf/serializer/var.h>
+#include <serf/reactor/future.h>
 
 namespace serf {
+
+    typedef boost::shared_ptr<Future<Var> > FVarP;
 
     /** \brief Interface which remotely callable instances must implement.
      */
@@ -14,6 +17,7 @@ namespace serf {
         virtual ~VarCallable();
 
         virtual Var varCall_(std::string const& method, std::vector<Var> const& args) = 0;
+        virtual FVarP varCall_a_(std::string const& method, std::vector<Var> const& args) = 0;
     };
 
     class VarCallException : public std::exception
@@ -40,6 +44,16 @@ namespace serf {
     {
     public:
         NotEnoughArgs(std::string const& method, int provided, int required);
+    };
+
+    /** \brief Interface for things which decode exceptions and throw them.
+     */
+    class VarExceptionDecoder
+    {
+    public:
+        virtual ~VarExceptionDecoder();
+
+        virtual void varDecodeExc_(Var const& exc) = 0;
     };
 }
 
