@@ -6,7 +6,7 @@
 #include <serf/reactor/accept_reader.h>
 #include <serf/rpc/connection_factory.h>
 #include <serf/rpc/message_router.h>
-#include <serf/rpc/message_handler.h>
+#include <serf/rpc/rpc_handler.h>
 
 #include <serf/debug.h>
 
@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
 {
     unsigned short port = 6504;
     Reactor reactor;
-    MessageHandler mh;
+    RPCHandler mh;
     MessageRouter r(&mh, &reactor);
     mh.setRouter(&r);
 

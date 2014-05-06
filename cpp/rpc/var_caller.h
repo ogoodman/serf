@@ -11,7 +11,7 @@ namespace serf {
     public:
         ~VarCaller();
 
-        /** \brief Interface for making remote calls.
+        /** \brief Makes a remote call.
          *
          * Takes an RMI call {"o":...} as a Var and returns a Future<Var>
          * containing {"r":...} or {"e":...} or throws due to some local
