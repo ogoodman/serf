@@ -40,6 +40,8 @@ namespace serf {
         VarCallable* servant_; // owned.
         std::map<std::string, Future<Var>::Ptr> callbacks_;
     };
+
+    std::string randomString(size_t len);
 }
 
 #endif // RPC_HANDLER_HGUARD_

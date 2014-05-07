@@ -2,6 +2,9 @@
 
 #include <sstream>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <serf/serializer/any_codec.h>
 #include <serf/rpc/message_router.h>
 #include <serf/rpc/var_callable_example.h>
@@ -14,7 +17,15 @@ namespace serf {
     std::string randomString(size_t len) {
         static bool initialized = false;
         if (!initialized) {
+#ifdef NO_SRANDOMDEV
+            int fd = open("/dev/urandom", O_RDONLY);
+            unsigned int seed;
+            if (read(fd, (void*)&seed, sizeof(seed)) != sizeof(seed)) throw std::runtime_error("failed to seed random()");
+            close(fd);
+            srandom(seed);
+#else
             srandomdev();
+#endif
             initialized = true;
         }
         std::string s(len, '\0');
