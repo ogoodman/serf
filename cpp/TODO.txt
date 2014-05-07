@@ -1,3 +1,6 @@
+Set up test of an outbound call from C++.
+
+
 Move Printer and TypeRegistry to their own files.
 
 The following files are affected when a codec is added:

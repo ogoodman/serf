@@ -10,18 +10,43 @@ namespace serf {
     class Resolver;
 
     /** \brief Base class for Proxies.
+     *
+     * Generated code will call varCall_a_ to make remote calls,
+     * toFuture<R> to convert return values to the expected type of
+     * Future. It may also override varDecodeExc_ in order to
+     * decode and then throw any proxy-specific exception returned
+     * from a call.
      */
-    class VarProxy : public VarCallable
+    class VarProxy
     {
     public:
         VarProxy(VarCaller* remote, std::string const& node, std::string const& addr);
 
         virtual void varDecodeExc_(Var const& exc);
 
-        Var varCall_(std::string const& method, std::vector<Var> const& args);
-        Future<Var>::Ptr varCall_a_(std::string const& method, std::vector<Var> const& args);
+        /** \brief Makes a remote call using the configured VarCaller.
+         *
+         * The eventual Var result will be a dictionary with either
+         * {"r": <result>} or {"e": <encoded-exception>}.
+         */
+        Future<Var>::Ptr remoteCall_a_(std::string const& method, std::vector<Var> const& args);
 
     protected:
+
+        /** \brief Converts a Future<Var> into a Future<T>.
+         *
+         * It sets the callback on the Future<Var> to be a Resolver<T>.
+         * When called, this will resolve the Future<T> using a
+         * ProxyCallResult<T>. 
+         *
+         * The Resolver does not call Result<Var>.get()
+         * in order to create the ProxyCallResult but
+         * rather passes ownership of the Result<Var> to the
+         * ProxyCallResult. Result<Var>.get() is called by 
+         * ProxyCallResult.get(). This is so that exceptions thrown
+         * by Result<Var>.get() or by converting Var to T do not need
+         * to be caught and re-packaged for the ProxyCallResult.
+         */
         template <typename T>
         typename Future<T>::Ptr toFuture(Future<Var>::Ptr fvp) {
             typename Future<T>::Ptr ftp(new Future<T>());
@@ -54,7 +79,7 @@ namespace serf {
             : prx_(prx), result_(result) {}
 
         virtual ref_type get() const {
-            Var reply(result_->get()); // {"r": ... } or {"e": ... }
+            const Var& reply(result_->get()); // {"r": ... } or {"e": ... }
             std::map<std::string, Var> const& reply_m(M(reply));
             std::map<std::string, Var>::const_iterator pos;
             pos = reply_m.find("r");
@@ -63,13 +88,47 @@ namespace serf {
                 prx_->varDecodeExc_(reply_m.at("e"));
                 throw std::runtime_error("should never get here");
             }
-            return boost::get<R>(pos->second);
+            return boost::get<ref_type>(pos->second);
         }
     private:
         VarProxy* prx_; // not owned
         Result<Var>::Ptr result_;
     };
 
+    /** \brief Part of VarProxy.
+     *
+     * Specialisation of ProxyCallResult<R> for type Var.
+     */
+    template <>
+    class ProxyCallResult<Var> : public Result<Var>
+    {
+    public:
+
+        ProxyCallResult(VarProxy* prx, Result<Var>::Ptr result)
+            : prx_(prx), result_(result) {
+        }
+
+        virtual Var const& get() const {
+            const Var& reply(result_->get()); // {"r": ... } or {"e": ... }
+            std::map<std::string, Var> const& reply_m(M(reply));
+            std::map<std::string, Var>::const_iterator pos;
+            pos = reply_m.find("r");
+            if (pos == reply_m.end()) {
+                // Should decode and throw the right exception.
+                prx_->varDecodeExc_(reply_m.at("e"));
+                throw std::runtime_error("should never get here");
+            }
+            return pos->second;
+        }
+    private:
+        VarProxy* prx_; // not owned
+        Result<Var>::Ptr result_;
+    };
+
+    /** \brief Part of VarProxy.
+     *
+     * Specialisation of ProxyCallResult<R> for type void.
+     */
     template <>
     class ProxyCallResult<void> : public Result<void>
     {
@@ -78,7 +137,7 @@ namespace serf {
             : prx_(prx), result_(result) {}
 
         virtual void get() const {
-            Var reply(result_->get()); // {"r": ... } or {"e": ... }
+            const Var& reply(result_->get()); // {"r": ... } or {"e": ... }
             std::map<std::string, Var> const& reply_m(M(reply));
             std::map<std::string, Var>::const_iterator pos;
             pos = reply_m.find("r");

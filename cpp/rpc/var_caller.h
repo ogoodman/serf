@@ -18,7 +18,7 @@ namespace serf {
          * error. It is the responsibility of the VarCaller to add
          * the reply address to the outgoing message.
          */
-        virtual Future<Var>::Ptr callRemote(std::string const& node, Var const& call) = 0;
+        virtual Future<Var>::Ptr callRemote(std::string const& node, Var& call) = 0;
     };
 }
 

@@ -13,6 +13,7 @@ namespace serf {
     public:
         virtual void fun_a(double x) = 0;
         virtual int fun_b(int x) = 0;
+        virtual Future<Var>::Ptr getitem(std::string const& key) = 0;
 
         virtual Var varCall_(std::string const& method, std::vector<Var> const& args);
         virtual FVarP varCall_a_(std::string const& method, std::vector<Var> const& args);
@@ -22,10 +23,11 @@ namespace serf {
     class ExamplePrx : public VarProxy
     {
     public:
-        ExamplePrx(VarCaller* remote);
+        ExamplePrx(VarCaller* remote, std::string const& node, std::string const& addr);
 
         Future<void>::Ptr fun_a(double x);
         Future<int>::Ptr fun_b(int x);
+        Future<Var>::Ptr getitem(std::string const& key);
     };
 
     // Our implementation.
@@ -34,6 +36,10 @@ namespace serf {
     public:
         void fun_a(double x);
         int fun_b(int x);
+        Future<Var>::Ptr getitem(std::string const& key);
+
+    public:
+        boost::shared_ptr<ExamplePrx> proxy;
     };
 }
 

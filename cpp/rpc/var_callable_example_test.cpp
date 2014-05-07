@@ -17,7 +17,7 @@ namespace serf {
         MockVarCaller(VarCallable* servant) : servant_(servant) {}
         
         // We get {"o":.., "m":.., "a":..}.
-        Future<Var>::Ptr callRemote(std::string const& node, Var const& call) {
+        Future<Var>::Ptr callRemote(std::string const& node, Var& call) {
             Future<Var>::Ptr reply(new Future<Var>);
             std::string method = boost::get<std::string>(M(call).at("m"));
         
@@ -86,7 +86,7 @@ public:
 
         ExampleImpl inst;
         MockVarCaller caller(&inst);
-        ExamplePrx prx(&caller);
+        ExamplePrx prx(&caller, "", "");
 
         prx.fun_a(-3.5)->then(this, &VarCallableExampleTest::callbackv);
         TS_ASSERT_EQUALS(n, 1);

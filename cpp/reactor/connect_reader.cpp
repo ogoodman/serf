@@ -27,7 +27,6 @@ namespace serf {
 
         // Make a socket and set fd_
         fd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-        SHOW(fd_);
 
         // Construct the address.
         struct sockaddr_in socket_address;

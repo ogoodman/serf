@@ -49,6 +49,8 @@ namespace serf {
             if (buffer_.size() < len + 5) break;
             std::string msg = buffer_.substr(5, len);
 
+            size_t i, n;
+
             switch (state_) {
             case CLIENT_WAIT_SSL_OPTIONS:
                 if (what != int(SSL_OPTIONS) ||
@@ -58,6 +60,12 @@ namespace serf {
                 } else {
                     // Continuing with non SSL connection.
                     state_ = ESTABLISHED;
+                    send(int(SSL_CHOICE), "P");
+                    n = queued_.size();
+                    for (i = 0; i < n; ++i) {
+                        send_(queued_[i]);
+                    }
+                    queued_.resize(0);
                 }
                 break;
             case SERVER_WAIT_SSL_CHOICE:
@@ -89,7 +97,7 @@ namespace serf {
      */
     void Connection::send(int what, std::string const& msg) {
         std::string header = std::string(1, char(what)) + encode_uint32(msg.size());
-        if (fd_ < 0) {
+        if (fd_ < 0 || state_ == CLIENT_WAIT_SSL_OPTIONS) {
             queued_.push_back(header + msg);
         } else {
             send_(header);
