@@ -4,6 +4,7 @@
 #include <serf/reactor/reactor.h>
 #include <serf/reactor/data_reader.h>
 #include <serf/reactor/data_handler.h>
+#include <serf/reactor/system_clock.h>
 #include <serf/debug.h>
 
 namespace serf {
@@ -22,7 +23,6 @@ namespace serf {
 		}
 
 		void dispose() {
-			SAY("In Timeout::dispose()");
 		}
 
 	private:
@@ -57,11 +57,12 @@ namespace serf {
 using namespace serf;
 
 int main(int argc, char* argv[]) {
+	SystemClock clock;
 	int sock[2];
 	socketpair(AF_UNIX, SOCK_STREAM, 0, sock);
 
+	Timeout t(clock.time() + Clock::seconds(1));
 	Reactor r;
-	Timeout t(r.time() + Clock::seconds(1));
 	TestHandler* th = new TestHandler("fred", &r);
 	DataReader* d = new DataReader(sock[0], th);
 
