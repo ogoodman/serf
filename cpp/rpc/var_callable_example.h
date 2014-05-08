@@ -13,6 +13,7 @@ namespace serf {
     public:
         virtual void fun_a(double x) = 0;
         virtual int fun_b(int x) = 0;
+        virtual int sum(std::vector<int> const& nums) = 0;
         virtual Future<Var>::Ptr getitem(std::string const& key) = 0;
 
         virtual Var varCall_(std::string const& method, std::vector<Var> const& args);
@@ -28,6 +29,7 @@ namespace serf {
         Future<void>::Ptr fun_a(double x);
         Future<int>::Ptr fun_b(int x);
         Future<Var>::Ptr getitem(std::string const& key);
+        Future<int>::Ptr sum(std::vector<int> const& nums);
     };
 
     // Our implementation.
@@ -36,6 +38,7 @@ namespace serf {
     public:
         void fun_a(double x);
         int fun_b(int x);
+        int sum(std::vector<int> const& nums);
         Future<Var>::Ptr getitem(std::string const& key);
 
     public:

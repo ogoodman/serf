@@ -65,6 +65,13 @@ public:
 
         args.resize(0);
         TS_ASSERT_THROWS(inst.varCall_("fun_a", args), NotEnoughArgs);
+
+        std::vector<Var> nums;
+        nums.push_back(1);
+        nums.push_back(3);
+        nums.push_back(5);
+        args.push_back(nums);
+        TS_ASSERT_EQUALS(boost::get<int>(inst.varCall_("sum", args)), 9);
     }
 
     void callbackv(Result<void>::Ptr r) {
@@ -96,6 +103,13 @@ public:
 
         prx.fun_b(42)->then(this, &VarCallableExampleTest::callbacki);
         TS_ASSERT_EQUALS(e_what, "too big");
+
+        std::vector<int> nums;
+        nums.push_back(1);
+        nums.push_back(4);
+        nums.push_back(9);
+        prx.sum(nums)->then(this, &VarCallableExampleTest::callbacki);
+        TS_ASSERT_EQUALS(n, 14);
     }
 
 private:

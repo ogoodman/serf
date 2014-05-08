@@ -1,10 +1,14 @@
-Make code so far conform to the protocol specifications.
+Write the IDL code generator.
+
+Set up JSUnit or similar.
+
+Refactor Publish-Subscribe to use complete proxies, not callback functions.
+
+Set up JS documentation.
 
 Make the offline event cause exception on unresolved callbacks.
 
-Implement Records in C++ so that I can handle exceptions properly.
-
-Write the IDL code generator.
+Implement Records in C++.
 
 SSL certificate / public key verification
 

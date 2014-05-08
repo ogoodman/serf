@@ -1,5 +1,6 @@
 #include <serf/rpc/var_callable_example.h>
 
+#include <serf/serializer/extract.h>
 #include <serf/rpc/var_caller.h>
 #include <serf/rpc/var_proxy.h>
 #include <serf/debug.h>
@@ -15,6 +16,11 @@ namespace serf {
         } else if (method == "fun_b") {
             if (args.size() < 1) throw NotEnoughArgs(method, args.size(), 1);
             result = fun_b(boost::get<int>(args.at(0)));
+        } else if (method == "sum") {
+            if (args.size() < 1) throw NotEnoughArgs(method, args.size(), 1);
+            std::vector<int> nums;
+            extract(nums, args.at(0));
+            result = sum(nums);
         } else {
             throw NoSuchMethod(method);
         }
@@ -58,6 +64,12 @@ namespace serf {
         return toFuture<Var>(remoteCall_a_("__getitem__", args));
     }
 
+    Future<int>::Ptr ExamplePrx::sum(std::vector<int> const& nums) {
+        std::vector<Var> args(1);
+        setVar(args[0], nums);
+        return toFuture<int>(remoteCall_a_("sum", args));
+    }
+
     // Our implementation.
 
     void ExampleImpl::fun_a(double x) {
@@ -74,4 +86,14 @@ namespace serf {
     Future<Var>::Ptr ExampleImpl::getitem(std::string const& key) {
         return proxy->getitem(key);
     }
+
+    int ExampleImpl::sum(std::vector<int> const& nums) {
+        int total = 0;
+        size_t i = 0, n = nums.size();
+        for (i = 0; i < n; ++i) {
+            total += nums[i];
+        }
+        return total;
+    }
+
 }
