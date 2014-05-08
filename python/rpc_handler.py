@@ -11,12 +11,12 @@ from serf.storage import Storage
 from serf.json_codec import JSON_CODEC
 
 # Most of what happens here is converting stuff, either for
-# passing it to another Vat or for saving to disk.
+# passing it to another RPCHandler or for saving to disk.
 #
 # There are 3 cases (2 directions each):
 # 1. to/from disk storage
-# 2. to/from Vat in different thread
-# 3. to/from remote Vat (via network)
+# 2. to/from RPCHandler in different thread
+# 3. to/from remote RPCHandler (via network)
 #
 # There are a few different types being passed around:
 # 1. plain-old-data
@@ -102,7 +102,7 @@ class RemoteCtx(object):
         return None, None
 
 
-class Vat(object):
+class RPCHandler(object):
     def __init__(self, transport, storage, t_model=None, verbose=False):
         thread_model = Synchronous() if t_model is None else t_model
         self.storage = storage
@@ -139,7 +139,7 @@ class Vat(object):
         """Handler for messages staying on this node.
 
         Messages are not encoded. They may be going from one
-        Vat to another so localize is called to convert Refs to
+        RPCHandler to another so localize is called to convert Refs to
         Proxies and vice-versa.
 
         Args:

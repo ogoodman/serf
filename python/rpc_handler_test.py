@@ -1,10 +1,10 @@
 #!/usr/bin/python
 
-"""Tests for class Vat."""
+"""Tests for class RPCHandler."""
 
 import unittest
 import weakref
-from serf.vat import Vat, convert
+from serf.rpc_handler import RPCHandler, convert
 from serf.mock_net import MockNet, MockTransport
 from serf.proxy import Proxy
 from serf.ref import Ref
@@ -21,11 +21,11 @@ from serf.json_codec import makeBoundMethod
 from serf.publisher import Publisher
 from serf.model import Model
 
-class VatTest(unittest.TestCase):
+class RPCHandlerTest(unittest.TestCase):
     def testCall(self):
         net = MockNet()
-        nodea, va = net.addVat('A', '', {})
-        nodeb, vb = net.addVat('B', '', {})
+        nodea, va = net.addRPCHandler('A', '', {})
+        nodeb, vb = net.addRPCHandler('B', '', {})
 
         nodea['addr'] = TestObject()
 
@@ -35,8 +35,8 @@ class VatTest(unittest.TestCase):
 
     def testWithStorage(self):
         net = MockNet()
-        na, va = net.addVat('A', '', {})
-        nb, vb = net.addVat('B', '', {})
+        na, va = net.addRPCHandler('A', '', {})
+        nb, vb = net.addRPCHandler('B', '', {})
 
         na['TOB'] = Data({}) # store a data object
 
@@ -53,14 +53,14 @@ class VatTest(unittest.TestCase):
 
     def testNonexistentNode(self):
         net = MockNet()
-        na, va = net.addVat('A', '', {})
+        na, va = net.addRPCHandler('A', '', {})
         cb = va.call('B', 'x', 'method', [])
         self.assertRaises(KeyError, cb.wait)
 
     def test(self):
         net = MockNet()
-        na, va = net.addVat('A', '', {})
-        nb, vb = net.addVat('B', '', {})
+        na, va = net.addRPCHandler('A', '', {})
+        nb, vb = net.addRPCHandler('B', '', {})
 
         na['a'] = Time()
         na['o'] = TestObject()
@@ -95,11 +95,11 @@ class VatTest(unittest.TestCase):
 
         self.assertEqual(d['name'], u'Barney')
 
-    def testAddVat(self):
+    def testAddRPCHandler(self):
         net = MockNet()
-        va, ra = net.addVat('A', '', {})
-        vb1, rb1 = net.addVat('B', '', {})
-        #vb2, rb2 = net.addVat('B', '2', {})
+        va, ra = net.addRPCHandler('A', '', {})
+        vb1, rb1 = net.addRPCHandler('B', '', {})
+        #vb2, rb2 = net.addRPCHandler('B', '2', {})
 
         va['df'] = {'name': u'Fred'}
         vb1['db'] = {'name': u'Barney'}
@@ -110,7 +110,7 @@ class VatTest(unittest.TestCase):
         self.assertEqual(p['name'], u'Fred')
         self.assertEqual(p2['name'], u'Barney')
 
-        #self.assertEqual(net.node['A'].getVatId('df'), '1')
+        #self.assertEqual(net.node['A'].getRPCHandlerId('df'), '1')
 
         self.assertEqual(type(vb1['db']), dict)
         #self.assertEqual(type(vb2['db']), dict)
@@ -118,11 +118,11 @@ class VatTest(unittest.TestCase):
     def testGreen(self):
         net = MockNet()
         gta = GreenThread()
-        va, ra = net.addVat('X', '', {}, t_model=gta)
+        va, ra = net.addRPCHandler('X', '', {}, t_model=gta)
         gta.start()
 
         gtb = GreenThread()
-        vb, rb = net.addVat('Y', '', {}, t_model=gtb)
+        vb, rb = net.addRPCHandler('Y', '', {}, t_model=gtb)
         gtb.start()
 
         va['data'] = {'name': 'Tom'}
@@ -148,11 +148,11 @@ class VatTest(unittest.TestCase):
     def testWorker(self):
         net = MockNet()
         gta = EventletThread()
-        va, ra = net.addVat('X', '', {}, t_model=gta)
+        va, ra = net.addRPCHandler('X', '', {}, t_model=gta)
         gta.start(True)
 
         worker = EventletThread()
-        vb, rb = net.addVat('Y', '', {}, t_model=worker)
+        vb, rb = net.addRPCHandler('Y', '', {}, t_model=worker)
         worker.start()
 
         va['data'] = {'name': 'Tom'}
@@ -161,7 +161,7 @@ class VatTest(unittest.TestCase):
         self.assertEqual(pb['name'], 'Tom')
 
     def testGC(self):
-        h = Vat(MockTransport('browser'), {})
+        h = RPCHandler(MockTransport('browser'), {})
         makeBoundMethod(h, {'o':'shared', 'm':'notify'})
         hr = weakref.ref(h)
         self.assertEqual(hr(), h)
@@ -173,8 +173,8 @@ class VatTest(unittest.TestCase):
         ta = net.addNode('browser')
         tb = net.addNode('server')
 
-        na = Vat(ta, {})
-        nb = Vat(tb, {})
+        na = RPCHandler(ta, {})
+        nb = RPCHandler(tb, {})
 
         oa = Model()
         na.provide('1', oa)

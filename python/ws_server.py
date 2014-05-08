@@ -11,7 +11,7 @@ from serf.eventlet_thread import EventletThread
 from serf.websocket_handler import WebSocketHandler, CURRENT
 from serf.model import Model
 from serf.bound_method import BoundMethod
-from serf.vat import Vat
+from serf.rpc_handler import RPCHandler
 
 SINGLETON_MODEL = Model()
 
@@ -38,7 +38,7 @@ def handle(socket, client_address):
     transport = WebSocketHandler(socket, client_address)
     thread = EventletThread()
     thread.callFromThread = thread.call
-    handler = Vat(transport, {}, t_model=thread, verbose=True)
+    handler = RPCHandler(transport, {}, t_model=thread, verbose=True)
     handler.provide('shared', SINGLETON_MODEL)
     handler.provide('private', Model())
     handler.provide('sqcaller', SquareCaller(handler, 'sqcaller'))

@@ -7,7 +7,7 @@ from serf.transport import Transport
 from serf.fs_dict import FSDict
 from serf.eventlet_thread import EventletThread
 from serf.storage import Storage
-from serf.vat import Vat
+from serf.rpc_handler import RPCHandler
 from serf.util import codeDir
 
 if __name__ == '__main__':
@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     thread = EventletThread()
     storage = Storage(store, t_model=thread)
-    vat = Vat(net, storage, t_model=thread)
+    vat = RPCHandler(net, storage, t_model=thread)
 
     thread.start()
     print 'Serf Server 0.1', NODE

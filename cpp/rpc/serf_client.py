@@ -5,7 +5,7 @@ import sys
 import socket
 import struct
 import time
-from serf.vat import Vat
+from serf.rpc_handler import RPCHandler
 from serf.eventlet_net import Net
 from serf.eventlet_thread import EventletThread
 
@@ -36,7 +36,7 @@ def callRemote():
     thread = EventletThread()
     thread.start()
     transport = Net('127.0.0.1:6503')
-    vat = Vat('127.0.0.1:6503', '', {}, node=transport, t_model=thread)
+    vat = RPCHandler('127.0.0.1:6503', '', {}, node=transport, t_model=thread)
     cb = vat.call('127.0.0.1:6502', 'OBJ', 'fun_b', [5])
     print cb.wait()
 

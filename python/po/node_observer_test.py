@@ -21,7 +21,7 @@ class TestRef(object):
     def _save(self):
         self.saved += 1
 
-class TestVat(object):
+class TestRPCHandler(object):
     def __init__(self):
         self.online = []
         self.thread_model = Synchronous()
@@ -43,10 +43,10 @@ class TestVat(object):
 
 class NodeObserverTest(unittest.TestCase):
     def test(self):
-        vat = TestVat()
+        vat = TestRPCHandler()
         no = NodeObserver(vat)
         vat.node_observer = no
-        no.ref = TestRef() # Normally added by Vat.__getitem__
+        no.ref = TestRef() # Normally added by RPCHandler.__getitem__
         no._save = no.ref._save
         obs = TestObserver()
 

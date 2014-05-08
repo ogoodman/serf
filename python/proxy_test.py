@@ -4,7 +4,7 @@
 
 import unittest
 from serf.mock_net import MockNet, MockTransport
-from serf.vat import Vat
+from serf.rpc_handler import RPCHandler
 from serf.test_object import TestObject
 from serf.proxy import Proxy
 
@@ -12,8 +12,8 @@ from serf.proxy import Proxy
 class ProxyTest(unittest.TestCase):
     def testFuture(self):
         net = MockNet()
-        na, va = net.addVat('A', '', {})
-        nb, vb = net.addVat('B', '', {})
+        na, va = net.addRPCHandler('A', '', {})
+        nb, vb = net.addRPCHandler('B', '', {})
 
         pr = va.provide('addr', TestObject())
         ob = na.cache['addr']
@@ -37,8 +37,8 @@ class ProxyTest(unittest.TestCase):
 
     def testProxy(self):
         net = MockNet()
-        na, va = net.addVat('A', '', {})
-        nb, vb = net.addVat('B', '', {})
+        na, va = net.addRPCHandler('A', '', {})
+        nb, vb = net.addRPCHandler('B', '', {})
 
         pr = va.provide('addr', TestObject())
         ob = na.cache['addr']
@@ -60,9 +60,9 @@ class ProxyTest(unittest.TestCase):
         self.assertEqual(pr.callIncr(2), 3)
 
     def testProxyEquality(self):
-        va0 = Vat(MockTransport('A'), {})
-        va1 = Vat(MockTransport('A'), {})
-        vb0 = Vat(MockTransport('B'), {})
+        va0 = RPCHandler(MockTransport('A'), {})
+        va1 = RPCHandler(MockTransport('A'), {})
+        vb0 = RPCHandler(MockTransport('B'), {})
         p1 = Proxy('B', 'x', va0)
         p2 = Proxy('B', 'y', va1)
         p3 = Proxy('B', 'y', va0)

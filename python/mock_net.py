@@ -2,7 +2,7 @@
 
 import socket
 import weakref
-from serf.vat import Vat
+from serf.rpc_handler import RPCHandler
 from serf.storage import Storage
 from serf.publisher import Publisher
 
@@ -37,10 +37,10 @@ class MockNet(object):
             self.end[node] = MockTransport(node, self)
         return self.end[node]
 
-    def addVat(self, node_id, vat_id, store, t_model=None):
+    def addRPCHandler(self, node_id, vat_id, store, t_model=None):
         transport = self.addNode(node_id)
         storage = Storage(store, t_model=t_model)
-        vat = Vat(transport, storage, t_model=t_model)
+        vat = RPCHandler(transport, storage, t_model=t_model)
         return storage, vat
 
     def goOffline(self, node):

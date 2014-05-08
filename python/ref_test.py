@@ -55,8 +55,8 @@ class RefTest(unittest.TestCase):
 
     def testFacetProxy(self):
         net = MockNet()
-        va, ra = net.addVat('A', '', {})
-        vb, rb = net.addVat('B', '', {})
+        va, ra = net.addRPCHandler('A', '', {})
+        vb, rb = net.addRPCHandler('B', '', {})
 
         main_ref = va.makeRef(TestData(24))
         public = va.makeRef(main_ref._getFacet('public'))

@@ -9,7 +9,7 @@ import traceback
 from eventlet.green import select
 from code import InteractiveConsole
 from serf.fs_dict import FSDict
-from serf.vat import Vat
+from serf.rpc_handler import RPCHandler
 from serf.transport import Transport
 from serf.eventlet_thread import EventletThread
 from serf.proxy import Proxy
@@ -27,7 +27,7 @@ from serf.repl_proxy import REPLProxy
 # time through the Transport object. The peer created in the REPL will be
 # unable to respond. This module implements two partial fixes.
 #
-# 1. Run the Transport and main Vat in a thread. Wrap all references to these
+# 1. Run the Transport and main RPCHandler in a thread. Wrap all references to these
 #    objects in a proxy that transfers all calls into their thread.
 #
 # 2. Use code.InteractiveConsole to set up a replica of Python's REPL
@@ -55,7 +55,7 @@ net = Transport(CLIENT, ssl=SSL)
 
 thread = EventletThread()
 s0 = Storage(store, t_model=thread)
-v0 = Vat(net, s0, t_model=thread)
+v0 = RPCHandler(net, s0, t_model=thread)
 
 def wrap(x):
     return REPLProxy(x, thread)
@@ -72,7 +72,7 @@ class ClientConsole(InteractiveConsole):
 
 try:
     # thread.start(True) means start a new thread, while False means
-    # use the current thread. When RUN_CONSOLE is true we run Transport and Vat
+    # use the current thread. When RUN_CONSOLE is true we run Transport and RPCHandler
     # calls in the main thread.
     thread.start(not RUN_CONSOLE)
 
