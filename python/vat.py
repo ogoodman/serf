@@ -57,6 +57,15 @@ class SendErrorCb(object):
     def failure(self, exc):
         self.vat.lput(self.cb_id, {'e': exc})
 
+def encodeException(e):
+    return [type(e).__name__] + list(e.args)
+
+def decodeException(e):
+    try:
+        return EXCEPTIONS[e[0]](*e[1:])
+    except:
+        return RemoteException('%s%r' % (e[0], e[1:]))
+
 class RemoteCtx(object):
     def __init__(self, vat):
         self.vat = weakref.ref(vat)
@@ -69,17 +78,13 @@ class RemoteCtx(object):
                 return Ref(self.vat().storage, data['path'])
             return Proxy(node, data['path'], self.vat())
         if name == 'exc':
-            try:
-                cls = EXCEPTIONS[data['type']]
-            except:
-                return RemoteException('%s%r' % (data['type'], data['a']))
-            return cls(*data['a'])
+            return decodeException(data)
         raise SerializationError(name)
 
     def record(self, inst):
         t = type(inst)
         if isinstance(inst, Exception):
-            return Record('exc', {'type': t.__name__, 'a': inst.args})
+            return Record('exc', encodeException(inst))
         ref = getattr(inst, 'ref', None)
         if type(ref) is Ref:
             t, inst = Ref, ref
@@ -131,7 +136,11 @@ class Vat(object):
         self.thread_model.callFromThread(self._rhandle, msg)
 
     def lput(self, addr, msg):
-        """Handler for unencoded data from a different thread.
+        """Handler for messages staying on this node.
+
+        Messages are not encoded. They may be going from one
+        Vat to another so localize is called to convert Refs to
+        Proxies and vice-versa.
 
         Args:
             addr: instance to which message is addressed
@@ -141,42 +150,40 @@ class Vat(object):
 
     def _nhandle(self, addr, msg):
         msg = rmap(self.localize, msg)
-        self._handle(addr, msg)
+        self._handle(addr, msg, self.node_id)
 
     def _rhandle(self, msg_data):
         pcol = msg_data['pcol']
+        from_ = msg_data['from']
         if pcol == 'json':
             msg = JSON_CODEC.decode(self, msg_data['message'])
-            addr = msg['o']
             if self.verbose:
                 print getattr(self.node, 'client_ip', ''), 'In', msg
         elif pcol == 'local':
-            msg = msg_data['message']
-            addr = msg['o']
-            msg = rmap(self.localize, msg)
+            msg = rmap(self.localize, msg_data['message'])
         else:
             f = StringIO(msg_data['message'])
-            addr = decode(f) # msg is addr, body
             msg = decode(f, self.remote_ctx)
+        addr = msg['o']
         # Subtract transport path from incoming message.
         assert(addr.startswith(self.node.path))
         addr = addr[len(self.node.path):]
-        self._handle(addr, msg)
+        self._handle(addr, msg, from_)
 
-    def _handle(self, addr, msg):
+    def _handle(self, addr, msg, from_):
         if 'm' in msg:
-            self.thread_model.call(self.handleCall, addr, msg)
+            self.thread_model.call(self.handleCall, addr, msg, from_)
         else:
             self.handleReply(addr, msg)
 
     def handleReply(self, addr, msg):
+        # TODO: make from-node part of the callbacks key and pass it through.
         cb = self.callbacks.pop(addr)
         if 'r' in msg:
             cb.success(msg['r'])
         else:
-            # Temporary work-around for C++ sending lists.
             if type(msg['e']) is list:
-                msg['e'] = Exception(*msg['e'][1])
+                msg['e'] = decodeException(msg['e'])
             cb.failure(msg['e'])
 
     def localCall(self, addr, method, args):
@@ -194,12 +201,11 @@ class Vat(object):
                     pass
         return result, exc
 
-    def handleCall(self, addr, msg):
+    def handleCall(self, addr, msg, reply_node):
         method = msg['m']
         args = msg['a']
         result, exc = self.localCall(addr, method, args)
         try:
-            reply_node = msg['N']
             reply_addr = msg['O']
         except KeyError:
             if exc is not None:
@@ -208,30 +214,25 @@ class Vat(object):
         if exc is None:
             msg = {'r': result}
         else:
-            msg = {'e': exc}
+            msg = {'e': encodeException(exc)}
         try:
             # serialization errors can occur here.
             self.send(reply_node, reply_addr, msg)
         except SerializationError, exc:
-            self.send(reply_node, reply_addr, {'e': exc})
+            self.send(reply_node, reply_addr, {'e': encodeException(exc)})
 
     def send(self, node, addr, msg, errh=None):
+        msg['o'] = addr
         if node == 'browser':
-            msg['o'] = addr
             if self.verbose:
                 print getattr(self.node, 'client_ip', ''), 'Out', msg
             enc = JSON_CODEC.encode(self, msg)
             pcol = 'json'
         elif node == self.node_id:
-            msg = rmap(self.delocalize, msg)
-            msg['o'] = addr
-            enc = msg
+            enc = rmap(self.delocalize, msg)
             pcol = 'local'
         else:
-            f = StringIO()
-            encode(f, addr)
-            encode(f, msg, self.remote_ctx)
-            enc = f.getvalue()
+            enc = encodes(msg, self.remote_ctx)
             pcol = 'serf'
         self.node.send(node, enc, pcol, errh=errh)
 
@@ -245,8 +246,7 @@ class Vat(object):
         self.callbacks[reply_addr] = cb
         msg = {'m': method,
                'a': args,
-               'O': reply_addr,
-               'N': self.node_id}
+               'O': reply_addr}
         send_err_cb = SendErrorCb(self, reply_addr)
         self.send(node, addr, msg, send_err_cb.failure)
         return cb

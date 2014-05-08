@@ -69,26 +69,23 @@ namespace serf {
         AnyCodec codec;
         Context ctx;
 
-        Var addr; codec.decode(in, addr, ctx);
-
-        // FIXME: this will throw if someone sends us an exception since we
-        // don't know how to deal with Records yet.
         Var call; codec.decode(in, call, ctx);
 
-        std::string addr_s(boost::get<std::string const&>(addr));
-
         std::map<std::string, Var>& call_m(M(call));
+
+        std::string addr(boost::get<std::string const&>(call_m["o"]));
+
         std::map<std::string, Var>::iterator pos = call_m.find("m");
 
         if (pos == call_m.end()) {
             // It should be a reply. 
-            // FIXME: this is not a good way to decide.
-            Future<Var>::Ptr cb = callbacks_[addr_s];
+            // FIXME: this is not a great way to decide.
+            Future<Var>::Ptr cb = callbacks_[addr];
             if (!cb) {
                 SAY("received a return value for a call we never sent");
                 return;
             }
-            callbacks_.erase(addr_s);
+            callbacks_.erase(addr);
             // This will cause the Resolver in var_proxy.h to run which
             // will create a ProxyCallResult (also in var_proxy.h).
             // That will probably be consumed right away and have its
@@ -97,12 +94,8 @@ namespace serf {
             return;
         }
 
-        std::string method = boost::get<std::string>(M(call)["m"]);
+        std::string method(boost::get<std::string const&>(pos->second));
 
-        // This should match the node above since both come from
-        // what the caller says he is. So doesn't that make it a bit
-        // redundant?
-        // std::string reply_node = boost::get<std::string>(M(call)["N"]);
         std::string reply_addr = boost::get<std::string>(M(call)["O"]);
         Var args = M(call)["a"];
 
@@ -118,8 +111,7 @@ namespace serf {
         try {
             reply_m["r"] = result->get();
         } catch (std::exception& e) {
-            // FIXME: we're supposed to send a Record, but we haven't
-            // defined them yet.
+            // FIXME: Handle the user-defined exceptions.
             std::vector<Var> exc;
             exc.push_back(std::string("UnknownException"));
             std::vector<Var> exc_args;
@@ -127,9 +119,9 @@ namespace serf {
             exc.push_back(exc_args);
             reply_m["e"] = exc;
         }
+        reply_m["o"] = addr_;
 
         std::ostringstream out;
-        codec.encode(out, addr_, ctx);
         codec.encode(out, Var(reply_m), ctx);
         router_->send(node_, out.str());
     }
@@ -147,10 +139,8 @@ namespace serf {
         std::string reply_addr = randomString(12);
         std::ostringstream out;
         M(call)["O"] = reply_addr;
-        M(call)["N"] = std::string("127.0.0.1:6504"); // FIXME.
         AnyCodec codec;
         Context ctx;
-        codec.encode(out, M(call)["o"], ctx);
         codec.encode(out, call, ctx);
         router_->send(node, out.str());
         callbacks_[reply_addr] = reply;
