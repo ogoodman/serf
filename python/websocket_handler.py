@@ -63,7 +63,6 @@ class WebSocketHandler(Publisher):
         self.sock = SocketBuffer(sock)
         self.client_address = address
         self.client_ip = address[0]
-        #self.node_id = '%s:%s' % address
         self.node_id = 'server'
         self.path = ''
         self.close_sent = False
@@ -140,7 +139,7 @@ class WebSocketHandler(Publisher):
         return True
 
     def on_message(self, message):
-        self.notify('message', {'from': self.client_ip, 'pcol': 'json', 'message': message})
+        self.notify('message', {'from': 'browser', 'pcol': 'json', 'message': message})
 
     def on_close(self):
         self.notify('close', None)
