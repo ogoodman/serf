@@ -5,6 +5,7 @@
 import os
 import sys
 import time
+import traceback
 from eventlet.green import select
 from code import InteractiveConsole
 from serf.fs_dict import FSDict
@@ -15,7 +16,7 @@ from serf.proxy import Proxy
 from serf.util import timeCall, codeDir
 from serf.po.printer import Printer
 from serf.po.group import Group
-from serf.storage import Storage, fcat
+from serf.storage import Storage, fcat, NoSuchName
 from serf.worker import Worker
 from serf.repl_proxy import REPLProxy
 
@@ -56,21 +57,8 @@ thread = EventletThread()
 s0 = Storage(store, t_model=thread)
 v0 = Vat(net, s0, t_model=thread)
 
-# thread.start(True) means start a new thread, while False means
-# use the current thread. When RUN_CONSOLE is true we run Transport and Vat
-# calls in the main thread.
-thread.start(not RUN_CONSOLE)
-
-thread.callFromThread(net.listen)
-thread.callFromThread(net.start)
-
 def wrap(x):
     return REPLProxy(x, thread)
-
-o = s0.getn('o')
-ro = s0.getn('o-remote')
-p = s0.getn('printer')
-server = s0.getn('server')
 
 class ClientConsole(InteractiveConsole):
     def raw_input(self, prompt):
@@ -82,8 +70,26 @@ class ClientConsole(InteractiveConsole):
             raise EOFError()
         return s.strip()
 
-if RUN_CONSOLE:
-    console = ClientConsole(locals())
-    console.interact()
-else:
-    o, ro, p, server, s0 = map(wrap, [o, ro, p, server, s0])
+try:
+    # thread.start(True) means start a new thread, while False means
+    # use the current thread. When RUN_CONSOLE is true we run Transport and Vat
+    # calls in the main thread.
+    thread.start(not RUN_CONSOLE)
+
+    thread.callFromThread(net.listen)
+    thread.callFromThread(net.start)
+
+    o = s0.getn('o')
+    ro = s0.getn('o-remote')
+    p = s0.getn('printer')
+    server = s0.getn('server')
+
+    if RUN_CONSOLE:
+        console = ClientConsole(locals())
+        console.interact()
+    else:
+        o, ro, p, server, s0 = map(wrap, [o, ro, p, server, s0])
+except NoSuchName:
+    pass
+except:
+    traceback.print_exc()

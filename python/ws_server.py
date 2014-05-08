@@ -1,5 +1,10 @@
 #!/usr/bin/python
 
+"""Demo of websockets. 
+
+TODO: reimplement using pure eventlet websocket module.
+"""
+
 import eventlet
 import weakref
 from serf.eventlet_thread import EventletThread

@@ -1,0 +1,2 @@
+doc:
+	epydoc serf
