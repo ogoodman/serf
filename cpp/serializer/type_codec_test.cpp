@@ -36,7 +36,7 @@ public:
         TS_ASSERT_EQUALS(c->encodes(val), string("\xFF\xF0", 2));
         val = 6.02e23;
         c = getCodec("d"); // float (double) codec
-        TS_ASSERT_EQUALS(c->encodes(val), "a\xd3\xa8\x10\x9f\xde\xdf""D");
+        TS_ASSERT_EQUALS(c->encodes(val), "D\xdf\xde\x9f\x10\xa8\xd3""a");
         val = string("data");
         c = getCodec("r"); // raw data codec.
         TS_ASSERT_EQUALS(c->encodes(val), string("\x00\x00\x00\x04""data", 8));
