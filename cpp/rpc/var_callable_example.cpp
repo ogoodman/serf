@@ -27,18 +27,19 @@ namespace serf {
         return result;
     }
 
+    // We make a protected call to varCall_a_ at the top level.
     FVarP Example::varCall_a_(std::string const& method, std::vector<Var> const& args) {
-        FVarP result(new Future<Var>());
-        try {
-            // AMD example.
-            if (method == "getitem") {
-                if (args.size() < 1) throw NotEnoughArgs(method, args.size(), 1);
-                result = getitem(boost::get<std::string const&>(args.at(0)));
-            } else {
-                result->resolve(varCall_(method, args));
-            }
-        } catch (std::exception& e) {
-            result->resolve(new ErrorResult<Var>(e.what()));
+        FVarP result;
+
+        // AMD example.
+        if (method == "getitem") {
+            if (args.size() < 1) throw NotEnoughArgs(method, args.size(), 1);
+            result = toFuture<Var>(getitem(boost::get<std::string const&>(args.at(0))));
+        } else {
+            std::map<std::string, Var> m_var;
+            m_var["r"] = varCall_(method, args);
+            result.reset(new Future<Var>());
+            result->resolve(Var(m_var));
         }
         return result;
     }

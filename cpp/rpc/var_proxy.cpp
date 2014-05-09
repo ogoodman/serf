@@ -1,6 +1,7 @@
 #include <serf/rpc/var_proxy.h>
 
 #include <serf/rpc/var_caller.h>
+#include <serf/debug.h>
 
 namespace serf {
 
@@ -17,8 +18,8 @@ namespace serf {
     }
 
     void VarProxy::varDecodeExc_(Var const& exc) {
-        // exc should be [exc-type, [args...]].
-        std::string what(boost::get<std::string>(V(V(exc)[1])[0]));
+        // exc should be [exc-type, args...].
+        std::string what(boost::get<std::string>(V(exc)[1]));
         throw std::runtime_error(what);
     }
 }

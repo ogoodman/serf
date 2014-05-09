@@ -25,11 +25,9 @@ namespace serf {
             try {
                 reply_m["r"] = servant_->varCall_(method, V(M(call).at("a")));
             } catch (std::exception& e) {
-                std::vector<Var> e_args;
-                e_args.push_back(std::string(e.what()));
                 std::vector<Var> e_info;
                 e_info.push_back(std::string("Exception"));
-                e_info.push_back(e_args);
+                e_info.push_back(std::string(e.what()));
                 reply_m["e"] = e_info;
             }
             reply->resolve(Var(reply_m));

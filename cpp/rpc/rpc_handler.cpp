@@ -99,30 +99,20 @@ namespace serf {
         std::string reply_addr = boost::get<std::string>(M(call)["O"]);
         Var args = M(call)["a"];
 
-        servant_->varCall_a_(method, V(args))->then(
+        SyncVarCallResolver resolver(servant_, method, V(args));
+        resolver.resolve()->then(
             new VarReplyCallback(router_, node, reply_addr));
     }
 
     void VarReplyCallback::call(Result<Var>::Ptr result) {
         AnyCodec codec;
         Context ctx;
-        std::map<std::string, Var> reply_m;
 
-        try {
-            reply_m["r"] = result->get();
-        } catch (std::exception& e) {
-            // FIXME: Handle the user-defined exceptions.
-            std::vector<Var> exc;
-            exc.push_back(std::string("UnknownException"));
-            std::vector<Var> exc_args;
-            exc_args.push_back(std::string(e.what()));
-            exc.push_back(exc_args);
-            reply_m["e"] = exc;
-        }
-        reply_m["o"] = addr_;
+        Var reply = result->get(); // should be a map, should not throw.
+        M(reply)["o"] = addr_;
 
         std::ostringstream out;
-        codec.encode(out, Var(reply_m), ctx);
+        codec.encode(out, reply, ctx);
         router_->send(node_, out.str());
     }
 

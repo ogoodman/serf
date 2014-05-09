@@ -11,7 +11,7 @@ namespace serf {
 
     /** \brief Base class for Proxies.
      *
-     * Generated code will call varCall_a_ to make remote calls,
+     * Generated code will call remoteCall_a_ to make remote calls,
      * toFuture<R> to convert return values to the expected type of
      * Future. It may also override varDecodeExc_ in order to
      * decode and then throw any proxy-specific exception returned
@@ -22,6 +22,8 @@ namespace serf {
     public:
         VarProxy(VarCaller* remote, std::string const& node, std::string const& addr);
 
+        /** \brief Throws the exception specified by exc.
+         */
         virtual void varDecodeExc_(Var const& exc);
 
         /** \brief Makes a remote call using the configured VarCaller.
@@ -88,6 +90,7 @@ namespace serf {
                 prx_->varDecodeExc_(reply_m.at("e"));
                 throw std::runtime_error("should never get here");
             }
+            // FIXME: this won't work for complex pos->second types.
             return boost::get<ref_type>(pos->second);
         }
     private:
