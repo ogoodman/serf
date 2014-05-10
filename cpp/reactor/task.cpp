@@ -8,8 +8,7 @@ namespace serf {
     Task::~Task() {}
 
 	void Task::dispose() {
-		SAY("task dispose");
-		//delete this;
+		delete this;
 	}
 
     int64_t Clock::days(int64_t n) {

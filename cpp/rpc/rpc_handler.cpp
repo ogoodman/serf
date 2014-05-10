@@ -99,8 +99,7 @@ namespace serf {
         std::string reply_addr = boost::get<std::string>(M(call)["O"]);
         Var args = M(call)["a"];
 
-        SyncVarCallResolver resolver(servant_, method, V(args));
-        resolver.resolve()->then(
+        servant_->call_(method, V(args))->then(
             new VarReplyCallback(router_, node, reply_addr));
     }
 

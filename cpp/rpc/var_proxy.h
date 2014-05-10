@@ -11,9 +11,9 @@ namespace serf {
 
     /** \brief Base class for Proxies.
      *
-     * Generated code will call remoteCall_a_ to make remote calls,
+     * Generated code will call call_ to make remote calls,
      * toFuture<R> to convert return values to the expected type of
-     * Future. It may also override varDecodeExc_ in order to
+     * Future. It may also override throw_ in order to
      * decode and then throw any proxy-specific exception returned
      * from a call.
      */
@@ -24,14 +24,14 @@ namespace serf {
 
         /** \brief Throws the exception specified by exc.
          */
-        virtual void varDecodeExc_(Var const& exc);
+        virtual void throw_(Var const& exc);
 
         /** \brief Makes a remote call using the configured VarCaller.
          *
          * The eventual Var result will be a dictionary with either
          * {"r": <result>} or {"e": <encoded-exception>}.
          */
-        Future<Var>::Ptr remoteCall_a_(std::string const& method, std::vector<Var> const& args);
+        Future<Var>::Ptr call_(std::string const& method, std::vector<Var> const& args);
 
     protected:
 
@@ -87,7 +87,7 @@ namespace serf {
             pos = reply_m.find("r");
             if (pos == reply_m.end()) {
                 // Should decode and throw the right exception.
-                prx_->varDecodeExc_(reply_m.at("e"));
+                prx_->throw_(reply_m.at("e"));
                 throw std::runtime_error("should never get here");
             }
             // FIXME: this won't work for complex pos->second types.
@@ -118,7 +118,7 @@ namespace serf {
             pos = reply_m.find("r");
             if (pos == reply_m.end()) {
                 // Should decode and throw the right exception.
-                prx_->varDecodeExc_(reply_m.at("e"));
+                prx_->throw_(reply_m.at("e"));
                 throw std::runtime_error("should never get here");
             }
             return pos->second;
@@ -146,7 +146,7 @@ namespace serf {
             pos = reply_m.find("r");
             if (pos == reply_m.end()) {
                 // Should decode and throw the right exception.
-                prx_->varDecodeExc_(reply_m.at("e"));
+                prx_->throw_(reply_m.at("e"));
                 throw std::runtime_error("should never get here");
             }
             boost::get<boost::blank>(pos->second);

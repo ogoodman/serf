@@ -3,14 +3,20 @@
 #include <serf/serializer/extract.h>
 #include <serf/rpc/var_caller.h>
 #include <serf/rpc/var_proxy.h>
+#include <serf/rpc/serf_exception.h>
 #include <serf/debug.h>
 
 namespace serf {
 
-    // Generated code.
-    Var Example::varCall_(std::string const& method, std::vector<Var> const& args) {
+    // We make a protected call to varCall_a_ at the top level.
+    FVarP Example::varCall_a_(std::string const& method, std::vector<Var> const& args) {
         Var result;
-        if (method == "fun_a") {
+
+        if (method == "getitem") { // AMD example.
+            if (args.size() < 1) throw NotEnoughArgs(method, args.size(), 1);
+			std::string a0 = boost::get<std::string const&>(args.at(0));
+            return toFuture<Var>(getitem(a0));
+		} else if (method == "fun_a") {
             if (args.size() < 1) throw NotEnoughArgs(method, args.size(), 1);
             fun_a(boost::get<double>(args.at(0)));
         } else if (method == "fun_b") {
@@ -24,24 +30,12 @@ namespace serf {
         } else {
             throw NoSuchMethod(method);
         }
-        return result;
-    }
 
-    // We make a protected call to varCall_a_ at the top level.
-    FVarP Example::varCall_a_(std::string const& method, std::vector<Var> const& args) {
-        FVarP result;
-
-        // AMD example.
-        if (method == "getitem") {
-            if (args.size() < 1) throw NotEnoughArgs(method, args.size(), 1);
-            result = toFuture<Var>(getitem(boost::get<std::string const&>(args.at(0))));
-        } else {
-            std::map<std::string, Var> m_var;
-            m_var["r"] = varCall_(method, args);
-            result.reset(new Future<Var>());
-            result->resolve(Var(m_var));
-        }
-        return result;
+		std::map<std::string, Var> m_var;
+		m_var["r"] = result;
+		FVarP f_res(new Future<Var>());
+		f_res->resolve(Var(m_var));
+        return f_res;
     }
 
     ExamplePrx::ExamplePrx(VarCaller* remote, std::string const& node, std::string const& addr)
@@ -50,25 +44,25 @@ namespace serf {
     Future<void>::Ptr ExamplePrx::fun_a(double x) {
         std::vector<Var> args;
         args.push_back(x);
-        return toFuture<void>(remoteCall_a_("fun_a", args));
+        return toFuture<void>(call_("fun_a", args));
     }
 
     Future<int>::Ptr ExamplePrx::fun_b(int n) {
         std::vector<Var> args;
         args.push_back(n);
-        return toFuture<int>(remoteCall_a_("fun_b", args));
+        return toFuture<int>(call_("fun_b", args));
     }
 
     Future<Var>::Ptr ExamplePrx::getitem(std::string const& key) {
         std::vector<Var> args;
         args.push_back(key);
-        return toFuture<Var>(remoteCall_a_("__getitem__", args));
+        return toFuture<Var>(call_("__getitem__", args));
     }
 
     Future<int>::Ptr ExamplePrx::sum(std::vector<int> const& nums) {
         std::vector<Var> args(1);
         setVar(args[0], nums);
-        return toFuture<int>(remoteCall_a_("sum", args));
+        return toFuture<int>(call_("sum", args));
     }
 
     // Our implementation.

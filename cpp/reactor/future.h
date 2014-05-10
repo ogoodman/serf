@@ -116,6 +116,7 @@ namespace serf {
     public:
 
         typedef boost::shared_ptr<Future> Ptr;
+        typedef typename add_constref<R>::type ref_type;
 
         Future() : callback_(NULL) {
         }
@@ -154,6 +155,11 @@ namespace serf {
                 callback_->call(result_);
             }
         }
+
+		ref_type get() {
+			if (!result_) throw std::runtime_error("future not yet resolved");
+			return result_->get();
+		}
 
     private:
         typename Result<R>::Ptr result_;

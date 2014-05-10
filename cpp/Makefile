@@ -1,16 +1,18 @@
 INCLUDES = -I.
 
+UTIL_OBJ = runnable.o
+
 SERIALIZER_OBJ = var.o codec.o int_codec.o string_codec.o array_codec.o type_codec.o any_codec.o null_codec.o bool_codec.o float_codec.o time_codec.o dict_codec.o tuple_codec.o struct_codec.o
 
 REACTOR_OBJ = accept_reader.o data_handler.o data_reader.o line_handler.o reactor.o reader.o connect_reader.o task.o system_clock.o
 
 RPC_OBJ = connection.o connection_factory.o message_handler.o message_router.o var_callable.o var_callable_example.o var_caller.o var_proxy.o rpc_handler.o
 
-OBJ = $(SERIALIZER_OBJ) $(REACTOR_OBJ) $(RPC_OBJ)
+OBJ = $(UTIL_OBJ) $(SERIALIZER_OBJ) $(REACTOR_OBJ) $(RPC_OBJ) serf_exception.o
 
-TEST_SRCS = var_test.cpp int_codec_test.cpp string_codec_test.cpp array_codec_test.cpp type_codec_test.cpp any_codec_test.cpp null_codec_test.cpp bool_codec_test.cpp float_codec_test.cpp time_codec_test.cpp dict_codec_test.cpp tuple_codec_test.cpp struct_codec_test.cpp accept_reader_test.cpp data_handler_test.cpp data_reader_test.cpp line_handler_test.cpp reactor_test.cpp reader_test.cpp connect_reader_test.cpp connection_test.cpp connection_factory_test.cpp message_router_test.cpp task_test.cpp system_clock_test.cpp var_callable_example_test.cpp future_test.cpp var_proxy_test.cpp rpc_handler_test.cpp extract_test.cpp
+TEST_SRCS = var_test.cpp int_codec_test.cpp string_codec_test.cpp array_codec_test.cpp type_codec_test.cpp any_codec_test.cpp null_codec_test.cpp bool_codec_test.cpp float_codec_test.cpp time_codec_test.cpp dict_codec_test.cpp tuple_codec_test.cpp struct_codec_test.cpp accept_reader_test.cpp data_handler_test.cpp data_reader_test.cpp line_handler_test.cpp reactor_test.cpp reader_test.cpp connect_reader_test.cpp connection_test.cpp connection_factory_test.cpp message_router_test.cpp task_test.cpp system_clock_test.cpp var_callable_test.cpp future_test.cpp var_proxy_test.cpp rpc_handler_test.cpp extract_test.cpp serf_exception_test.cpp
 
-VPATH = .:build:serializer:reactor:rpc
+VPATH = .:build:util:serializer:reactor:rpc
 
 # If your boost installation / compiler version has trouble compiling
 # var.h, try setting CFLAGS via an environment variable as below.

@@ -16,7 +16,6 @@ namespace serf {
         virtual int sum(std::vector<int> const& nums) = 0;
         virtual Future<Var>::Ptr getitem(std::string const& key) = 0;
 
-        virtual Var varCall_(std::string const& method, std::vector<Var> const& args);
         virtual FVarP varCall_a_(std::string const& method, std::vector<Var> const& args);
     };
 

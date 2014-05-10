@@ -2,6 +2,7 @@
 #define VAR_CALLABLE_HGUARD_
 
 #include <stdexcept>
+#include <serf/util/runnable.h>
 #include <serf/serializer/var.h>
 #include <serf/serializer/extract.h>
 #include <serf/reactor/future.h>
@@ -26,16 +27,16 @@ namespace serf {
      * it instead encodes the result as {"e": exc}.
      *
      * Because it cannot know how to encode every exception which can
-     * possibly occur it uses a helper function tryGet_ of the original
+     * possibly occur it uses a helper function try_ of the original
      * VarCallable to indirectly call Result<R>.get(). Its implementation
      * should catch and encode any exception the VarCallable might throw.
-     * We pass ourself to tryGet_ as a Result<void> which tryGet_
+     * We pass ourself to try_ as a Result<void> which try_
      * must call get() on. That get() is where we can attempt to extract
-     * and convert the R result, knowing that tryGet_ will catch any
+     * and convert the R result, knowing that try_ will catch any
      * exception that is thrown.
      */
     template <typename R>
-    class VarCallResolver : public Callback<R>, public Result<void> {
+    class VarCallResolver : public Callback<R>, public Runnable {
     public:
         typedef typename Future<R>::Ptr f_type;
 
@@ -44,7 +45,9 @@ namespace serf {
 
         virtual void call(typename Result<R>::Ptr result);
 
-        virtual void get() const {
+		/** \brief Convert result from R to Var and resolve the Future<Var>.
+		 */
+        virtual void run() {
             std::map<std::string, Var> enc;
             setVar(enc["r"], r_result_->get());
             f_result_->resolve(Var(enc));
@@ -52,7 +55,7 @@ namespace serf {
     private:
         VarCallable* callable_;
         f_type f_;
-        mutable FVarP f_result_;
+        FVarP f_result_;
         typename Result<R>::Ptr r_result_;
     };
     
@@ -68,7 +71,7 @@ namespace serf {
          *
          * Returns true if get() returns normally, false if get() throws.
          */
-        virtual bool tryGet_(Result<void>& result, Var& exc);
+        virtual bool try_(Runnable& task, Var& exc);
 
         /** \brief Converts a Future<R> to a Future<Var> which resolves to
          *  the encoded result.
@@ -85,7 +88,8 @@ namespace serf {
             return result;
         }
 
-        virtual Var varCall_(std::string const& method, std::vector<Var> const& args) = 0;
+		FVarP call_(std::string const& method, std::vector<Var> const& args);
+
         virtual FVarP varCall_a_(std::string const& method, std::vector<Var> const& args) = 0;
     };
 
@@ -93,80 +97,13 @@ namespace serf {
     void VarCallResolver<R>::call(typename Result<R>::Ptr result) {
         Var exc;
         r_result_ = result;
-        if (!callable_->tryGet_(*this, exc)) {
+        if (!callable_->try_(*this, exc)) {
             std::map<std::string, Var> enc;
             enc["e"] = exc;
             f_result_->resolve(Var(enc));
         }
         // else f_result_ will have been resolved in this->get().
     }
-
-
-    /** \brief Part of VarCallable.
-     *
-     * This helper directly resolves a Future<Var> with the result of
-     * a synchronous call to VarCallable.varCall_(method, args).
-     * Because it does not know how to encode all possible exceptions
-     * which a given VarCallable may throw, it causes the call to
-     * varCall_ to be executed inside a call to tryGet_ which should
-     * know how to encode all exceptions specific to the instance.
-     */
-    class SyncVarCallResolver : public Result<void> {
-    public:
-        // FIXME: the body of this can go into var_callable.cpp.
-        SyncVarCallResolver(VarCallable* callable, std::string const& method, std::vector<Var> const& args)
-            : callable_(callable), method_(method), args_(args) {}
-
-        FVarP& resolve() {
-            Var exc;
-            if (!callable_->tryGet_(*this, exc)) {
-                std::map<std::string, Var> enc;
-                enc["e"] = exc;
-                f_result_.reset(new Future<Var>());
-                f_result_->resolve(Var(enc));
-            }
-            // else f_result_ will have been resolved in this->get().
-            return f_result_;
-        }
-
-        virtual void get() const {
-            // If this returns we will eventually get a packaged
-            // result or a packged exception, but not an exception.
-            f_result_ = callable_->varCall_a_(method_, args_);
-        }
-
-    private:
-        VarCallable* callable_;
-        std::string method_;
-        std::vector<Var> args_;
-        mutable FVarP f_result_;
-    };
-
-    class VarCallException : public std::exception
-    {
-    public:
-        VarCallException();
-        VarCallException(std::string const& what);
-        ~VarCallException() throw() {}
-
-        const char* what() const throw() {
-            return msg_.c_str();
-        }
-    protected:
-        std::string msg_;
-    };
-
-    class NoSuchMethod : public VarCallException
-    {
-    public:
-        NoSuchMethod(std::string const& method);
-    };
-
-    class NotEnoughArgs : public VarCallException
-    {
-    public:
-        NotEnoughArgs(std::string const& method, int provided, int required);
-    };
 }
 
 #endif // VAR_CALLABLE_HGUARD_

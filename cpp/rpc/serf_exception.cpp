@@ -1,0 +1,52 @@
+#include <serf/./rpc/serf_exception.h>
+
+namespace serf {
+    SerfException::SerfException() {}
+    SerfException::SerfException(std::string const& what) : msg_(what) {}
+
+    NoSuchMethod::NoSuchMethod(std::string const& method_)
+		: method(method_)
+	{
+        msg_ = "no method: " + method;
+    }
+
+	Var NoSuchMethod::encode() const {
+		std::vector<Var> enc(2);
+		enc[0] = type();
+		enc[1] = method;
+		return enc;
+	}
+
+	std::string NoSuchMethod::type() const {
+		return "NoSuchMethod";
+	}
+
+    NotEnoughArgs::NotEnoughArgs(std::string const& method_, int provided_, int required_)
+		: method(method_), provided(provided_), required(required_)
+	{
+        std::ostringstream out;
+        out << "method \"" << method << "\" called with " << provided << " arg(s). " << required << " required.";
+        msg_ = out.str();
+    }
+
+	std::string NotEnoughArgs::type() const {
+		return "NotEnoughArgs";
+	}
+
+	Var NotEnoughArgs::encode() const {
+		std::vector<Var> enc(4);
+		enc[0] = type();
+		enc[1] = method;
+		enc[2] = provided;
+		enc[3] = required;
+		return enc;
+	}
+
+	TypeError::TypeError(std::string const& what) : SerfException(what) {
+	}
+
+	std::string TypeError::type() const {
+		return "TypeError";
+	}
+
+}
