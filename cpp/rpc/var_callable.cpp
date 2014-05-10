@@ -81,10 +81,24 @@ namespace serf {
 		return false;
     }
 
-	/** \brief Makes a call on a VarCallable returning an encoded
-	 *  result or exception.
-	 */
+    /** \brief Dispatches calls to methods of the implementation.
+     *
+     * The result is returned as a Future<Var> resolving to
+     * {"r": result}. 
+     * Any exception thrown is converted by try_ to a Var and
+     * returned as {"e": exception}.
+     */
 	FVarP VarCallable::call_(std::string const& method, std::vector<Var> const& args) {
         return VarCallableCaller(this, method, V(args)).call();
 	}
+
+    /** \brief Converts a Var to a Future<Var> of {"r": result}.
+     */
+    FVarP VarCallable::encodeResult_(Var const& result) {
+		std::map<std::string, Var> m_var;
+		m_var["r"] = result;
+		FVarP f_res(new Future<Var>());
+		f_res->resolve(Var(m_var));
+        return f_res;
+    }
 }

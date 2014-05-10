@@ -1,4 +1,4 @@
-#include <serf/rpc/var_callable_example.h>
+#include <serf/rpc/example.h>
 #include <cxxtest/TestSuite.h>
 
 #include <serf/rpc/var_caller.h>

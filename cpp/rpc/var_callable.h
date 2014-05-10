@@ -90,7 +90,12 @@ namespace serf {
 
 		FVarP call_(std::string const& method, std::vector<Var> const& args);
 
+        /** \brief Implemented by generated code which dispatches to
+         *  methods of the implementation.
+         */
         virtual FVarP varCall_a_(std::string const& method, std::vector<Var> const& args) = 0;
+
+        FVarP encodeResult_(Var const& result);
     };
 
     template <typename R>

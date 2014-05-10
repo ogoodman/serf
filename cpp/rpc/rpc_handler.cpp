@@ -7,7 +7,7 @@
 #include <fcntl.h>
 #include <serf/serializer/any_codec.h>
 #include <serf/rpc/message_router.h>
-#include <serf/rpc/var_callable_example.h>
+#include <serf/rpc/example.h>
 #include <serf/debug.h>
 
 namespace serf {
