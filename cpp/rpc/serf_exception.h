@@ -66,6 +66,18 @@ namespace serf {
 
 		std::string type() const;
 	};
+
+    class NodeOffline : public SerfException
+    {
+    public:
+        NodeOffline(int code);
+        ~NodeOffline() throw() {}
+
+        Var encode() const;
+        std::string type() const;
+    public:
+        int code;
+    };
 }
 
 #endif // SERF_EXCEPTION_HGUARD_

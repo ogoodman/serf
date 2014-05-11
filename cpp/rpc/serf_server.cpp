@@ -7,6 +7,7 @@
 #include <serf/rpc/connection_factory.h>
 #include <serf/rpc/message_router.h>
 #include <serf/rpc/rpc_handler.h>
+#include <serf/rpc/example.h>
 
 #include <serf/debug.h>
 
@@ -27,6 +28,11 @@ int main(int argc, char* argv[])
     RPCHandler mh;
     MessageRouter r(&mh, &reactor);
     mh.setRouter(&r);
+
+    ExampleImpl* servant = new ExampleImpl();
+    servant->proxy.reset(
+        new ExamplePrx(&mh, "127.0.0.1:6502", "QRJSY2M9RA0H"));
+    mh.provide("example", servant);
 
     ConnectionFactory* f = new ConnectionFactory(&r, &reactor);
     reactor.addReader(new AcceptReader(port, f));

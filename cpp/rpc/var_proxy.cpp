@@ -36,6 +36,9 @@ namespace serf {
 			throw NotEnoughArgs(what, provided, required);
 		}
 		if (type == "TypeError") throw TypeError(what);
+        if (type == "NodeOffline") {
+            throw NodeOffline(boost::get<int>(V(exc)[1]));
+        }
         throw std::runtime_error(what);
     }
 }

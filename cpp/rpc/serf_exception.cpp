@@ -49,4 +49,20 @@ namespace serf {
 		return "TypeError";
 	}
 
+    NodeOffline::NodeOffline(int code_) : code(code_) {
+        std::ostringstream out;
+        out << "errno = " << code;
+        msg_ = out.str();
+    }
+
+    Var NodeOffline::encode() const {
+        std::vector<Var> exc_v(2);
+        exc_v[0] = type();
+        exc_v[1] = code;
+        return exc_v;
+    }
+    
+    std::string NodeOffline::type() const {
+        return "NodeOffline";
+    }
 }

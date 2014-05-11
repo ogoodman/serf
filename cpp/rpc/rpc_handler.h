@@ -26,18 +26,16 @@ namespace serf {
         RPCHandler(MessageRouter* router=NULL);
         ~RPCHandler();
 
-        /** \brief Configure with a MessageRouter if one was not provided
-         *  to the constructor.
-         */
         void setRouter(MessageRouter* router);
 
         void offline(std::string const& node, int code);
         void handle(std::string const& node, std::string const& msg);
+        void provide(std::string const& name, VarCallable* servant);
 
         Future<Var>::Ptr callRemote(std::string const& node, Var& call);
     private:
         MessageRouter* router_; // not owned.
-        VarCallable* servant_; // owned.
+        std::map<std::string, VarCallable*> servants_; // owned.
         std::map<std::string, Future<Var>::Ptr> callbacks_;
     };
 
