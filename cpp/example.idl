@@ -3,4 +3,5 @@ interface Example {
     int fun_b(in int i);
     future<var> getitem(in text k);
     int sum(in list<int> nums);
+    list<int> graph(in time t);
 };

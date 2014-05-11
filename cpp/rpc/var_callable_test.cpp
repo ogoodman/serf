@@ -30,7 +30,7 @@ namespace serf {
 
 using namespace serf;
 
-class VarCallableExampleTest : public CxxTest::TestSuite
+class VarCallableTest : public CxxTest::TestSuite
 {
 public:
 	Var getResult(FVarP enc) {
@@ -42,7 +42,7 @@ public:
 		return boost::get<std::string>(V(exc)[0]);
 	}
 
-    void testVarCallableExample() {
+    void testExampleImpl() {
         ExampleImpl inst;
 
         std::vector<Var> args;
@@ -86,7 +86,12 @@ public:
         }
     }
 
-    void testVarCallableExamplePrx() {
+    void callbackvi(Result<std::vector<int> >::Ptr r) {
+        std::vector<int> nums(r->get());
+        n = nums[0];
+    }
+
+    void testExamplePrx() {
         n = 0;
         e_what = "";
 
@@ -94,21 +99,25 @@ public:
         MockVarCaller caller(&inst);
         ExamplePrx prx(&caller, "", "");
 
-        prx.fun_a(-3.5)->then(this, &VarCallableExampleTest::callbackv);
+        prx.fun_a(-3.5)->then(this, &VarCallableTest::callbackv);
         TS_ASSERT_EQUALS(n, 1);
 
-        prx.fun_b(5)->then(this, &VarCallableExampleTest::callbacki);
+        prx.fun_b(5)->then(this, &VarCallableTest::callbacki);
         TS_ASSERT_EQUALS(n, 10);
 
-        prx.fun_b(42)->then(this, &VarCallableExampleTest::callbacki);
+        prx.fun_b(42)->then(this, &VarCallableTest::callbacki);
         TS_ASSERT_EQUALS(e_what, "too big");
 
         std::vector<int> nums;
         nums.push_back(1);
         nums.push_back(4);
         nums.push_back(9);
-        prx.sum(nums)->then(this, &VarCallableExampleTest::callbacki);
+        prx.sum(nums)->then(this, &VarCallableTest::callbacki);
         TS_ASSERT_EQUALS(n, 14);
+
+        boost::posix_time::ptime now(second_clock::universal_time());
+        prx.graph(now)->then(this, &VarCallableTest::callbackvi);
+        TS_ASSERT_EQUALS(n, 3);
     }
 
 private:

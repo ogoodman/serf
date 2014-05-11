@@ -10,6 +10,7 @@ public:
     int fun_b(int x);
     int sum(std::vector<int> const& nums);
     serf::Future<serf::Var>::Ptr getitem(std::string const& key);
+    std::vector<int32_t> graph(boost::posix_time::ptime t);
 
 public:
     boost::shared_ptr<ExamplePrx> proxy;

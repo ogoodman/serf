@@ -25,3 +25,11 @@ int ExampleImpl::sum(std::vector<int> const& nums) {
     }
     return total;
 }
+
+std::vector<int32_t> ExampleImpl::graph(boost::posix_time::ptime t) {
+	std::vector<int32_t> nums;
+	nums.push_back(3);
+	nums.push_back(6);
+	nums.push_back(5);
+	return nums;
+}

@@ -91,11 +91,13 @@ namespace serf {
                 throw std::runtime_error("should never get here");
             }
             // FIXME: this won't work for complex pos->second types.
-            return boost::get<ref_type>(pos->second);
+            extract(r_, pos->second);
+            return r_;
         }
     private:
         VarProxy* prx_; // not owned
         Result<Var>::Ptr result_;
+        mutable R r_;
     };
 
     /** \brief Part of VarProxy.

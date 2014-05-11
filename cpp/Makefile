@@ -23,11 +23,13 @@ all: build demo
 build/%.o: %.cpp
 	$(CXX) -g -Wall -c $(CFLAGS) $(INCLUDES) -o $@ $<
 
-rpc/example_gen.cpp:
+rpc/example_gen.cpp: example.idl
 	../scripts/idl_to_cpp.py example.idl rpc
 
-rpc/example_gen.h:
+rpc/example_gen.h: example.idl
 	../scripts/idl_to_cpp.py example.idl rpc
+
+build/example.o: rpc/example_gen.h
 
 build/test_runner.cpp: $(TEST_SRCS)
 	cxxtestgen --error-printer -o $@ $^
