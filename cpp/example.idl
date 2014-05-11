@@ -1,0 +1,6 @@
+interface Example {
+    void fun_a(in float d);
+    int fun_b(in int i);
+    future<var> getitem(in text k);
+    int sum(in list<int> nums);
+};

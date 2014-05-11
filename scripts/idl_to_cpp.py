@@ -1,72 +1,20 @@
 #!/usr/bin/python
-"""Convert the contents of an IDL file to C++."""
+"""Convert the contents of an IDL file to C++.
+
+Usage:
+    idl_to_cpp <name>.serf <output-dir>
+
+Writes <output-dir>/<name>_gen.cpp and <output-dir>/<name>_gen.h
+containing generated code for servant base classes and proxies
+for each interface defined in <name>.serf.
+"""
 
 import os, sys
-
-TYPES = ['void', 'bool', 'byte', 'int', 'long', 'float', 'ascii', 'text', 'data', 'list', 'dict', 'time', 'var', 'future']
-
-COMPOUND = ['list', 'dict', 'future']
-
-BY_CREF = COMPOUND + ['ascii', 'text', 'data', 'var']
-
-CPP_TYPE = {
-    'void': 'void',
-    'bool': 'bool',
-    'byte': 'serf::byte',
-    'int': 'int32_t',
-    'long': 'int64_t',
-    'float': 'double',
-    'ascii': 'std::string',
-    'text': 'std::string',
-    'data': 'std::string',
-    'list': 'std::vector<%s>',
-    'dict': 'std::map<std::string, %s>',
-    'time': 'boost::posix_time::ptime',
-    'var': 'serf::Var',
-    'future': 'serf::Future<%s>::Ptr',
-}
-
-class IDLType(object):
-    """Represents an IDL static type."""
-    def __init__(self, name, elem_type=None, opt=False):
-        """Make an IDL type object.
-
-        The name must be one of the primitive or compound types in TYPES.
-        If name is one of the compound types, 'list' or 'dict' then an
-        elem_type must be provided as well which must be another IDLType
-        instance.
-
-        If IDLType represents an argument type it may be marked as
-        optional.
-        """
-        assert(name in TYPES)
-        if elem_type is not None:
-            assert(name in COMPOUND)
-        self.name = name
-        self.elem_type = elem_type
-        self.opt = opt
-
-    def cppType(self, opt_sp=False):
-        """Gets the C++ type declaration of this IDL type.
-
-        The opt_sp puts a trailing space after a closing angle bracket
-        if the type itself ends with a closing angle bracket.
-        """
-        sp = ' ' if opt_sp and self.name in COMPOUND else ''
-        if self.elem_type is None:
-            return CPP_TYPE[self.name] + sp
-        return CPP_TYPE[self.name] % self.elem_type.cppType(opt_sp=True) + sp
-
-    def cppArgType(self):
-        """Gets the C++ type declaration for a function parameter.
-
-        The only difference from the usual cppType is that we pass
-        compound types and strings by const reference.
-        """
-        type = self.cppType()
-        if self.name in BY_CREF:
-            type += ' const&'
-        return type
+from pprint import pprint
+from pyparsing import ParseException
+from serf.idl_types import COMPOUND, IDLType, InterfaceDef
+from serf.idl_parser import IDL_BNF
+from serf.util import getOptions
 
 class IndentingStream(object):
     """Wrapper for a file-like object which handles indentation."""
@@ -220,9 +168,9 @@ def writeProxyClassImpl(out, cls, method_list):
     for spec in method_list:
         writeProxyMethodImpl(out, cls, *spec)
 
-def writeCppHeader(out, cls, method_list, name):
+def writeCppHeader(out, interfaces, name):
     """Write header file containing servant base and proxy declarations."""
-    guard_id = 'IDL_GENERATED_%s_HGUARD_' % cls
+    guard_id = 'IDL_GENERATED_%s_HGUARD_' % name.upper()
     out.writeln('#ifndef %s' % guard_id)
     out.writeln('#define %s' % guard_id)
     out.writeln('')
@@ -231,13 +179,14 @@ def writeCppHeader(out, cls, method_list, name):
     out.writeln('#include <serf/rpc/var_callable.h>')
     out.writeln('#include <serf/rpc/var_proxy.h>')
     out.writeln('')
-    writeServantBaseDecl(out, cls, method_list)
-    out.writeln('')
-    writeProxyClassDecl(out, cls, method_list)
-    out.writeln('')
+    for i in interfaces:
+        writeServantBaseDecl(out, i.cls, i.method_list)
+        out.writeln('')
+        writeProxyClassDecl(out, i.cls, i.method_list)
+        out.writeln('')
     out.writeln('#endif // %s' % guard_id)
 
-def writeCppSource(out, cls, method_list, name):
+def writeCppSource(out, interfaces, name):
     """Write source file implementing servant base and proxy."""
     out.writeln('#include "%s.h"' % name)
     out.writeln('')
@@ -247,33 +196,45 @@ def writeCppSource(out, cls, method_list, name):
     out.writeln('#include <serf/rpc/var_caller.h>')
     out.writeln('#include <serf/rpc/serf_exception.h>')
     out.writeln('')
-    writeServantBaseImpl(out, cls, method_list)
-    out.writeln('')
-    writeProxyClassImpl(out, cls, method_list)
-    out.writeln('')
+    for i in interfaces:
+        writeServantBaseImpl(out, i.cls, i.method_list)
+        out.writeln('')
+        writeProxyClassImpl(out, i.cls, i.method_list)
+        out.writeln('')
 
-if __name__ == '__main__':
-    outdir = 'rpc'
-    name = 'example_gen'
-    method_list = [
-        ['fun_a', [IDLType('float')], IDLType('void')],
-        ['fun_b', [IDLType('int')], IDLType('int')],
-        ['getitem', [IDLType('text')], IDLType('future',IDLType('var'))],
-        ['sum', [IDLType('list', IDLType('int'))], IDLType('int')],
-        #['prices', [IDLType('time')], IDLType('list', IDLType('float'))],
-        ]
-    #writeServantBaseDecl(out, 'Example', method_list)
-    #writeServantBaseImpl(out, 'Example', method_list)
-    #writeProxyClassDecl(out, 'Example', method_list)
-    #writeProxyClassImpl(out, 'Example', method_list)
-
+def writeFiles(outdir, name, interfaces):
     path = os.path.join(outdir, name + '.h')
     with open(path, 'w') as f_out:
         out = IndentingStream(f_out)
-        writeCppHeader(out, 'Example', method_list, name)
+        writeCppHeader(out, interfaces, name)
     print 'wrote', path
     path = os.path.join(outdir, name + '.cpp')
     with open(os.path.join(outdir, name + '.cpp'), 'w') as f_out:
         out = IndentingStream(f_out)
-        writeCppSource(out, 'Example', method_list, name)
+        writeCppSource(out, interfaces, name)
     print 'wrote', path
+
+def main():
+    opt, args = getOptions('h', ['help'], __doc__)
+    src_file = args[0]
+    grammar = IDL_BNF()
+    src = open(src_file).read()
+    try:
+        tokens = grammar.parseString(src, parseAll=True)
+    except ParseException as err:
+        print err.line
+        print ' ' * (err.column-1) + '^'
+        print err
+        return
+    name = src_file.rsplit('.', 1)[0] + '_gen'
+    interfaces = [t for t in tokens if type(t) is InterfaceDef]
+    if len(args) > 1:
+        writeFiles(args[1], name, interfaces)
+    else:
+        out = IndentingStream(sys.stdout)
+        writeCppSource(out, interfaces, name)
+
+
+if __name__ == '__main__':
+    main()
+
