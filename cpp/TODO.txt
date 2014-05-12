@@ -1,14 +1,6 @@
-Write the IDL code generator.
-
-Set up JSUnit or similar.
-
-Refactor Publish-Subscribe to use complete proxies, not callback functions.
-
 Set up JS documentation.
 
-Make the offline event cause exception on unresolved callbacks.
-
-Implement Records in C++.
+Set up JSUnit or similar.
 
 SSL certificate / public key verification
 
@@ -19,6 +11,7 @@ Hostname resolution for C++.
 Message registry.
 
 
+Refactor Publish-Subscribe to use complete proxies, not callback functions.
 
 Move Printer and TypeRegistry to their own files.
 

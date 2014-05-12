@@ -9,6 +9,7 @@
 #include <boost/variant.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/shared_ptr.hpp>
+#include <serf/serializer/record.h>
 
 namespace serf {
 
@@ -26,8 +27,11 @@ namespace serf {
         std::string,
         std::vector<boost::recursive_variant_>,
         std::map<std::string, boost::recursive_variant_>,
-        boost::shared_ptr<Codec>
+        boost::shared_ptr<Codec>,
+        RecordT<boost::recursive_variant_>
     >::type Var;
+
+    typedef RecordT<Var> Record;
     
     std::ostream& operator<< (std::ostream& out, Var const& value);
     std::string toStr(Var const& value);

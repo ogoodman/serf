@@ -5,6 +5,18 @@
 
 namespace serf {
 
+    Context::~Context() {
+    }
+
+    CodecP Context::codec(int type_id, std::string& type_name) {
+        return CodecP();
+    }
+
+    CodecP Context::namedCodec(std::string const& type_name, int& type_id) {
+        type_id = 0;
+        return CodecP();
+    }
+
     Codec::~Codec() {
     }
     

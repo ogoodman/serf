@@ -2,7 +2,7 @@ INCLUDES = -I.
 
 UTIL_OBJ = runnable.o
 
-SERIALIZER_OBJ = var.o codec.o int_codec.o string_codec.o array_codec.o type_codec.o any_codec.o null_codec.o bool_codec.o float_codec.o time_codec.o dict_codec.o tuple_codec.o struct_codec.o
+SERIALIZER_OBJ = var.o codec.o int_codec.o string_codec.o array_codec.o type_codec.o any_codec.o null_codec.o bool_codec.o float_codec.o time_codec.o dict_codec.o tuple_codec.o struct_codec.o record.o record_codec.o
 
 REACTOR_OBJ = accept_reader.o data_handler.o data_reader.o line_handler.o reactor.o reader.o connect_reader.o task.o system_clock.o
 
@@ -10,7 +10,7 @@ RPC_OBJ = connection.o connection_factory.o message_handler.o message_router.o v
 
 OBJ = $(UTIL_OBJ) $(SERIALIZER_OBJ) $(REACTOR_OBJ) $(RPC_OBJ)
 
-TEST_SRCS = var_test.cpp int_codec_test.cpp string_codec_test.cpp array_codec_test.cpp type_codec_test.cpp any_codec_test.cpp null_codec_test.cpp bool_codec_test.cpp float_codec_test.cpp time_codec_test.cpp dict_codec_test.cpp tuple_codec_test.cpp struct_codec_test.cpp accept_reader_test.cpp data_handler_test.cpp data_reader_test.cpp line_handler_test.cpp reactor_test.cpp reader_test.cpp connect_reader_test.cpp connection_test.cpp connection_factory_test.cpp message_router_test.cpp task_test.cpp system_clock_test.cpp var_callable_test.cpp future_test.cpp var_proxy_test.cpp rpc_handler_test.cpp extract_test.cpp serf_exception_test.cpp
+TEST_SRCS = var_test.cpp int_codec_test.cpp string_codec_test.cpp array_codec_test.cpp type_codec_test.cpp any_codec_test.cpp null_codec_test.cpp bool_codec_test.cpp float_codec_test.cpp time_codec_test.cpp dict_codec_test.cpp tuple_codec_test.cpp struct_codec_test.cpp accept_reader_test.cpp data_handler_test.cpp data_reader_test.cpp line_handler_test.cpp reactor_test.cpp reader_test.cpp connect_reader_test.cpp connection_test.cpp connection_factory_test.cpp message_router_test.cpp task_test.cpp system_clock_test.cpp var_callable_test.cpp future_test.cpp var_proxy_test.cpp rpc_handler_test.cpp extract_test.cpp serf_exception_test.cpp record_test.cpp
 
 VPATH = .:build:util:serializer:reactor:rpc
 

@@ -12,6 +12,7 @@
 #include <serf/serializer/type_codec.h>
 #include <serf/serializer/any_codec.h>
 #include <serf/serializer/struct_codec.h>
+#include <serf/serializer/record_codec.h>
 
 #include <serf/debug.h>
 
@@ -83,6 +84,8 @@ namespace serf {
         reg(CodecFactoryP(new TupleCodec::Factory()));
         reg(CodecFactoryP(new TypeCodec::Factory()));
         reg(CodecFactoryP(new StructCodec::Factory()));
+        reg(CodecFactoryP(new RecordCodec::Factory()));
+        reg(CodecFactoryP(new MessageCodec::Factory()));
     }
     TypeRegistry::~TypeRegistry() {
     }

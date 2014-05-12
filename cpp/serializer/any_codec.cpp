@@ -31,6 +31,7 @@ namespace serf {
         void operator() (vector<Var> const& value) const;
         void operator() (map<string,Var> const& value) const;
         void operator() (CodecP value) const;
+        void operator() (Record const& value) const;
     
     private:
         ostream* out_;
@@ -102,6 +103,32 @@ namespace serf {
     
     void AnyEncoder::operator() (CodecP value) const {
         value->encodeType(*out_);
+    }
+
+    void AnyEncoder::operator() (Record const& value) const {
+        IntCodec ic;
+        StringCodec data('r');
+        if (value.type_name == "@") {
+            (*out_) << '@';
+            ic.encode(*out_, value.type_id);
+            data.encode(*out_, value.value, *ctx_);
+            return;
+        }
+        int type_id;
+        CodecP codec = ctx_->namedCodec(value.type_name, type_id);
+        if (codec) {
+            (*out_) << '@';
+            ic.encode(*out_, type_id);
+            std::ostringstream tmp;
+            codec->encode(tmp, value.value, *ctx_);
+            data.encode(*out_, tmp.str());
+        } else {
+            StringCodec token('k');
+            AnyCodec ac;
+            (*out_) << 'R';
+            token.encode(*out_, value.type_name);
+            ac.encode(*out_, value.value, *ctx_);
+        }
     }
     
     std::string AnyCodec::typeName() {

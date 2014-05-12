@@ -26,7 +26,7 @@ namespace serf {
         void operator() (vector<Var> const& value) const;
         void operator() (map<string,Var> const& value) const;
         void operator() (CodecP value) const;
-    
+        void operator() (Record const& value) const;
     private:
         ostream* out_;
     };
@@ -83,7 +83,9 @@ namespace serf {
     void Printer::operator() (CodecP value) const {
         (*out_) << value->typeName();
     }
-    
+    void Printer::operator() (Record const& value) const {
+        // FIXME
+    }
     string toStr(Var const& value) {
         ostringstream result;
         result << value;
