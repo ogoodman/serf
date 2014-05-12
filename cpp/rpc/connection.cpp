@@ -4,7 +4,7 @@
 #include <sys/socket.h>
 #include <serf/reactor/reactor.h>
 #include <serf/rpc/message_router.h>
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 static uint32_t decode_uint32(std::string const& data) {
     // Approximately duplicates code in int_codec.cpp.

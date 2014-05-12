@@ -1,6 +1,6 @@
 #include <serf/reactor/line_handler.h>
 #include <cxxtest/TestSuite.h>
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 // using namespace serf;
 

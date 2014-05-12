@@ -14,7 +14,7 @@
 #include <serf/serializer/struct_codec.h>
 #include <serf/serializer/record_codec.h>
 
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 using namespace std;
 

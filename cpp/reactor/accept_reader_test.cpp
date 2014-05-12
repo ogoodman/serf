@@ -1,6 +1,6 @@
 #include <serf/reactor/accept_reader.h>
 #include <cxxtest/TestSuite.h>
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 // using namespace serf;
 

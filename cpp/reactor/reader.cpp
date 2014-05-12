@@ -1,6 +1,6 @@
 #include <serf/reactor/reader.h>
 
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 namespace serf {
 

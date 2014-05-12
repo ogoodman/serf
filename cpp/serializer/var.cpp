@@ -1,7 +1,7 @@
 #include <serf/serializer/var.h>
 
 #include <stdexcept>
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <serf/serializer/codec.h>
 

@@ -1,6 +1,6 @@
 #include <serf/serializer/struct_codec.h>
 
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 #include <serf/serializer/int_codec.h>
 #include <serf/serializer/string_codec.h>
 #include <serf/serializer/type_codec.h>

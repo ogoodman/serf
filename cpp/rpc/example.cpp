@@ -1,6 +1,6 @@
 #include <serf/rpc/example.h>
 
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 void ExampleImpl::fun_a(double x) {
     if (x > 0) {

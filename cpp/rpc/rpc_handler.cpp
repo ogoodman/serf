@@ -9,7 +9,7 @@
 #include <serf/rpc/message_router.h>
 #include <serf/rpc/var_callable.h>
 #include <serf/rpc/serf_exception.h>
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 namespace serf {
 

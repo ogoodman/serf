@@ -6,7 +6,7 @@
 #include <strings.h>
 #include <unistd.h>
 #include <serf/reactor/reactor.h>
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 namespace serf {
 

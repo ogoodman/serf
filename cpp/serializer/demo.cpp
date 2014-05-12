@@ -8,7 +8,7 @@
 #include <serf/serializer/time_codec.h>
 #include <serf/serializer/type_codec.h>
 
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 using namespace std;
 using namespace boost;

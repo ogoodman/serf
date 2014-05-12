@@ -5,7 +5,7 @@
 #include <serf/reactor/data_reader.h>
 #include <serf/reactor/data_handler.h>
 #include <serf/reactor/system_clock.h>
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 namespace serf {
 	class Timeout : public Task {

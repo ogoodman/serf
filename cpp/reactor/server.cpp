@@ -6,7 +6,7 @@
 #include <serf/reactor/data_handler.h>
 #include <serf/reactor/line_handler.h>
 #include <serf/reactor/reactor.h>
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 namespace serf {
 

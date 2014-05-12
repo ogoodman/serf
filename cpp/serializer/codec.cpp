@@ -1,7 +1,7 @@
 #include <serf/serializer/codec.h>
 
 #include <sstream>
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 namespace serf {
 

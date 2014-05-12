@@ -2,7 +2,7 @@
 #include <cxxtest/TestSuite.h>
 
 #include <serf/rpc/var_caller.h>
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 namespace serf {
     /** \brief Implements VarCaller for the benefit of tests.

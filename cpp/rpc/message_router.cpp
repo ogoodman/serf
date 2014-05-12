@@ -6,7 +6,7 @@
 #include <serf/rpc/connection_factory.h>
 #include <serf/rpc/connection.h>
 #include <serf/rpc/message_handler.h>
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 namespace serf {
 

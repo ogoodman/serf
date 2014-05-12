@@ -1,7 +1,7 @@
 #include <serf/serializer/int_codec.h>
 
 #include <stdexcept>
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 namespace serf {
 

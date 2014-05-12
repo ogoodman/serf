@@ -9,7 +9,7 @@
 #include <serf/rpc/rpc_handler.h>
 #include <serf/rpc/example.h>
 
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 using namespace serf;
 

@@ -1,7 +1,7 @@
 #include <serf/reactor/reactor.h>
 #include <cxxtest/TestSuite.h>
 #include <serf/reactor/task.h>
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 namespace serf {
     class MockClock : public Clock

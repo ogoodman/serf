@@ -3,7 +3,7 @@
 #include <serf/reactor/data_reader.h>
 #include <serf/rpc/message_router.h>
 #include <serf/rpc/connection.h>
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 namespace serf {
 

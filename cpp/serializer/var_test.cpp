@@ -2,7 +2,7 @@
 #include <cxxtest/TestSuite.h>
 
 #include <serf/serializer/null_codec.h>
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 
 using namespace boost;
 using namespace std;

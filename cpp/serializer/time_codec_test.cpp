@@ -1,7 +1,7 @@
 #include <serf/serializer/time_codec.h>
 #include <cxxtest/TestSuite.h>
 
-#include <serf/debug.h>
+#include <serf/util/debug.h>
 #include <sstream>
 
 using namespace boost;
