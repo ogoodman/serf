@@ -84,7 +84,9 @@ namespace serf {
         (*out_) << value->typeName();
     }
     void Printer::operator() (Record const& value) const {
-        // FIXME
+        (*out_) << value.type_name;
+        if (value.type_name == "@") (*out_) << value.type_id;
+        (*out_) << '(' << value.value << ')';
     }
     string toStr(Var const& value) {
         ostringstream result;
