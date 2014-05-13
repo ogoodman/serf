@@ -146,5 +146,9 @@ class SerializationTest(unittest.TestCase):
         msg1 = decodes(enc, ctx=REG)
         self.assertEqual(msg1.value['mood'], 'UGLY')
 
+    def testType(self):
+        self.assertEqual(encodes(DATA), 'Yr')
+        self.assertEqual(type(DATA), type(decodes('Yr')))
+
 if __name__ == '__main__':
     unittest.main()

@@ -182,7 +182,7 @@ class TypeCodec(Codec):
 
 TYPE = TypeCodec()
 
-class ARRAY(object):
+class ARRAY(Codec):
     type_byte = 'L'
     def __init__(self, item_codec):
         self.item_codec = item_codec
@@ -202,7 +202,7 @@ class ARRAY(object):
         return ARRAY(item_codec)
 LIST = ARRAY(ANY)
 
-class TUPLE(object):
+class TUPLE(Codec):
     type_byte = 'T'
     def __init__(self, *codecs):
         self.codecs = codecs
@@ -221,7 +221,7 @@ class TUPLE(object):
         n = INT32.decode(f, ctx)
         return TUPLE(*[TYPE.decode(f, ctx) for i in xrange(n)])
 
-class VECTOR(object):
+class VECTOR(Codec):
     type_byte = 'V'
     def __init__(self, item_codec, size):
         self.item_codec = item_codec
@@ -242,7 +242,7 @@ class VECTOR(object):
         n = INT32.decode(f, ctx)
         return VECTOR(item_codec, n)
 
-class MAP(object):
+class MAP(Codec):
     type_byte = 'M'
     def __init__(self, key_type, value_type):
         self.key_type = key_type
@@ -272,7 +272,7 @@ DICT = MAP(TOKEN, ANY)
 
 FIELD_SPEC = ARRAY(TUPLE(TOKEN, TYPE))
 
-class STRUCT(object):
+class STRUCT(Codec):
     type_byte = 'S'
     def __init__(self, fields):
         self.fields = fields # [[key, type],...]
@@ -291,7 +291,7 @@ class STRUCT(object):
     def decodeType(f, ctx):
         return STRUCT(FIELD_SPEC.decode(f, ctx))
 
-class CONST(object):
+class CONST(Codec):
     type_byte = 'C'
     def __init__(self, value):
         self.value = value
@@ -308,7 +308,7 @@ class CONST(object):
 
 ENUM_DICT = MAP(TOKEN, INT16)
 
-class ENUM(object):
+class ENUM(Codec):
     type_byte = 'E'
     def __init__(self, k_to_int):
         self.k_to_int = k_to_int
@@ -398,6 +398,8 @@ def encode(f, value, ctx=None, encoder=None):
     if encoder is None:
         if type(value) in ENCODER:
             encoder = ENCODER[type(value)](value)
+        elif isinstance(value, Codec):
+            encoder = TYPE
         else:
             return fallbackEncode(f, value, ctx)
     encoder.encodeType(f)
@@ -469,4 +471,3 @@ ENCODER[str] = findStringEncoder
 ENCODER[unicode] = lambda v: TEXT
 ENCODER[dict] = lambda v: DICT
 ENCODER[datetime.datetime] = lambda v: TIME
-
