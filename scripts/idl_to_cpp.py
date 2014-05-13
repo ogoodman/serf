@@ -65,7 +65,9 @@ def writeMethodDispatch(out, method, arg_types, return_type):
     # Declare the arguments we will present.
     for i, a_type in enumerate(arg_types):
         cpp_type = a_type.cppType()
-        if a_type.name in COMPOUND:
+        if a_type.name == 'var':
+            out.writeln('%s a%d(args.at(%d));' % (cpp_type, i, i))
+        elif a_type.name in COMPOUND:
             out.writeln('%s a%d;' % (cpp_type, i))
             out.writeln('extract(a%d, args.at(%d));' % (i, i))
         else:
