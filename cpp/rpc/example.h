@@ -12,9 +12,10 @@ public:
     serf::Future<serf::Var>::Ptr getitem(std::string const& key);
     std::vector<int32_t> graph(boost::posix_time::ptime t);
     void print(serf::Var const& value);
+    void setProxy(ExamplePrx const& ep);
 
 public:
-    boost::shared_ptr<ExamplePrx> proxy;
+    ExamplePrx proxy;
 };
 
 #endif // EXAMPLE_HGUARD_

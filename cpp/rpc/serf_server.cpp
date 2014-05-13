@@ -30,8 +30,7 @@ int main(int argc, char* argv[])
     mh.setRouter(&r);
 
     ExampleImpl* servant = new ExampleImpl();
-    servant->proxy.reset(
-        new ExamplePrx(&mh, "127.0.0.1:6502", "QRJSY2M9RA0H"));
+    servant->proxy = ExamplePrx(&mh, "127.0.0.1:6502", "QRJSY2M9RA0H");
     mh.provide("example", servant);
 
     ConnectionFactory* f = new ConnectionFactory(&r, &reactor);

@@ -14,7 +14,7 @@ int ExampleImpl::fun_b(int x) {
 }
 
 serf::Future<serf::Var>::Ptr ExampleImpl::getitem(std::string const& key) {
-    return proxy->getitem(key);
+    return proxy.getitem(key);
 }
 
 int ExampleImpl::sum(std::vector<int> const& nums) {
@@ -36,4 +36,8 @@ std::vector<int32_t> ExampleImpl::graph(boost::posix_time::ptime t) {
 
 void ExampleImpl::print(serf::Var const& value) {
     SAY(value);
+}
+
+void ExampleImpl::setProxy(ExamplePrx const& ep) {
+    proxy = ep;
 }

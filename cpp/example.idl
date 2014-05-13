@@ -5,4 +5,5 @@ interface Example {
     int sum(in list<int> nums);
     list<int> graph(in time t);
     void print(in var value);
+    void setProxy(in Example* ep);
 };

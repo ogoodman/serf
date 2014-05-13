@@ -18,6 +18,8 @@ class TestBuffer(object):
         self.buffer.write(data)
     def getvalue(self):
         return self.buffer.getvalue()
+    def clear(self):
+        self.buffer.truncate(0)
 
 class IDLTypesTest(unittest.TestCase):
     def test(self):
@@ -28,6 +30,11 @@ class IDLTypesTest(unittest.TestCase):
         buf = TestBuffer()
         IDLType('var').writeCppInitArg(buf, 0)
         self.assertEqual(buf.getvalue(), 'serf::Var a0(args.at(0));')
+
+        buf.clear()
+        ProxyType('Example').writeCppInitArg(buf, 0)
+        self.assertEqual(buf.getvalue(), 'ExamplePrx a0(rpc, boost::get<serf::Record const&>(args.at(0)));')
+
 
 if __name__ == '__main__':
     unittest.main()

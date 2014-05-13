@@ -12,6 +12,7 @@ namespace serf {
     typedef boost::shared_ptr<Future<Var> > FVarP;
 
     class VarCallable;
+    class VarCaller;
 
     /** \brief Part of VarCallable.
      *
@@ -88,12 +89,12 @@ namespace serf {
             return result;
         }
 
-		FVarP call_(std::string const& method, std::vector<Var> const& args);
+		FVarP call_(std::string const& method, std::vector<Var> const& args, VarCaller* rpc);
 
         /** \brief Implemented by generated code which dispatches to
          *  methods of the implementation.
          */
-        virtual FVarP varCall_a_(std::string const& method, std::vector<Var> const& args) = 0;
+        virtual FVarP varCall_a_(std::string const& method, std::vector<Var> const& args, VarCaller* rpc) = 0;
 
         FVarP encodeResult_(Var const& result);
     };

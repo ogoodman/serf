@@ -17,8 +17,8 @@ namespace serf {
     class VarCallableCaller : public Runnable {
     public:
         // FIXME: the body of this can go into var_callable.cpp.
-        VarCallableCaller(VarCallable* callable, std::string const& method, std::vector<Var> const& args)
-            : callable_(callable), method_(method), args_(args) {}
+        VarCallableCaller(VarCallable* callable, VarCaller* rpc, std::string const& method, std::vector<Var> const& args)
+            : callable_(callable), rpc_(rpc), method_(method), args_(args) {}
 
 		/** \brief Makes a call on a VarCallable returning an encoded
 		 *  result or exception.
@@ -44,11 +44,12 @@ namespace serf {
         virtual void run() {
             // If this returns we will eventually get a packaged
             // result or a packged exception, but not an exception.
-            f_result_ = callable_->varCall_a_(method_, args_);
+            f_result_ = callable_->varCall_a_(method_, args_, rpc_);
         }
 
     private:
         VarCallable* callable_;
+        VarCaller* rpc_;
         std::string method_;
         std::vector<Var> args_;
         mutable FVarP f_result_;
@@ -88,8 +89,8 @@ namespace serf {
      * Any exception thrown is converted by try_ to a Var and
      * returned as {"e": exception}.
      */
-	FVarP VarCallable::call_(std::string const& method, std::vector<Var> const& args) {
-        return VarCallableCaller(this, method, V(args)).call();
+	FVarP VarCallable::call_(std::string const& method, std::vector<Var> const& args, VarCaller* rpc) {
+        return VarCallableCaller(this, rpc, method, V(args)).call();
 	}
 
     /** \brief Converts a Var to a Future<Var> of {"r": result}.

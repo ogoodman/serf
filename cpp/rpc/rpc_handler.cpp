@@ -116,7 +116,7 @@ namespace serf {
             return;
         }
 
-        servant->call_(method, V(args))->then(
+        servant->call_(method, V(args), this)->then(
             new VarReplyCallback(router_, node, reply_addr));
     }
 

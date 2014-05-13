@@ -86,12 +86,23 @@ class IDLType(EqualityMixin):
 
 class ProxyType(EqualityMixin):
     """Represents a Proxy."""
-    def __init__(self, type_name):
+    def __init__(self, type_name, opt=False):
+        self.name = 'proxy'
         self.type_name = type_name
+        self.opt = opt
 
     def cppType(self):
         """Returns the C++ type declaration for this proxy type."""
         return self.type_name + 'Prx'
+
+    def cppArgType(self):
+        """Returns the preferred C++ parameter type."""
+        return self.type_name + 'Prx const&'
+
+    def writeCppInitArg(self, out, i):
+        """Write code to declare and initialize a<i> from args.at(<i>)."""
+        cpp_type = self.cppType()
+        out.writeln('%s a%d(rpc, boost::get<serf::Record const&>(args.at(%d)));' % (cpp_type, i, i))
 
     def __repr__(self):
         return "ProxyType('%s')" % self.type_name

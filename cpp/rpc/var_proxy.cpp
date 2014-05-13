@@ -50,4 +50,11 @@ namespace serf {
         }
         throw std::runtime_error(what);
     }
+
+    Record VarProxy::getRecord_() const {
+        std::map<std::string, Var> rec_m;
+        rec_m["node"] = node_;
+        rec_m["path"] = addr_;
+        return Record("ref", rec_m);
+    }
 }

@@ -34,6 +34,8 @@ namespace serf {
          */
         Future<Var>::Ptr call_(std::string const& method, std::vector<Var> const& args);
 
+        Record getRecord_() const;
+
     protected:
 
         /** \brief Converts a Future<Var> into a Future<T>.

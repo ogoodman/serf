@@ -86,7 +86,7 @@ def writeMethodDispatch(out, method, arg_types, return_type):
 
 def writeServantBaseImpl(out, cls, method_list):
     """Generate code for the varCall_a_ method of a servant base."""
-    out.writeln('serf::FVarP %s::varCall_a_(std::string const& method, std::vector<serf::Var> const& args) {' % cls)
+    out.writeln('serf::FVarP %s::varCall_a_(std::string const& method, std::vector<serf::Var> const& args, serf::VarCaller* rpc) {' % cls)
     out.indent(1)
     out.writeln('serf::Var result;')
     first = True
@@ -114,12 +114,14 @@ def writeServantMethodDecl(out, method, arg_types, return_type):
 
 def writeServantBaseDecl(out, cls, method_list):
     """Generate code for the servant base class declaration."""
+    out.writeln('class %sPrx;' % cls)
+    out.writeln('')
     out.writeln('class %s : public serf::VarCallable {' % cls)
     out.writeln('public:')
     out.indent(1)
     for spec in method_list:
         writeServantMethodDecl(out, *spec)
-    out.writeln('virtual serf::FVarP varCall_a_(std::string const& method, std::vector<serf::Var> const& args);')
+    out.writeln('virtual serf::FVarP varCall_a_(std::string const& method, std::vector<serf::Var> const& args, serf::VarCaller* rpc);')
     out.indent(-1)
     out.writeln('};')
 
@@ -138,6 +140,7 @@ def writeProxyClassDecl(out, cls, method_list):
     out.indent(1)
     out.writeln('%sPrx(serf::VarCaller* remote, std::string const& node, std::string const& addr);' % cls)
     out.writeln('%sPrx(serf::VarCaller* remote, serf::Record const& rec);' % cls)
+    out.writeln('%sPrx();' % cls)
     out.writeln('')
     for spec in method_list:
         writeProxyMethodDecl(out, *spec)
@@ -156,6 +159,8 @@ def writeProxyMethodImpl(out, cls, method, arg_types, return_type):
     for i, a_type in enumerate(arg_types):
         if a_type.name in COMPOUND:
             out.writeln('setVar(args[%d], a%d);' % (i, i))
+        elif a_type.name == 'proxy':
+            out.writeln('args[%d] = a%d.getRecord_();' % (i, i))
         else:
             out.writeln('args[%d] = a%d;' % (i, i))
     out.writeln('return toFuture<%s >(call_("%s", args));' % (base_return_type.cppType(), method))
@@ -166,6 +171,7 @@ def writeProxyClassImpl(out, cls, method_list):
     """Generate implementation of a Proxy class."""    
     out.writeln('%sPrx::%sPrx(serf::VarCaller* remote, std::string const& node, std::string const& addr) : serf::VarProxy(remote, node, addr) {\n}' % (cls, cls))
     out.writeln('%sPrx::%sPrx(serf::VarCaller* remote, serf::Record const& rec) : serf::VarProxy(remote, rec) {\n}' % (cls, cls))
+    out.writeln('%sPrx::%sPrx() : serf::VarProxy(NULL, "", "") {}' % (cls, cls))
     for spec in method_list:
         writeProxyMethodImpl(out, cls, *spec)
 
