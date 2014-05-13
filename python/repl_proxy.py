@@ -28,6 +28,12 @@ class REPLProxy(object):
             return self._wrap(cb.wait())
         return _mcall
 
+    def __setattr__(self, name, value):
+        if name in ('target', 'tm'):
+            self.__dict__[name] = value
+        else:
+            setattr(self.target, name, value)
+
     def __getattr__(self, name):
         return self._getattr(name)
 
