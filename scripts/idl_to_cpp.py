@@ -13,8 +13,10 @@ import os, sys
 from pprint import pprint
 from pyparsing import ParseException
 from serf.idl_types import COMPOUND, IDLType, InterfaceDef
-from serf.idl_parser import IDL_BNF
+from serf.idl_parser import idl_parser, addParseActions
 from serf.util import getOptions
+
+addParseActions()
 
 class IndentingStream(object):
     """Wrapper for a file-like object which handles indentation."""
@@ -62,16 +64,10 @@ def writeMethodDispatch(out, method, arg_types, return_type):
     out.indent(1)
     out.writeln('if (args.size() < %d) throw serf::NotEnoughArgs(method, args.size(), %d);' % (min_len, min_len))
 
-    # Declare the arguments we will present.
+    # Initialize the arguments we will present.
     for i, a_type in enumerate(arg_types):
-        cpp_type = a_type.cppType()
-        if a_type.name == 'var':
-            out.writeln('%s a%d(args.at(%d));' % (cpp_type, i, i))
-        elif a_type.name in COMPOUND:
-            out.writeln('%s a%d;' % (cpp_type, i))
-            out.writeln('extract(a%d, args.at(%d));' % (i, i))
-        else:
-            out.writeln('%s a%d(boost::get<%s>(args.at(%d)));' % (cpp_type, i, cpp_type, i))
+        a_type.writeCppInitArg(out, i)
+
     # Generate the call.
     params = ['a%d' % i for i in xrange(len(arg_types))]
     call = '%s(%s)' % (method, ', '.join(params))
@@ -141,6 +137,8 @@ def writeProxyClassDecl(out, cls, method_list):
     out.writeln('public:')
     out.indent(1)
     out.writeln('%sPrx(serf::VarCaller* remote, std::string const& node, std::string const& addr);' % cls)
+    out.writeln('%sPrx(serf::VarCaller* remote, serf::Record const& rec);' % cls)
+    out.writeln('')
     for spec in method_list:
         writeProxyMethodDecl(out, *spec)
     out.indent(-1)
@@ -167,6 +165,7 @@ def writeProxyMethodImpl(out, cls, method, arg_types, return_type):
 def writeProxyClassImpl(out, cls, method_list):
     """Generate implementation of a Proxy class."""    
     out.writeln('%sPrx::%sPrx(serf::VarCaller* remote, std::string const& node, std::string const& addr) : serf::VarProxy(remote, node, addr) {\n}' % (cls, cls))
+    out.writeln('%sPrx::%sPrx(serf::VarCaller* remote, serf::Record const& rec) : serf::VarProxy(remote, rec) {\n}' % (cls, cls))
     for spec in method_list:
         writeProxyMethodImpl(out, cls, *spec)
 
@@ -219,10 +218,9 @@ def writeFiles(outdir, name, interfaces):
 def main():
     opt, args = getOptions('h', ['help'], __doc__)
     src_file = args[0]
-    grammar = IDL_BNF()
     src = open(src_file).read()
     try:
-        tokens = grammar.parseString(src, parseAll=True)
+        tokens = idl_parser.parseString(src, parseAll=True)
     except ParseException as err:
         print err.line
         print ' ' * (err.column-1) + '^'
@@ -234,6 +232,7 @@ def main():
         writeFiles(args[1], name, interfaces)
     else:
         out = IndentingStream(sys.stdout)
+        writeCppHeader(out, interfaces, name)
         writeCppSource(out, interfaces, name)
 
 

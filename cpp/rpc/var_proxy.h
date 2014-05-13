@@ -21,6 +21,7 @@ namespace serf {
     {
     public:
         VarProxy(VarCaller* remote, std::string const& node, std::string const& addr);
+        VarProxy(VarCaller* remote, Record const& addr);
 
         /** \brief Throws the exception specified by exc.
          */

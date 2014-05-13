@@ -9,6 +9,15 @@ namespace serf {
     VarProxy::VarProxy(VarCaller* remote, std::string const& node, std::string const& addr)
         : remote_(remote), node_(node), addr_(addr) {}
 
+    VarProxy::VarProxy(VarCaller* remote, Record const& addr)
+        : remote_(remote),
+          node_(boost::get<std::string const&>(M(addr.value).at("node"))),
+          addr_(boost::get<std::string const&>(M(addr.value).at("path"))) {
+        if (addr.type_name != "ref") {
+            throw TypeError("type: \"" + addr.type_name + "\" is not a proxy");
+        }
+    }
+
     FVarP VarProxy::call_(std::string const& method, std::vector<Var> const& args) {
         std::map<std::string, Var> call_m;
         call_m["o"] = addr_;

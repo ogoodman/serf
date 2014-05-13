@@ -1,5 +1,7 @@
 """Classes representing the parsed contents of a serf IDL file."""
 
+from serf.util import EqualityMixin
+
 TYPES = ['void', 'bool', 'byte', 'int', 'long', 'float', 'ascii', 'text', 'data', 'list', 'dict', 'time', 'var', 'future']
 
 COMPOUND = ['list', 'dict', 'future']
@@ -23,7 +25,7 @@ CPP_TYPE = {
     'future': 'serf::Future<%s>::Ptr',
 }
 
-class IDLType(object):
+class IDLType(EqualityMixin):
     """Represents an IDL static type."""
     def __init__(self, name, elem_type=None, opt=False):
         """Make an IDL type object.
@@ -66,10 +68,33 @@ class IDLType(object):
             type += ' const&'
         return type
 
+    def writeCppInitArg(self, out, i):
+        """Write code to declare and initialize a<i> from args.at(<i>)."""
+        cpp_type = self.cppType()
+        if self.name == 'var':
+            out.writeln('%s a%d(args.at(%d));' % (cpp_type, i, i))
+        elif self.name in COMPOUND:
+            out.writeln('%s a%d;' % (cpp_type, i))
+            out.writeln('extract(a%d, args.at(%d));' % (i, i))
+        else:
+            out.writeln('%s a%d(boost::get<%s>(args.at(%d)));' % (cpp_type, i, cpp_type, i))
+    
     def __repr__(self):
         if self.elem_type is None:
             return "IDLType('%s')" % self.name
         return "IDLType('%s', %s)" % (self.name, self.elem_type)
+
+class ProxyType(EqualityMixin):
+    """Represents a Proxy."""
+    def __init__(self, type_name):
+        self.type_name = type_name
+
+    def cppType(self):
+        """Returns the C++ type declaration for this proxy type."""
+        return self.type_name + 'Prx'
+
+    def __repr__(self):
+        return "ProxyType('%s')" % self.type_name
 
 class InterfaceDef(object):
     """Represents an interface definition."""
