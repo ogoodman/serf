@@ -33,3 +33,7 @@ std::vector<int32_t> ExampleImpl::graph(boost::posix_time::ptime t) {
 	nums.push_back(5);
 	return nums;
 }
+
+void ExampleImpl::print(serf::Var const& value) {
+    SAY(value);
+}

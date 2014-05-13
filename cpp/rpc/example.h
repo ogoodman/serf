@@ -11,6 +11,7 @@ public:
     int sum(std::vector<int> const& nums);
     serf::Future<serf::Var>::Ptr getitem(std::string const& key);
     std::vector<int32_t> graph(boost::posix_time::ptime t);
+    void print(serf::Var const& value);
 
 public:
     boost::shared_ptr<ExamplePrx> proxy;

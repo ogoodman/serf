@@ -4,4 +4,5 @@ interface Example {
     future<var> getitem(in text k);
     int sum(in list<int> nums);
     list<int> graph(in time t);
+    void print(in var value);
 };
