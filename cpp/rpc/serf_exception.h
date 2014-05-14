@@ -48,6 +48,7 @@ namespace serf {
     {
     public:
         NotEnoughArgs(std::string const& method, int provided, int required);
+        NotEnoughArgs(std::vector<Var> const& args);
 		~NotEnoughArgs() throw() {}
 
 		Var encode() const;

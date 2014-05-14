@@ -1,4 +1,4 @@
-#include <serf/./rpc/serf_exception.h>
+#include <serf/rpc/serf_exception.h>
 
 namespace serf {
     SerfException::SerfException() {}
@@ -28,6 +28,11 @@ namespace serf {
         out << "method \"" << method << "\" called with " << provided << " arg(s). " << required << " required.";
         msg_ = out.str();
     }
+
+    NotEnoughArgs::NotEnoughArgs(std::vector<Var> const& args)
+        : method(boost::get<std::string const&>(args.at(1))),
+          provided(boost::get<int32_t>(args.at(2))),
+          required(boost::get<int32_t>(args.at(3))) {}
 
 	std::string NotEnoughArgs::type() const {
 		return "NotEnoughArgs";

@@ -34,7 +34,7 @@ namespace serf {
          */
         Future<Var>::Ptr call_(std::string const& method, std::vector<Var> const& args);
 
-        Record getRecord_() const;
+        operator Record() const;
 
     protected:
 
@@ -93,7 +93,6 @@ namespace serf {
                 prx_->throw_(reply_m.at("e"));
                 throw std::runtime_error("should never get here");
             }
-            // FIXME: this won't work for complex pos->second types.
             extract(r_, pos->second);
             return r_;
         }

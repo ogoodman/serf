@@ -41,3 +41,9 @@ void ExampleImpl::print(serf::Var const& value) {
 void ExampleImpl::setProxy(ExamplePrx const& ep) {
     proxy = ep;
 }
+
+serf::Future<ExamplePrx>::Ptr ExampleImpl::getProxy() {
+    serf::Future<ExamplePrx>::Ptr f(new serf::Future<ExamplePrx>);
+    f->resolve(proxy);
+    return f;
+}

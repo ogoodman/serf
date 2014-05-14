@@ -6,25 +6,6 @@ TYPES = ['void', 'bool', 'byte', 'int', 'long', 'float', 'ascii', 'text', 'data'
 
 COMPOUND = ['list', 'dict', 'future']
 
-BY_CREF = COMPOUND + ['ascii', 'text', 'data', 'var']
-
-CPP_TYPE = {
-    'void': 'void',
-    'bool': 'bool',
-    'byte': 'serf::byte',
-    'int': 'int32_t',
-    'long': 'int64_t',
-    'float': 'double',
-    'ascii': 'std::string',
-    'text': 'std::string',
-    'data': 'std::string',
-    'list': 'std::vector<%s>',
-    'dict': 'std::map<std::string, %s>',
-    'time': 'boost::posix_time::ptime',
-    'var': 'serf::Var',
-    'future': 'serf::Future<%s>::Ptr',
-}
-
 class IDLType(EqualityMixin):
     """Represents an IDL static type."""
     def __init__(self, name, elem_type=None, opt=False):
@@ -46,39 +27,6 @@ class IDLType(EqualityMixin):
         self.elem_type = elem_type
         self.opt = opt
 
-    def cppType(self, opt_sp=False):
-        """Gets the C++ type declaration of this IDL type.
-
-        The opt_sp puts a trailing space after a closing angle bracket
-        if the type itself ends with a closing angle bracket.
-        """
-        sp = ' ' if opt_sp and self.name in COMPOUND else ''
-        if self.elem_type is None:
-            return CPP_TYPE[self.name] + sp
-        return CPP_TYPE[self.name] % self.elem_type.cppType(opt_sp=True) + sp
-
-    def cppArgType(self):
-        """Gets the C++ type declaration for a function parameter.
-
-        The only difference from the usual cppType is that we pass
-        compound types and strings by const reference.
-        """
-        type = self.cppType()
-        if self.name in BY_CREF:
-            type += ' const&'
-        return type
-
-    def writeCppInitArg(self, out, i):
-        """Write code to declare and initialize a<i> from args.at(<i>)."""
-        cpp_type = self.cppType()
-        if self.name == 'var':
-            out.writeln('%s a%d(args.at(%d));' % (cpp_type, i, i))
-        elif self.name in COMPOUND:
-            out.writeln('%s a%d;' % (cpp_type, i))
-            out.writeln('extract(a%d, args.at(%d));' % (i, i))
-        else:
-            out.writeln('%s a%d(boost::get<%s>(args.at(%d)));' % (cpp_type, i, cpp_type, i))
-    
     def __repr__(self):
         if self.elem_type is None:
             return "IDLType('%s')" % self.name
@@ -91,24 +39,29 @@ class ProxyType(EqualityMixin):
         self.type_name = type_name
         self.opt = opt
 
-    def cppType(self):
-        """Returns the C++ type declaration for this proxy type."""
-        return self.type_name + 'Prx'
-
-    def cppArgType(self):
-        """Returns the preferred C++ parameter type."""
-        return self.type_name + 'Prx const&'
-
-    def writeCppInitArg(self, out, i):
-        """Write code to declare and initialize a<i> from args.at(<i>)."""
-        cpp_type = self.cppType()
-        out.writeln('%s a%d(rpc, boost::get<serf::Record const&>(args.at(%d)));' % (cpp_type, i, i))
-
     def __repr__(self):
         return "ProxyType('%s')" % self.type_name
+
+class Member(object):
+    """Represents a struct or exception member."""
+    def __init__(self, type, name):
+        self.type = type
+        self.name = name
+
+    def __repr__(self):
+        return 'Member(%r,%r)' % (self.type, self.name)
 
 class InterfaceDef(object):
     """Represents an interface definition."""
     def __init__(self, cls, method_list):
         self.cls = cls
         self.method_list = method_list
+
+class ExceptionDef(object):
+    """Represents an exception definition."""
+    def __init__(self, cls, member_list):
+        self.cls = cls
+        self.member_list = member_list
+
+    def __repr__(self):
+        return 'ExceptionDef(%r, %r)' % (self.cls, self.member_list)

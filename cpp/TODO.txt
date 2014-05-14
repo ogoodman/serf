@@ -20,3 +20,6 @@ The following files are affected when a codec is added:
   TypeRegistry, currently in type_codec.cpp,
   AnyEncoder,   currently in any_codec.cpp.
 
+Adding an idl item.
+  Add a type to idl_types and add it as an action in idl_parser.
+  For an exception type we need to generate.

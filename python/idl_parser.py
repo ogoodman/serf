@@ -126,25 +126,24 @@ singleLineComment = "//" + restOfLine
 idl_parser.ignore( singleLineComment )
 idl_parser.ignore( cStyleComment )
 
-def addParseActions():
+def addParseActions(mod):
     """Adds parse actions for building an AST of idl objects."""
-    from serf.idl_types import IDLType, InterfaceDef, ProxyType
 
     def onType(toks):
-        return IDLType(toks[0])
+        return mod.IDLType(toks[0])
     typeName.setParseAction(onType)
     void_.setParseAction(onType)
 
     def onList(toks):
-        return IDLType('list', toks[0][2])
+        return mod.IDLType('list', toks[0][2])
     listDef.setParseAction(onList)
 
     def onFuture(toks):
-        return IDLType('future', toks[0][2])
+        return mod.IDLType('future', toks[0][2])
     futureDef.setParseAction(onFuture)
 
     def onDict(toks):
-        return IDLType('dict', toks[0][2])
+        return mod.IDLType('dict', toks[0][2])
     dictDef.setParseAction(onDict)
 
     def onOperation(toks):
@@ -152,11 +151,19 @@ def addParseActions():
     operationDef.setParseAction(onOperation)
 
     def onProxy(toks):
-        return ProxyType(toks[0][0])
+        return mod.ProxyType(toks[0][0])
     proxyDef.setParseAction(onProxy)
 
     def onInterfaceDef(toks):
         grouped = toks[0]
         # Probably failing as soon as we have base types.
-        return InterfaceDef(grouped[1], grouped[3:-2])
+        return mod.InterfaceDef(grouped[1], grouped[3:-2])
     interfaceDef.setParseAction(onInterfaceDef)
+
+    def onExceptionItem(toks):
+        return mod.Member(toks[0][0], toks[0][1])
+    exceptionItem.setParseAction(onExceptionItem)
+
+    def onExceptionDef(toks):
+        return mod.ExceptionDef(toks[1], toks[3:-2])
+    exceptionDef.setParseAction(onExceptionDef)

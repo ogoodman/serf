@@ -5,36 +5,19 @@
 import unittest
 from cStringIO import StringIO
 from serf.idl_parser import *
-from serf.idl_types import *
+from serf import idl_types
 
-addParseActions()
-
-class TestBuffer(object):
-    def __init__(self):
-        self.buffer = StringIO()
-    def write(self, data):
-        self.buffer.write(data)
-    def writeln(self, data):
-        self.buffer.write(data)
-    def getvalue(self):
-        return self.buffer.getvalue()
-    def clear(self):
-        self.buffer.truncate(0)
+addParseActions(idl_types)
 
 class IDLTypesTest(unittest.TestCase):
     def test(self):
         ex_prx = typeDef.parseString('Example*')[0]
-        self.assertEqual(ex_prx, ProxyType('Example'))
+        self.assertEqual(ex_prx, idl_types.ProxyType('Example'))
 
-    def testWriteCppInitArg(self):
-        buf = TestBuffer()
-        IDLType('var').writeCppInitArg(buf, 0)
-        self.assertEqual(buf.getvalue(), 'serf::Var a0(args.at(0));')
-
-        buf.clear()
-        ProxyType('Example').writeCppInitArg(buf, 0)
-        self.assertEqual(buf.getvalue(), 'ExamplePrx a0(rpc, boost::get<serf::Record const&>(args.at(0)));')
-
+    def testParseExceptionDef(self):
+        ex = exceptionDef.parseString('exception BadId { int id; };')[0]
+        self.assertEqual(ex.cls, 'BadId')
+        self.assertEqual(type(ex.member_list[0]), idl_types.Member)
 
 if __name__ == '__main__':
     unittest.main()

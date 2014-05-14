@@ -13,7 +13,7 @@ public:
     std::vector<int32_t> graph(boost::posix_time::ptime t);
     void print(serf::Var const& value);
     void setProxy(ExamplePrx const& ep);
-
+    serf::Future<ExamplePrx>::Ptr getProxy();
 public:
     ExamplePrx proxy;
 };

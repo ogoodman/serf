@@ -39,11 +39,7 @@ namespace serf {
 			// OK, exception might not have any args.
 		}
 		if (type == "NoSuchMethod") throw NoSuchMethod(what); // what is method.
-		if (type == "NotEnoughArgs") {
-			int provided(boost::get<int>(V(exc)[2]));
-			int required(boost::get<int>(V(exc)[3]));
-			throw NotEnoughArgs(what, provided, required);
-		}
+		if (type == "NotEnoughArgs") throw NotEnoughArgs(V(exc));
 		if (type == "TypeError") throw TypeError(what);
         if (type == "NodeOffline") {
             throw NodeOffline(boost::get<int>(V(exc)[1]));
@@ -51,7 +47,7 @@ namespace serf {
         throw std::runtime_error(what);
     }
 
-    Record VarProxy::getRecord_() const {
+    VarProxy::operator Record() const {
         std::map<std::string, Var> rec_m;
         rec_m["node"] = node_;
         rec_m["path"] = addr_;

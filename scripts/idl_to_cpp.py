@@ -12,11 +12,12 @@ for each interface defined in <name>.serf.
 import os, sys
 from pprint import pprint
 from pyparsing import ParseException
-from serf.idl_types import COMPOUND, IDLType, InterfaceDef
+from serf import idl_cpp_types
+from serf.idl_cpp_types import COMPOUND, IDLType, InterfaceDef
 from serf.idl_parser import idl_parser, addParseActions
 from serf.util import getOptions
 
-addParseActions()
+addParseActions(idl_cpp_types)
 
 class IndentingStream(object):
     """Wrapper for a file-like object which handles indentation."""
@@ -62,7 +63,8 @@ def writeMethodDispatch(out, method, arg_types, return_type):
 
     out.writeln('if (method == "%s") {' % method)
     out.indent(1)
-    out.writeln('if (args.size() < %d) throw serf::NotEnoughArgs(method, args.size(), %d);' % (min_len, min_len))
+    if min_len > 0:
+        out.writeln('if (args.size() < %d) throw serf::NotEnoughArgs(method, args.size(), %d);' % (min_len, min_len))
 
     # Initialize the arguments we will present.
     for i, a_type in enumerate(arg_types):
@@ -156,13 +158,13 @@ def writeProxyMethodImpl(out, cls, method, arg_types, return_type):
     out.writeln('%s %sPrx::%s(%s) {' % (return_type.cppType(), cls, method, args))
     out.indent(1)
     out.writeln('std::vector<serf::Var> args(%d);' % len(arg_types))
+    # Proxy arguments
     for i, a_type in enumerate(arg_types):
         if a_type.name in COMPOUND:
             out.writeln('setVar(args[%d], a%d);' % (i, i))
-        elif a_type.name == 'proxy':
-            out.writeln('args[%d] = a%d.getRecord_();' % (i, i))
         else:
             out.writeln('args[%d] = a%d;' % (i, i))
+    # Proxy return value
     out.writeln('return toFuture<%s >(call_("%s", args));' % (base_return_type.cppType(), method))
     out.indent(-1)
     out.writeln('}')

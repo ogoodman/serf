@@ -20,7 +20,7 @@ namespace serf {
         // We get {"o":.., "m":.., "a":..}.
         Future<Var>::Ptr callRemote(std::string const& node, Var& call) {
             std::string method = boost::get<std::string>(M(call).at("m"));
-			return servant_->call_(method, V(M(call).at("a")));
+			return servant_->call_(method, V(M(call).at("a")), this);
         }
         
     private:
@@ -48,28 +48,28 @@ public:
         std::vector<Var> args;
         args.push_back(-3.14);
 
-        Var result = getResult(inst.call_("fun_a", args));
+        Var result = getResult(inst.call_("fun_a", args, NULL));
         TS_ASSERT_THROWS_NOTHING(boost::get<boost::blank>(result));
 
-		std::string exc_type = getExcType(inst.call_("fun_b", args));
+		std::string exc_type = getExcType(inst.call_("fun_b", args, NULL));
         TS_ASSERT_EQUALS(exc_type, "TypeError");
 
         args[0] = 3;
 
-		result = getResult(inst.call_("fun_b", args));
+		result = getResult(inst.call_("fun_b", args, NULL));
         TS_ASSERT_EQUALS(boost::get<int>(result), 8);
 
-        TS_ASSERT_EQUALS(getExcType(inst.call_("nosuch", args)), "NoSuchMethod");
+        TS_ASSERT_EQUALS(getExcType(inst.call_("nosuch", args, NULL)), "NoSuchMethod");
 
         args.resize(0);
-        TS_ASSERT_EQUALS(getExcType(inst.call_("fun_a", args)), "NotEnoughArgs");
+        TS_ASSERT_EQUALS(getExcType(inst.call_("fun_a", args, NULL)), "NotEnoughArgs");
         std::vector<Var> nums;
         nums.push_back(1);
         nums.push_back(3);
         nums.push_back(5);
         args.push_back(nums);
 		
-		result = getResult(inst.call_("sum", args));
+		result = getResult(inst.call_("sum", args, NULL));
         TS_ASSERT_EQUALS(boost::get<int>(result), 9);
     }
 
@@ -97,7 +97,7 @@ public:
 
         ExampleImpl inst;
         MockVarCaller caller(&inst);
-        ExamplePrx prx(&caller, "", "");
+        ExamplePrx prx(&caller, "node", "path");
 
         prx.fun_a(-3.5)->then(this, &VarCallableTest::callbackv);
         TS_ASSERT_EQUALS(n, 1);
@@ -118,6 +118,9 @@ public:
         boost::posix_time::ptime now(second_clock::universal_time());
         prx.graph(now)->then(this, &VarCallableTest::callbackvi);
         TS_ASSERT_EQUALS(n, 3);
+
+        ExamplePrx prx2(&caller, "node", "path2");
+        prx.setProxy(prx2);
     }
 
 private:

@@ -33,6 +33,8 @@ int main(int argc, char* argv[])
     servant->proxy = ExamplePrx(&mh, "127.0.0.1:6502", "QRJSY2M9RA0H");
     mh.provide("example", servant);
 
+    Var v(servant->proxy);
+
     ConnectionFactory* f = new ConnectionFactory(&r, &reactor);
     reactor.addReader(new AcceptReader(port, f));
 
