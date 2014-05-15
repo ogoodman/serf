@@ -1,6 +1,6 @@
 INCLUDES = -I.
 
-UTIL_OBJ = runnable.o
+UTIL_OBJ = runnable.o debug.o
 
 SERIALIZER_OBJ = var.o codec.o int_codec.o string_codec.o array_codec.o type_codec.o any_codec.o null_codec.o bool_codec.o float_codec.o time_codec.o dict_codec.o tuple_codec.o struct_codec.o record.o record_codec.o
 

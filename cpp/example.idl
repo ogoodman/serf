@@ -8,3 +8,8 @@ interface Example {
     void setProxy(in Example* ep);
     future<Example*> getProxy();
 };
+
+exception MyBad {
+    list<text> errors;
+    int id;
+};

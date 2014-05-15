@@ -18,7 +18,7 @@ namespace serf {
     public:
         Quitter(Reactor* reactor) : reactor_(reactor) {}
         void handle(std::string const& data) {
-            cout << "got input: " << data;
+            std::cout << "got input: " << data;
             reactor_->stop();
         }
     private:
@@ -89,7 +89,7 @@ namespace serf {
      * an attached LinePrinter.
      */
     void LinePrinter::handle(std::string const& line) {
-        cout << count_ << "\t" << line;
+        std::cout << count_ << "\t" << line;
         if (line.find("foo") != std::string::npos) {
             write(fd_, "you said foo!\n", 14);
         }

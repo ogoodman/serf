@@ -117,3 +117,33 @@ def importSymbol(path):
 
 def codeDir():
     return os.path.dirname(__file__)
+
+class IndentingStream(object):
+    """Wrapper for a file-like object which handles indentation."""
+    def __init__(self, out):
+        self.level = 0
+        self.out = out
+        self.done_indent = False
+
+    def writeln(self, line):
+        """Write line to self.out indented by the current level."""
+        if not self.done_indent:
+            self.out.write('    ' * self.level)
+        self.out.write(line)
+        self.out.write('\n')
+        self.done_indent = False
+
+    def write(self, s):
+        """Write s to self.out indenting each line by the current level."""
+        lines = s.split('\n')
+        for line in lines[:-1]:
+            self.writeln(line)
+        if lines[-1]:
+            if not self.done_indent:
+                self.out.write('    ' * self.level)
+            self.out.write(lines[-1])
+            self.done_indent = True
+
+    def indent(self, n):
+        """Add n to the current indent level."""
+        self.level += n

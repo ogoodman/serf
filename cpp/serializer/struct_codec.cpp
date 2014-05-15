@@ -57,7 +57,7 @@ namespace serf {
         size_t i, n = ic.decodeSize(in);
         StringCodec sc('k');
         TypeCodec tc;
-        string key;
+        std::string key;
         CodecP type;
         std::vector<Field> fields;
         for (i = 0; i < n; ++i) {

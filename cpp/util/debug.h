@@ -5,36 +5,22 @@
 #include <string>
 #include <sstream>
 #include <vector>
-#include <iomanip>
 #include <list>
+#include <map>
 
-using namespace std;
+#define SAY(a) std::cout << a << std::endl;
+#define SHOW(a) std::cout << #a << " = " << a << std::endl
 
-#define SAY(a) cout << a << endl;
-#define SHOW(a) cout << #a << " = " << a << endl
+std::string repr(std::string const& s, char delim='"');
+std::string repr(std::vector<unsigned char> const& data);
+std::string repr(unsigned char ch);
+std::string repr(bool b);
 
-inline std::string repr(std::string const& s, char delim='"') {
-    ostringstream result;
-    result << hex;
-    result << delim;
-    for (size_t i = 0, n = s.length(); i < n; ++i) {
-        if (s[i] < ' ' || ((unsigned char)s[i]) > 0x7E) {
-            result << "\\x" << setfill('0') << setw(2) <<
-                uppercase << int((unsigned char)s[i]);
-        } else {
-            result << s[i];
-        }
-    }
-    result << delim;
-    return result.str();
-}
-
-inline std::string repr(vector<unsigned char> const& data) {
-    return repr(string((char*)&*data.begin(), data.size()));
-}
-
-inline std::string repr(unsigned char ch) {
-    return repr(string(1, char(ch)), '\'');
+template <typename T>
+std::string repr(T const& value) {
+    std::ostringstream out;
+    out << value;
+    return out.str();
 }
 
 template <class T>
@@ -42,9 +28,22 @@ std::ostream& operator << (std::ostream& out, std::vector<T> vec) {
     out << "[";
     for (size_t i = 0, n = vec.size(); i < n; ++i) {
         if (i) out << ", ";
-        out << vec[i];
+        out << repr(vec[i]);
     }
     return out << "]";
+}
+
+template <class T, class U>
+std::ostream& operator << (std::ostream& out, std::map<T, U> const& m) {
+    out << "{";
+    typename std::map<T, U>::const_iterator i = m.begin(), e = m.end();
+    bool first = true;
+    for (; i != e; ++i) {
+        if (!first) out << ", ";
+        first = false;
+        out << repr(i->first) << ": " << repr(i->second);
+    }
+    return out << "}";
 }
 
 template <class T>

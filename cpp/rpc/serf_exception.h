@@ -29,7 +29,7 @@ namespace serf {
 			return exc;
 		}
     protected:
-        std::string msg_;
+        mutable std::string msg_;
     };
 
     class NoSuchMethod : public SerfException
