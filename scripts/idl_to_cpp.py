@@ -13,7 +13,7 @@ import os, sys
 from pprint import pprint
 from pyparsing import ParseException
 from serf import idl_cpp_types
-from serf.idl_cpp_types import COMPOUND, IDLType, InterfaceDef
+from serf.idl_types import ExceptionDef
 from serf.idl_parser import idl_parser, addParseActions
 from serf.util import getOptions, IndentingStream
 
@@ -42,6 +42,7 @@ def writeCppSource(out, interfaces, name):
     out.writeln('')
     out.writeln('// GENERATED_CODE -- DO NOT EDIT!')
     out.writeln('')
+    out.writeln('#include <serf/util/on_load.h>')
     out.writeln('#include <serf/serializer/extract.h>')
     out.writeln('#include <serf/rpc/var_caller.h>')
     out.writeln('#include <serf/util/debug.h>')
@@ -49,6 +50,8 @@ def writeCppSource(out, interfaces, name):
     for i in interfaces:
         i.writeDef(out)
         out.writeln('')
+    exc = [i for i in interfaces if isinstance(i, ExceptionDef)]
+    idl_cpp_types.writeExceptionRegistration(out, exc)
 
 def writeFiles(outdir, name, interfaces):
     path = os.path.join(outdir, name + '.h')

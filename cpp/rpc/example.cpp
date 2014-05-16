@@ -9,7 +9,7 @@ void ExampleImpl::fun_a(double x) {
 }
 
 int ExampleImpl::fun_b(int x) {
-    if (x == 42) throw std::runtime_error("too big");
+    if (x == 42) throw TooBig(42);
     return x + 5;
 }
 

@@ -9,7 +9,6 @@ interface Example {
     future<Example*> getProxy();
 };
 
-exception MyBad {
-    list<text> errors;
-    int id;
+exception TooBig {
+    int n;
 };

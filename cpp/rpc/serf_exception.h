@@ -32,10 +32,37 @@ namespace serf {
         mutable std::string msg_;
     };
 
+    /** Instances throw dynamically constructed exceptions. */
+    class BaseThrower {
+    public:
+        virtual ~BaseThrower() {}
+        virtual void throw_(std::vector<serf::Var> const& args) = 0;
+    };
+
+    /** Instances throw exceptions of type E constructed with the given args. */
+    template <typename E>
+    class Thrower : public BaseThrower {
+    public:
+        void throw_(std::vector<serf::Var> const& args) {
+            throw E(args);
+        }
+    };
+
+    /** Registry of dynamically throwable exceptions. */
+    class Exceptions
+    {
+    public:
+        typedef std::map<std::string, boost::shared_ptr<BaseThrower> > throwers;
+        static throwers& reg();
+        static void add(std::string const& name, BaseThrower* thrower);
+        static void throw_(std::vector<serf::Var> const& args);
+    };
+
     class NoSuchMethod : public SerfException
     {
     public:
         NoSuchMethod(std::string const& method);
+        NoSuchMethod(std::vector<Var> const& args);
 		~NoSuchMethod() throw() {}
 
 		Var encode() const;
@@ -63,6 +90,7 @@ namespace serf {
 	{
 	public:
 		TypeError(std::string const& what);
+        TypeError(std::vector<Var> const& args);
 		~TypeError() throw() {}
 
 		std::string type() const;
@@ -72,6 +100,7 @@ namespace serf {
     {
     public:
         NodeOffline(int code);
+        NodeOffline(std::vector<Var> const& args);
         ~NodeOffline() throw() {}
 
         Var encode() const;

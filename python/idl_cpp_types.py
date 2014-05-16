@@ -329,7 +329,7 @@ class ExceptionDef(idl_types.ExceptionDef):
         out.writeln('serf::Var %s::encode() const {' % self.cls)
         out.indent(1)
         out.writeln('std::vector<serf::Var> enc(%d);' % (len(self.member_list) + 1))
-        out.writeln('enc[0] = "%s";' % self.cls)
+        out.writeln('enc[0] = std::string("%s");' % self.cls)
         for i, m in enumerate(self.member_list):
             if m.type.name in COMPOUND:
                 out.writeln('setVar(enc[%d], %s);' % (i + 1, m.name))
@@ -378,3 +378,17 @@ class ExceptionDef(idl_types.ExceptionDef):
         self.writeTypeDef(out)
         out.writeln('')
         self.writeWhatDef(out)
+
+    def writeRegistration(self, out):
+        out.writeln('serf::Exceptions::add("%s", new serf::Thrower<%s>);' % (self.cls, self.cls))
+
+def writeExceptionRegistration(out, exc):
+    if not exc:
+        return
+    out.writeln('static void registerExc() {')
+    out.indent(1)
+    for e in exc:
+        e.writeRegistration(out)
+    out.indent(-1)
+    out.writeln('}')
+    out.writeln('static serf::OnLoad run(registerExc);')

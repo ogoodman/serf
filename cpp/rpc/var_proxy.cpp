@@ -28,23 +28,7 @@ namespace serf {
     }
 
     void VarProxy::throw_(Var const& exc) {
-        // exc should be [exc-type, args...].
-		std::string type(boost::get<std::string>(V(exc)[0]));
-        std::string what;
-		try {
-			what = boost::get<std::string>(V(exc)[1]);
-		} catch (boost::bad_get&) {
-			// OK, might be args of a different type.
-		} catch (std::out_of_range&) {
-			// OK, exception might not have any args.
-		}
-		if (type == "NoSuchMethod") throw NoSuchMethod(what); // what is method.
-		if (type == "NotEnoughArgs") throw NotEnoughArgs(V(exc));
-		if (type == "TypeError") throw TypeError(what);
-        if (type == "NodeOffline") {
-            throw NodeOffline(boost::get<int>(V(exc)[1]));
-        }
-        throw std::runtime_error(what);
+        Exceptions::throw_(V(exc));
     }
 
     VarProxy::operator Record() const {

@@ -1,6 +1,7 @@
 #include <serf/rpc/example.h>
 #include <cxxtest/TestSuite.h>
 
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <serf/rpc/var_caller.h>
 #include <serf/util/debug.h>
 
@@ -106,7 +107,7 @@ public:
         TS_ASSERT_EQUALS(n, 10);
 
         prx.fun_b(42)->then(this, &VarCallableTest::callbacki);
-        TS_ASSERT_EQUALS(e_what, "too big");
+        TS_ASSERT_EQUALS(e_what, "TooBig(n=42)");
 
         std::vector<int> nums;
         nums.push_back(1);
@@ -115,12 +116,20 @@ public:
         prx.sum(nums)->then(this, &VarCallableTest::callbacki);
         TS_ASSERT_EQUALS(n, 14);
 
-        boost::posix_time::ptime now(second_clock::universal_time());
+        boost::posix_time::ptime now(boost::posix_time::second_clock::universal_time());
         prx.graph(now)->then(this, &VarCallableTest::callbackvi);
         TS_ASSERT_EQUALS(n, 3);
 
         ExamplePrx prx2(&caller, "node", "path2");
         prx.setProxy(prx2);
+    }
+
+    void testIDLException() {
+        std::vector<serf::Var> exc(2);
+        exc[0] = std::string("TooBig");
+        exc[1] = 42;
+
+        TS_ASSERT_THROWS(Exceptions::throw_(exc), TooBig);
     }
 
 private:
