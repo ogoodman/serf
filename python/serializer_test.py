@@ -94,7 +94,6 @@ class SerializationTest(unittest.TestCase):
         f_enc = encodes(fancy, ctx=REG)
         self.assertEqual(decodes(f_enc, ctx=REG), fancy)
 
-
     def testStruct(self):
         s = STRUCT([('name', TEXT), ('dob', TIME)])
         dob = datetime.datetime(1973,4,22)
@@ -136,6 +135,15 @@ class SerializationTest(unittest.TestCase):
         msg3 = decodes(m_enc, ctx=REG)
         self.assertEqual(msg3.value, val1)
 
+    def testConst(self):
+        lucky = CONST(3)
+        f = StringIO('')
+        self.assertEqual(lucky.decode(f, None), 3)
+        l_enc = encodes(lucky)
+        self.assertEqual(l_enc, 'YCi\x00\x00\x00\x03')
+        l2 = decodes(l_enc)
+        self.assertEqual(l2.decode(f, None), 3)
+
     def testEnum(self):
         GBE = ENUM({'GOOD':0, 'BAD':1, 'UGLY':2})
         s = STRUCT([('name', TEXT), ('mood', GBE)])
@@ -145,6 +153,20 @@ class SerializationTest(unittest.TestCase):
         enc = encodes(msg, ctx=REG)
         msg1 = decodes(enc, ctx=REG)
         self.assertEqual(msg1.value['mood'], 'UGLY')
+
+        gbe_enc = encodes(GBE)
+        f = StringIO(gbe_enc[2:]) # After YE it is an ENUM_DICT
+        self.assertEqual(ENUM_DICT.decode(f, None), {'GOOD':0, 'BAD':1, 'UGLY':2})
+        gbe2 = decodes(gbe_enc)
+        f = StringIO(encodes(0, encoder=INT16)[1:]) # drop the h.
+        self.assertEqual(gbe2.decode(f, None), 'GOOD')
+
+    def testRecord(self):
+        self.assertNotEqual(Record('tom', 1), None)
+        self.assertNotEqual(Record('tom', 1), Record('dick', 1))
+        self.assertEqual(str(Record('tom', 1)), 'tom(1)')
+        tom_enc = encodes(Record('tom', 1))
+        self.assertEqual(decodes(tom_enc), Record('tom', 1))
 
     def testType(self):
         self.assertEqual(encodes(DATA), 'Yr')

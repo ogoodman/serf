@@ -448,6 +448,7 @@ register(VECTOR) # V
 register(MAP)    # M
 register(STRUCT) # S
 register(CONST)  # C
+register(ENUM)   # E
 
 def findIntEncoder(value):
     if -2147483648 <= value <= 2147483647:
