@@ -5,7 +5,7 @@
 import unittest
 from serf.po.data import Data, AutoSave
 from serf.synchronous import Synchronous
-from serf.green_thread import GreenThread
+from serf.eventlet_thread import EventletThread
 from serf.worker import Callback
 from serf.proxy import Proxy
 
@@ -127,8 +127,8 @@ class DataTest(unittest.TestCase):
         # green-threads are more efficient since a save will be done
         # only once per yield.
 
-        green = GreenThread()
-        green.start()
+        green = EventletThread()
+        green.start(thread=True)
         saver = AutoSave(data, green)
         data.change_obs._add(saver)
 

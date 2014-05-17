@@ -12,7 +12,6 @@ from serf.po.data import Data
 from serf.test_object import TestObject
 from serf.serializer import SerializationError
 from serf.test_time import Time
-from serf.green_thread import GreenThread
 from serf.worker import Worker
 from serf.test_handler import TestHandler
 from serf.eventlet_thread import EventletThread
@@ -117,13 +116,13 @@ class RPCHandlerTest(unittest.TestCase):
 
     def testGreen(self):
         net = MockNet()
-        gta = GreenThread()
+        gta = EventletThread()
         va, ra = net.addRPCHandler('X', '', {}, t_model=gta)
-        gta.start()
+        gta.start(True)
 
-        gtb = GreenThread()
+        gtb = EventletThread()
         vb, rb = net.addRPCHandler('Y', '', {}, t_model=gtb)
-        gtb.start()
+        gtb.start(True)
 
         va['data'] = {'name': 'Tom'}
 

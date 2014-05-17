@@ -15,6 +15,11 @@ class BoundMethod(object):
         self.twoway = twoway
 
     def __call__(self, *args):
+        """Make a one-way call to the referenced object's method.
+
+        This returns None if the RPC handler is still live.
+        It returns False if the handler has been garbage collected.
+        """
         h = self.handler()
         if h is None:
             # False is for unsubscribing. This happens when a server
@@ -25,11 +30,10 @@ class BoundMethod(object):
             # Then false might be a legal value and we don't want to
             # get it just because the client has gone away.
             return False
-        if self.node == 'browser':
-            # This is a one-way send, so also geared to event handlers.
-            h.send('browser', self.oid, {'m':self.method, 'a':list(args)})
+        if self.node == h.node_id:
+            h.localCall(self.oid, self.method, args)
         else:
-            return h.localCall(self.oid, self.method, args)
+            h.send(self.node, self.oid, {'m':self.method, 'a':list(args)})
 
     def _ext_encoding(self):
         return 'BoundMethod', {'o':self.oid, 'm':self.method, 'n':self.node, 't': self.twoway}

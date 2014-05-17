@@ -30,7 +30,6 @@ net_base.py
 
 thread model
 eventlet_thread.py
-green_thread.py (used only in some tests)
 synchronous.py
 worker.py
 
