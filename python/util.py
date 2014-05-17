@@ -72,6 +72,7 @@ def getOptions(short, long=None, help=None):
         opts, args = getopt.getopt(sys.argv[1:], short, long or [])
     except getopt.GetoptError, e:
         printHelp()
+        opts, args = [], []
 
     opt_dict = {}
     for o, a in opts:
