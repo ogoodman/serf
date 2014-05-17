@@ -32,6 +32,12 @@ class WeakListTest(unittest.TestCase):
         self.assertEqual(len(l), 0)
         self.assertEqual(l.items(), [])
 
+        a2 = A()
+        l.add(a2.foo)
+        self.assertEqual(len(l), 1)
+        l.discard(a2.foo)
+        self.assertEqual(len(l), 0)
+
     def testLambda(self):
         l = WeakList()
         c = lambda: None
@@ -41,6 +47,12 @@ class WeakListTest(unittest.TestCase):
         del c
         self.assertEqual(len(l), 0)
         self.assertEqual(l.items(), [])
+
+        d = lambda: None
+        l.add(d)
+        self.assertEqual(len(l), 1)
+        l.discard(d)
+        self.assertEqual(len(l), 0)
 
     def testClosure(self):
         def makeClosure():

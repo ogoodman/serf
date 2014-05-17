@@ -75,7 +75,7 @@ class StorageCtx(object):
         raise SerializationError(str(t))
 
     def codec(self, type_id):
-        return None
+        return None, None
 
     def namedCodec(self, type_name):
         return None, None

@@ -5,6 +5,7 @@ import inspect
 import os
 import sys
 import time
+from cStringIO import StringIO
 from random import choice
 import string
 
@@ -147,3 +148,19 @@ class IndentingStream(object):
     def indent(self, n):
         """Add n to the current indent level."""
         self.level += n
+
+class Capture(object):
+    def __init__(self, stream='stdout'):
+        self.stream = stream
+        self.old = getattr(sys, stream)
+        self.fh = StringIO()
+        setattr(sys, stream, self.fh)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        setattr(sys, self.stream, self.old)
+
+    def getvalue(self):
+        return self.fh.getvalue()

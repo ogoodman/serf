@@ -15,7 +15,7 @@ from serf.test_time import Time
 from serf.worker import Worker
 from serf.test_handler import TestHandler
 from serf.eventlet_thread import EventletThread
-from serf.storage import Storage
+from serf.storage import Storage, _str
 from serf.json_codec import makeBoundMethod
 from serf.publisher import Publisher
 from serf.model import Model
@@ -93,6 +93,10 @@ class RPCHandlerTest(unittest.TestCase):
         op.setName(u'Barney')
 
         self.assertEqual(d['name'], u'Barney')
+
+        self.assertEqual(_str(b), "Time()")
+        self.assertEqual(_str(ap), "ref(path='a', node='A')")
+        self.assertEqual(_str([(1,2),{'a':5}]), "[(1, 2), {'a': 5}]")
 
     def testAddRPCHandler(self):
         net = MockNet()

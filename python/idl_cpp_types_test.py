@@ -39,8 +39,21 @@ class IDLCppTypesTest(unittest.TestCase):
         smap_mem = idl.Member(idl.IDLType('dict', idl.IDLType('ascii')), 'props')
         text_mem = idl.Member(idl.IDLType('text'), 'desc')
         exc = idl.ExceptionDef('MyBad', [int_mem, smap_mem, text_mem])
-        print capture(exc.writeDecl)
-        print capture(exc.writeDef),
+        # Gets coverage.. add a print to debug.
+        capture(exc.writeDecl)
+        capture(exc.writeDef)
+        capture(idl.writeExceptionRegistration, [exc])
+
+    def testInterfaceDef(self):
+        methods = [
+            ['fun', [idl.IDLType('text')], idl.IDLType('int')],
+            ['funb', [idl.IDLType('list', idl.IDLType('var'))], idl.IDLType('future', idl.IDLType('void'))],
+            ['func', [], idl.IDLType('void')],
+            ]
+        iface = idl.InterfaceDef('Example', methods)
+        # Gets coverage.. add a print to debug.
+        capture(iface.writeDecl)
+        capture(iface.writeDef)
 
 if __name__ == '__main__':
     unittest.main()

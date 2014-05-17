@@ -6,8 +6,9 @@ import time
 import os
 import unittest
 import socket
+import eventlet
 from serf.util import codeDir
-from serf.transport import Transport
+from serf.transport import *
 from serf.eventlet_test_handler import TestHandler
 
 SERV = '127.0.0.1:6512'
@@ -55,10 +56,56 @@ class TransportTest(unittest.TestCase):
         with handler.expect(1):
             client.send(SERV, 'hello again')
 
-        with handler.expect(2):
+        with handler.expect(3):
             client.send(SERV, 'gday')
             client.send(SERV, 'howdy')
-        self.assertEqual(handler.received, ['gday', 'howdy'])
+            client.send(SERV, '')
+        self.assertEqual(handler.received, ['gday', 'howdy', ''])
+
+        server.stop()
+
+    def testGetAddr(self):
+        self.assertEqual(getAddr(SERV), ('127.0.0.1', 6512))
+        self.assertEqual(getAddr('fred.local'), ('fred.local', 6502))
+
+    def testBadClient(self):
+        server = Transport(SERV)
+        handler = TestHandler(server)
+        server.listen()
+        server.start()
+
+        client = Transport('CLIENT')
+
+        # Instead of doing client.connect which would be well-behaved
+        # we'll do some of the steps from there wrongly.
+        sock = eventlet.connect(getAddr(SERV))
+        what, ssl_opts = client.read(sock)
+        self.assertEqual(what, SSL_OPTIONS)
+
+        # Send less than a full header (5 bytes).
+        sock.send('abc')
+        sock.shutdown(socket.SHUT_WR) # Server will close on incomplete header.
+        reply = sock.recv(1024)
+        self.assertEqual(reply, '')
+
+        # Server should have already forgotten us.
+        self.assertEqual(len(server.nodes), 0)
+
+        # Connect again: send incomplete payload.
+        sock = eventlet.connect(getAddr(SERV))
+        what, ssl_opts = client.read(sock)
+        sock.send('\0\0abcfoo')
+        sock.shutdown(socket.SHUT_WR) # Server will close on incomplete payload.
+        reply = sock.recv(1024)
+
+        # Connect again: send invalid protocol choice.
+        sock = eventlet.connect(getAddr(SERV))
+        what, ssl_opts = client.read(sock)
+        self.assertEqual(what, SSL_OPTIONS)
+        client.write(sock, SSL_CHOICE, 'R') # no such choice
+        reply = sock.recv(1024) # Server will close, this won't block.
+        self.assertEqual(reply, '')
+        self.assertEqual(len(server.nodes), 0) # Again, no connection.
 
         server.stop()
 

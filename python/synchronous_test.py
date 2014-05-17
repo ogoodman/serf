@@ -38,5 +38,10 @@ class SynchronousTest(unittest.TestCase):
         tm.callFromThread(first)
         self.assertEqual(items, ['first', 'second', 'third', 'fourth'])
 
+    def testNoCallback(self):
+        tm = Synchronous()
+        cb = tm.makeCallback()
+        self.assertRaises(Exception, cb.wait)
+
 if __name__ == '__main__':
     unittest.main()

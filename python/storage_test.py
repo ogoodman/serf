@@ -3,12 +3,13 @@
 """Tests for Storage."""
 
 import unittest
-from serf.util import EqualityMixin
-from serf.storage import Storage
+from serf.util import EqualityMixin, Capture
+from serf.storage import Storage, fcat, _str, NoSuchName
 from serf.po.data import Data
 from serf.ref import Ref
 from serf.test_person import Person
 from serf.test_time import Time
+from serf.serializer import SerializationError, Record, encodes
 
 class TestObject(EqualityMixin):
     serialize = ('data', 'obs')
@@ -58,6 +59,10 @@ class StorageTest(unittest.TestCase):
         self.assertEqual(type(t_data['dad']), Ref)
 
         self.assertEqual(tom.dadsName(), 'Gary')
+
+        with Capture() as c:
+            fcat(tom)
+            self.assertEqual(c.getvalue(), "Person(env=ref(path='people/data/tom'))\n")
 
         # We can store refs anywhere in data. A top-level Data object
         # which has come from the store can turn itself into a ref.
@@ -151,6 +156,21 @@ class StorageTest(unittest.TestCase):
         self.assertEqual(ra1, ra2)
         self.assertNotEqual(ra1, rb)
 
+    def testSerializationErrors(self):
+        proxy_enc = encodes(Record('ref', {'path':'p', 'node':'n'}))
+        unk_enc = encodes(Record('unknown', 3))
+        msg_enc = encodes(Record('@', 'xyz', 35))
+        s = Storage({'caps/foo': proxy_enc, 'caps/unk': unk_enc, 'caps/msg': msg_enc})
+        self.assertRaises(SerializationError, s.__getitem__, 'foo')
+        self.assertRaises(SerializationError, s.__getitem__, 'unk')
+
+        self.assertEqual(s['msg'], Record('@', 'xyz', 35))
+
+        class NoSer(object):
+            pass
+        self.assertRaises(SerializationError, s.__setitem__, 'nos', NoSer())
+        
+        self.assertRaises(NoSuchName, s.getn, 'bimbo')
 
 if __name__ == '__main__':
     unittest.main()

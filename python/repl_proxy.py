@@ -8,6 +8,12 @@ import types
 from serf.worker import Callback
 from serf.serializer import POD_TYPES
 
+def callWithResult(cb, func, *args):
+    try:
+        cb.success(func(*args))
+    except Exception, e:
+        cb.failure(e)
+
 class REPLProxy(object):
     def __init__(self, target, tm):
         self.target = target
@@ -24,7 +30,7 @@ class REPLProxy(object):
             return self._wrap(attr)
         def _mcall(*args):
             cb = Callback()
-            self.tm.callFromThread(self.tm.callWithResult, cb, attr, *args)
+            self.tm.callFromThread(callWithResult, cb, attr, *args)
             return self._wrap(cb.wait())
         return _mcall
 

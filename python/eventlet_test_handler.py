@@ -28,6 +28,9 @@ class TestHandler(object):
         if len(self.received) == self.expected:
             self.event.send()
 
+    def msg(self, msg):
+        self.handle('message', {'message': msg})
+
     def online(self, ev, node):
         pass
 

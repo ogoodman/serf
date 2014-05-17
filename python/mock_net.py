@@ -48,8 +48,6 @@ class MockNet(object):
 
     def goOnline(self, node):
         self.offline.discard(node)
-        if node not in self.end:
-            return
         nn = self.end[node]
         for k, n in self.end.items():
             if k != node:

@@ -51,14 +51,26 @@ class Transport(Publisher):
         self.verbose = verbose
         self.ssl = ssl
 
+    def readall(self, socket, n):
+        """Defragment and read n bytes."""
+        buf = []
+        count = 0
+        while count < n:
+            data = socket.recv(min(n - count, 4096))
+            if not data:
+                return ''
+            buf.append(data)
+            count += len(data)
+        return ''.join(buf)
+
     def read(self, socket):
         """Receive a single control-byte, message pair."""
-        header = socket.recv(5)
+        header = self.readall(socket, 5)
         if len(header) < 5:
             return DISCONNECTED, ''
         what, msg_len = struct.unpack('>bI', header)
         if msg_len > 0:
-            msg = socket.recv(msg_len)
+            msg = self.readall(socket, msg_len)
         else:
             msg = ''
         if len(msg) < msg_len:
@@ -67,8 +79,9 @@ class Transport(Publisher):
 
     def write(self, socket, what, msg):
         """Write a single control-byte and message."""
-        socket.send(struct.pack('>bI', what, len(msg)))
-        socket.send(msg)
+        socket.sendall(struct.pack('>bI', what, len(msg)))
+        if msg:
+            socket.sendall(msg)
         
     def accept(self, socket, address):
         """Called when listening with new client connections."""
@@ -79,8 +92,11 @@ class Transport(Publisher):
 
         self.write(socket, SSL_OPTIONS, ssl_opts)
         what, choice = self.read(socket)
+        if what == DISCONNECTED:
+            return
         if what != SSL_CHOICE or len(choice) != 1 or (choice not in ssl_opts):
-            print 'invalid response to SSL_OPTIONS from', address
+            if self.verbose:
+                print 'invalid response to SSL_OPTIONS from', address
             return
         if choice == 'S':
             socket = ssl.wrap_socket(socket, server_side=True, **self.ssl)
@@ -190,7 +206,7 @@ class Transport(Publisher):
         return sock
 
     def sendDisconnect(self, node):
-        self.nodes[node].send(struct.pack('>bI', CLOSE, 0))
+        self.nodes[node].sendall(struct.pack('>bI', CLOSE, 0))
 
     def closeConnection(self, node):
         if node in self.nodes:

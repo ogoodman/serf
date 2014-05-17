@@ -18,12 +18,21 @@ class EventletThreadTest(unittest.TestCase):
         with eth.expect(1):
             thread.callFromThread(eth.handle, 'message', {'message': 'hi'})
 
+        with eth.expect(1):
+            thread.callAfter(0, eth.msg, 'foo')
+
+        cb = thread.makeCallback()
+        thread.callAfter(0, cb.failure, Exception('bar'))
+        self.assertRaises(Exception, cb.wait)
+
         thread.stop()
         thread.start(True) # now in a different thread
 
         with th.expect(1):
             thread.callFromThread(th.handle, 'message', {'message': 'lo'})
 
+        # NOTE: we don't stop it here. There should be an atexit handler
+        # to do that for us. If that fails the tests will hang.
 
 if __name__ == '__main__':
     unittest.main()

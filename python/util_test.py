@@ -3,7 +3,7 @@
 """Test for functions in serf.util."""
 
 import unittest
-from serf.util import EqualityMixin, rmap
+from serf.util import EqualityMixin, rmap, Capture
 
 class A(EqualityMixin):
     def __init__(self, arg):
@@ -36,6 +36,11 @@ class UtilTest(unittest.TestCase):
         self.assertEqual(b.arg, 'foo')
         self.assertEqual(conv({'a': 1, 'b': A('foo')}), {'a': 1, 'b':B('foo')})
         self.assertEqual(conv((u'x', A(2))), (u'x', B(2)))
+    
+    def testCapture(self):
+        with Capture() as c:
+            print 'not printed'
+            self.assertEquals(c.getvalue(), 'not printed\n')
 
 
 if __name__ == '__main__':

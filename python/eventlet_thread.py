@@ -53,12 +53,6 @@ class EventletThread(object):
     def callAfter(self, secs, *args):
         return eventlet.spawn_after(secs, *args)
 
-    def callWithResult(self, cb, func, *args):
-        try:
-            cb.success(func(*args))
-        except Exception, e:
-            cb.failure(e)
-
     def stop(self):
         if self.loop_in:
             self.loop_in.close()

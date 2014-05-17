@@ -25,12 +25,6 @@ CPP_TYPE = {
     'future': 'serf::Future<%s>::Ptr',
 }
 
-def capture(fn, *args):
-    """Captures a string from a function taking an output stream."""
-    out = StringIO()
-    fn(out, *args)
-    return out.getvalue()
-
 class IDLType(idl_types.IDLType):
     def cppType(self, opt_sp=False):
         """Gets the C++ type declaration of this IDL type.
@@ -362,10 +356,6 @@ class ExceptionDef(idl_types.ExceptionDef):
         out.writeln('return msg_.c_str();')
         out.indent(-1)
         out.writeln('}')
-
-    def writeOutputOperatorDef(self, out):
-        # INCOMPLETE
-        out.writeln('std::ostream& out operator<< (std::ostream& out, %s const& exc);' % self.cls)
 
     def writeDef(self, out):
         """Write code defining all class members."""
