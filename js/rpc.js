@@ -1,4 +1,9 @@
 define(['when/when'], function(when) {
+    /**
+     * Provides RPC between client-side javascript and a Serf-WS server.
+     * @module serf/rpc
+     */
+
     function traverse(data, fn) {
         var r = traverse0(data, fn);
         if (r != undefined) return r;
@@ -31,6 +36,11 @@ define(['when/when'], function(when) {
         return undefined;
     }
 
+    /**
+     * Represents a Serf/WS server connection.
+     * @constructor
+     * @param {string} url Websocket URL for the server
+     */
     function WSServer(url) {
         this.url = url;
         this.callId = 0;
@@ -40,8 +50,11 @@ define(['when/when'], function(when) {
         this.obj = {};
     };
 
+    /**
+     * Factory functions for embedded records.
+     */
     WSServer.prototype.hooks = {};
-    
+
     WSServer.prototype.connect = function() {
         var that = this;
 
@@ -180,6 +193,12 @@ define(['when/when'], function(when) {
         return mcall;
     }
 
+    /**
+     * Represents a server-side object.
+     * @constructor
+     * @param {WSServer} server Server where the object resides
+     * @param {string} objId Id of a server-side object
+     */
     function Proxy(server, objId, node) {
         this.server = server;
         this.objId = objId;
@@ -190,6 +209,24 @@ define(['when/when'], function(when) {
         this._subs = {};
     }
 
+    /**
+     * Makes a proxy for the named server-side object.
+     * @param {string} objId Id of a server-side object
+     */
+    WSServer.prototype.getProxy = function(objId) {
+        // FIXME: not sure what node was for, leave out for now.
+        return new Proxy(this, objId);
+    };
+
+    /**
+     * Add a method stub to the proxy.
+     *
+     * A newly created Proxy does not know what server-side
+     * methods are available. We have to add method stubs for
+     * each method we want to be able to call.
+     *
+     * @param {string} name Method name to add
+     */
     Proxy.prototype.addMethod = function(name) {
         var that = this;
         this[name] = function() {
@@ -203,6 +240,13 @@ define(['when/when'], function(when) {
         for (i = 0; i < n; ++i ) subs[i](event, info);
     };
     
+    /**
+     * Subscribe to an event of the server-side object.
+     * <p>The callback function will be passed (event-name, event-info).
+     *
+     * @param {string} event Event name
+     * @param {function} cb Callback
+     */
     Proxy.prototype.subscribe = function(event, cb) {
         if (!(event in this._subs)) {
             this._subs[event] = [cb];

@@ -1,4 +1,4 @@
-require(['when/when', 'app/rpc', 'app/publisher'],
+require(['when/when', 'serf/rpc', 'serf/publisher'],
 function(when, rpc, publisher) {
 
     var Publisher = publisher.Publisher;
