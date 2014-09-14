@@ -30,3 +30,10 @@ to the http config.
 
 Run the server in
   serf/python/ws_server.py
+
+To run it as a service, update the path to ws_server.py in
+  serf/python/ws_server.conf
+and copy to /etc/init/ws_server.conf. Then
+  sudo initctl reload-configuration
+  sudo initctl start ws_server
+to run it.
