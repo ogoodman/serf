@@ -1,6 +1,6 @@
 """Transfers messages received to the best matching endpoint."""
 
-import cjson
+import json
 from serf.serializer import decodes
 from serf.publisher import Publisher
 
@@ -30,7 +30,7 @@ class Dispatcher(object):
 
     def _handle(self, ev, msg):
         if msg['pcol'] == 'json':
-            addr = cjson.decode(msg['message'])['o']
+            addr = json.loads(msg['message'])['o']
         else:
             addr = decodes(msg['message'])
         addr = addr.rstrip('/') + '/' # normalise path.

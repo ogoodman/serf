@@ -1,5 +1,5 @@
 import weakref
-import cjson
+import json
 from serf.traverse import traverse
 from serf.proxy import Proxy
 from serf.bound_method import BoundMethod
@@ -31,7 +31,7 @@ class JSONCodec(object):
         return {'__ext__name_': name, '__ext__args_': value}
 
     def encode(self, rpc_handler, data):
-        return cjson.encode(traverse(data, self.preEncodeFn))
+        return json.dumps(traverse(data, self.preEncodeFn))
 
     def decode(self, rpc_handler, message):
         def postDecodeFn(data):
@@ -43,6 +43,6 @@ class JSONCodec(object):
                 if name in self.hooks:
                     return self.hooks[name](rpc_handler, value)
             return None
-        return traverse(cjson.decode(message), postDecodeFn)
+        return traverse(json.loads(message), postDecodeFn)
 
 JSON_CODEC = JSONCodec()
