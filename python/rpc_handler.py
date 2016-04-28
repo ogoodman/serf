@@ -5,7 +5,7 @@ from cStringIO import StringIO
 from serf.serializer import encode, decode, encodes, decodes, SerializationError, POD_TYPES, Record
 from serf.ref import Ref
 from serf.synchronous import Synchronous
-from serf.util import randomString, rmap
+from serf.util import randomString, rmap, importSymbol
 from serf.proxy import Proxy
 from serf.storage import Storage
 from serf.json_codec import JSON_CODEC
@@ -66,19 +66,40 @@ def decodeException(e):
     except:
         return RemoteException('%s%r' % (e[0], e[1:]))
 
+
 class RemoteCtx(object):
-    def __init__(self, vat):
+    def __init__(self, vat, msg_data=None):
         self.vat = weakref.ref(vat)
         self.node_id = vat.node_id
+        self.safe = ['serf.po.']
+        self.msg_data = msg_data or {}
+
+    def _safe_cls(self, cls):
+        for prefix in self.safe:
+            if cls.startswith(prefix):
+                return True
+        return False
 
     def custom(self, name, data):
         if name == 'ref':
             node = data['node']
             if node == self.node_id:
                 return Ref(self.vat().storage, data['path'])
+            if node == '-':
+                node = self.msg_data.get('from')
             return Proxy(node, data['path'], self.vat())
         if name == 'exc':
             return decodeException(data)
+
+        if name == 'inst' and self._safe_cls(data['CLS']):
+            cls = importSymbol(data['CLS'])
+            try:
+                args = [data[key] for key in cls.serialize]
+            except KeyError:
+                raise SerializationError(name + ': ' + repr(data))
+            else:
+                return cls(*args)
+
         raise SerializationError(name)
 
     def record(self, inst):
@@ -93,6 +114,15 @@ class RemoteCtx(object):
             return Record('ref', {'path': inst._path, 'node': self.node_id})
         if t is Proxy:
             return Record('ref', {'path': inst._path, 'node': inst._node})
+
+        # Serialize instances without any capability members.
+        s_attrs = getattr(t, 'serialize', None)
+        if type(s_attrs) is tuple and not [a for a in s_attrs if a.startswith('_')]:
+            data = dict([(key, getattr(inst, key)) for key in s_attrs])
+            cls = inst.__class__
+            data['CLS'] = '%s.%s' % (cls.__module__, cls.__name__)
+            return Record('inst', data)
+
         raise SerializationError(str(t))
 
     def codec(self, type_id):
@@ -163,7 +193,7 @@ class RPCHandler(object):
             msg = rmap(self.localize, msg_data['message'])
         else:
             f = StringIO(msg_data['message'])
-            msg = decode(f, self.remote_ctx)
+            msg = decode(f, RemoteCtx(self, msg_data))
         addr = msg['o']
         # Subtract transport path from incoming message.
         assert(addr.startswith(self.node.path))

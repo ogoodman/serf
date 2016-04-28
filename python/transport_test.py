@@ -28,7 +28,7 @@ class TransportTest(unittest.TestCase):
         server = Transport(SERV, ssl=SSL)
         handler = TestHandler(server)
 
-        client = Transport('CLIENT', ssl=SSL)
+        client = Transport(ssl=SSL)
         c_handler = TestHandler(client)
 
         server.listen()
@@ -36,10 +36,9 @@ class TransportTest(unittest.TestCase):
         with handler.expect(1):
             client.send(SERV, 'hi')
         self.assertEqual(handler.received, ['hi'])
-        self.assertEqual(handler.node_conn, 'CLIENT')
 
         with c_handler.expect(1):
-            server.send('CLIENT', 'hello') # send with server running.
+            server.send(handler.node_conn, 'hello') # send with server running.
         self.assertEqual(c_handler.received, ['hello'])
 
         def errh(exc):
@@ -74,7 +73,7 @@ class TransportTest(unittest.TestCase):
         server.listen()
         server.start()
 
-        client = Transport('CLIENT')
+        client = Transport()
 
         # Instead of doing client.connect which would be well-behaved
         # we'll do some of the steps from there wrongly.

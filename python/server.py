@@ -3,6 +3,7 @@
 """Server for distributed capabilities."""
 
 import os
+import sys
 from serf.transport import Transport
 from serf.fs_dict import FSDict
 from serf.eventlet_thread import EventletThread
@@ -19,7 +20,7 @@ if __name__ == '__main__':
         'keyfile': os.path.join(codeDir(), 'data/host.key')
     }
 
-    net = Transport(NODE, ssl=SSL)
+    net = Transport(NODE, ssl=SSL, verbose=('-v' in sys.argv))
 
     thread = EventletThread()
     storage = Storage(store, t_model=thread)

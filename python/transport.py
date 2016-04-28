@@ -35,8 +35,15 @@ def getAddr(node):
     return host, port
 
 class Transport(Publisher):
-    """Implements Transport. Connector for serf protocol."""
-    def __init__(self, node_id, verbose=False, ssl=None):
+    """Implements Transport. Connector for serf protocol.
+
+    A Transport instance is a node in a TCP/IP network.
+    It could be a listening node, in which case it has an
+    node_id of the form '<host>:<port>', or it could be a pure
+    client of some other (listening) node, in which case
+    its node_id is '-'.
+    """
+    def __init__(self, node_id='-', verbose=False, ssl=None):
         Publisher.__init__(self)
         self.node_id = node_id
         self.path = ''
@@ -50,6 +57,7 @@ class Transport(Publisher):
         self.thread = threading.currentThread()
         self.verbose = verbose
         self.ssl = ssl
+        self.conn_num = 0
 
     def readall(self, socket, n):
         """Defragment and read n bytes."""
@@ -100,9 +108,12 @@ class Transport(Publisher):
             return
         if choice == 'S':
             socket = ssl.wrap_socket(socket, server_side=True, **self.ssl)
-        self.process(socket, address)
+        # Could use timestamp rather than conn_num to make node id's
+        # forever unique.
+        self.conn_num += 1
+        self.process(socket, address, '%%d@%s:%s' % address % self.conn_num)
 
-    def process(self, sock, address, node=None):
+    def process(self, sock, address, node):
         """Handler for all established connections.
 
         This processes all incoming messages, including the node-name
@@ -117,15 +128,16 @@ class Transport(Publisher):
                     print self.node_id, '%s %s disconnected' % (node, address)
                 break
             if what == NODE_NAME:
-                node = msg
-                if node in self.nodes:
-                    if self.verbose:
-                        print self.node_id, '%s %s already connected' % (node, address)
-                else:
-                    if self.verbose:
+                if msg != '-':
+                    # FIXME: need to verify.
+                    node = msg
+                if self.verbose:
+                    if msg == '-':
                         print self.node_id, '%s %s connected' % (node, address)
-                    self.nodes[node] = sock
-                    self.notify('connected', node)
+                    else:
+                        print self.node_id, '%s %s connected (unverified)' % (node, address)
+                self.nodes[node] = sock
+                self.notify('connected', node)
             elif what == MSG:
                 self.notify('message', {'from': node, 'pcol': 'serf', 'message': msg})
             elif what == CLOSE:

@@ -9,6 +9,8 @@ from serf.util import randomString, importSymbol
 from serf.synchronous import Synchronous
 
 # This enables us to move serializable classes around.
+# FIXME: this is a bad way to do it because it assumes that
+# serf.config is owned by the application.
 try:
     from serf.config import mapClass
 except ImportError:
