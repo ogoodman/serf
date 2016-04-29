@@ -63,6 +63,43 @@ class TransportTest(unittest.TestCase):
 
         server.stop()
 
+    def testClientOffline(self):
+        server = Transport(SERV)
+        handler = TestHandler(server)
+        server.listen()
+        server.start()
+
+        self.disconnected = None
+        def on_disc(ev, info):
+            self.disconnected = info
+        server.subscribe('disconnected', on_disc)
+
+        client = Transport()
+        c_handler = TestHandler(client)
+
+        with handler.expect(1):
+            client.send(SERV, 'hi')
+        self.assertEqual(handler.received, ['hi'])
+
+        c_node = handler.node_conn
+
+        with c_handler.expect(1):
+            server.send(c_node, 'hello')
+        self.assertEqual(c_handler.received, ['hello'])
+
+        client.stop()
+
+        self.assertEqual(self.disconnected, c_node)
+
+        self.err_count = 0
+        def errh(e):
+            self.err_count += 1
+            self.assertEqual(type(e), socket.error)
+        server.send(c_node, 'hello again', errh=errh)
+        self.assertEqual(self.err_count, 1)
+
+        server.stop()
+
     def testGetAddr(self):
         self.assertEqual(getAddr(SERV), ('127.0.0.1', 6512))
         self.assertEqual(getAddr('fred.local'), ('fred.local', 6502))

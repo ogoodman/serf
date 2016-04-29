@@ -4,6 +4,7 @@ import eventlet
 import struct
 import threading
 import traceback
+import re
 from eventlet.green import socket, ssl
 from eventlet.timeout import Timeout
 from eventlet.event import Event
@@ -25,6 +26,8 @@ SSL_OPTS = ['keyfile', 'certfile', 'cert_reqs', 'ssl_version', 'ca_certs']
 # a list of supported options. The client sends back an SSL choice
 # choosing one of the options. If the choice is SSL, both ends then
 # upgrade to SSL before continuing.
+
+TEMPNODE_RE = re.compile('\d+@\d+(\.\d+){3}:\d+')
 
 def getAddr(node):
     parts = node.split(':', 1)
@@ -145,6 +148,7 @@ class Transport(Publisher):
                     print self.node_id, '%s %s requested close' % (node, address)
                 break
         self.closeConnection(node)
+        self.notify('disconnected', node)
             
     def _nobodyConnected(self):
         el = self.wait_for_close
@@ -198,6 +202,9 @@ class Transport(Publisher):
 
     def connect(self, node):
         """Connect with a new node."""
+        # Deal with a non-listening client that has gone away.
+        if TEMPNODE_RE.match(node):
+            raise socket.error(107, 'ENOTCONN')
         address = getAddr(node)
         sock = eventlet.connect(address)
         what, ssl_opts = self.read(sock)
