@@ -226,7 +226,10 @@ class RPCHandler(object):
             else:
                 try:
                     # FIXME: rpc_handler made _methods private. Should we?
-                    result = getattr(obj, method)(*args)
+                    if method == '__call__':
+                        result = obj(*args)
+                    else:
+                        result = getattr(obj, method)(*args)
                 except Exception, exc:
                     pass
         return result, exc

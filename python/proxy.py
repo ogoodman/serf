@@ -33,6 +33,12 @@ class Proxy(object):
     def __delitem__(self, key):
         self._getattr('__delitem__')(key)
 
+    def __call__(self, *args):
+        return self._getattr('__call__')(*args)
+
+    def f_call(self, *args):
+        return self._getattr_f('__call__')(*args)
+
     def __str__(self):
         return 'serf://' + self._node + '/' + self._path
 

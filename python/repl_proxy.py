@@ -52,3 +52,5 @@ class REPLProxy(object):
     def __delitem__(self, key):
         self._getattr('__delitem__')(key)
 
+    def __call__(self, *args):
+        return self.__call__(*args)
