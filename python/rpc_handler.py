@@ -71,7 +71,7 @@ class RemoteCtx(object):
     def __init__(self, vat, msg_data=None):
         self.vat = weakref.ref(vat)
         self.node_id = vat.node_id
-        self.safe = ['serf.po.']
+        self.safe = vat.safe
         self.msg_data = msg_data or {}
 
     def _safe_cls(self, cls):
@@ -142,6 +142,7 @@ class RPCHandler(object):
         self.callbacks = {}
         self.thread_model = thread_model
         self.verbose = verbose
+        self.safe = []
         transport.subscribe('message', self.handle)
         transport.subscribe('online', self._notifyNodeObserver)
         transport.subscribe('connected', self._notifyNodeObserver)
