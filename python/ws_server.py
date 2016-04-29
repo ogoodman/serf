@@ -33,6 +33,10 @@ class SquareCaller(object):
     def onClientEvent(self, ev, info):
         print 'got event', ev, info
 
+class Ping(object):
+    def ping(self):
+        return 'pong'
+
 def handle(socket, client_address):
     print client_address, 'connected'
     transport = WebSocketHandler(socket, client_address)
@@ -42,6 +46,7 @@ def handle(socket, client_address):
     handler.provide('shared', SINGLETON_MODEL)
     handler.provide('private', Model())
     handler.provide('sqcaller', SquareCaller(handler, 'sqcaller'))
+    handler.provide('ping', Ping())
     transport.handle()
     return handler
 
