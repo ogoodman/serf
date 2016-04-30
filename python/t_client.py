@@ -29,7 +29,7 @@ objects = {
 }
 thread = EventletThread()
 rpc = RPCHandler(transport, objects, t_model=thread)
-rpc.safe.append('serf.po')
+rpc.safe.append('serf.tables')
 
 def wrap(x):
     return REPLProxy(x, thread)
@@ -42,6 +42,7 @@ table = wrap(Proxy(SERVER, 'table', rpc))
 printer = wrap(Proxy(SERVER, 'printer', rpc))
 caller = wrap(Proxy(SERVER, 'proxy_caller', rpc))
 func = wrap(Proxy(SERVER, 'func', rpc))
+model = wrap(Proxy(SERVER, 'model', rpc))
 
 proxy = rpc.makeProxy('printer')
 sub = rpc.makeProxy('subscriber')

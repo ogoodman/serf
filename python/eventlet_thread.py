@@ -70,6 +70,11 @@ class EventletThread(object):
         # it doesn't need to start the thread. There is a simpler
         # thread model than this that uses an existing reactor and
         # might not even need callFromThread to handle other threads.
+
+        # It seems that we should be able to do this, but it causes
+        # error: cannot switch to a different thread in the unit tests.
+        # if self.thread is None:
+        #     return self.call(*args)
         with self.lock:
             self.queue.append(args)
         self.loop_in.send('\x01')

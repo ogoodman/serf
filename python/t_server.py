@@ -30,7 +30,7 @@ objects = {
 thread = EventletThread()
 
 rpc = RPCHandler(transport, objects, thread)
-rpc.safe.append('serf.po')
+rpc.safe.append('serf.tables')
 
 thread.start()
 print 'Serf Server 0.1', NODE

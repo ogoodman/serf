@@ -3,12 +3,16 @@ import json
 from serf.traverse import traverse
 from serf.proxy import Proxy
 from serf.bound_method import BoundMethod
+from serf.util import importSymbol
+from serf.serializer import SerializationError
 
 # A proxy comes with an arg of {'o':objId}
 
 def makeProxy(vat, data):
     """Rehydrates an incoming Proxy."""
-    return Proxy(data['n'], data['o'], vat)
+    proxy = Proxy(data['n'], data['o'], vat)
+    vat.refs.append(proxy)
+    return proxy
 
 def makeBoundMethod(vat, data):
     """Rehydrates an incoming BoundMethod."""
@@ -21,13 +25,33 @@ class JSONCodec(object):
         'BoundMethod': makeBoundMethod,
         'Proxy': makeProxy}
 
+    safe = ['serf.tables']
+
+    def _safe_cls(self, cls):
+        for prefix in self.safe:
+            if cls.startswith(prefix):
+                return True
+        return False
+
     def preEncodeFn(self, data):
+        cls = data.__class__
+
         if isinstance(data, Exception):
-            return [data.__class__.__name__, data.args]
-        try:
-            name, value = data._ext_encoding()
-        except:
-            return None
+            return [cls.__name__, data.args]
+
+        serialize = getattr(cls, 'serialize', None)
+        if type(serialize) is tuple:
+            name = '%s.%s' % (cls.__module__, cls.__name__)
+            value = {}
+            for key in serialize:
+                if key.startswith('_'):
+                    return None # requires local capabilities
+                value[key] = getattr(data, key, None)
+        else:
+            try:
+                name, value = data._ext_encoding()
+            except:
+                return None
         return {'__ext__name_': name, '__ext__args_': value}
 
     def encode(self, rpc_handler, data):
@@ -42,6 +66,15 @@ class JSONCodec(object):
                     return None
                 if name in self.hooks:
                     return self.hooks[name](rpc_handler, value)
+
+                if self._safe_cls(name):
+                    cls = importSymbol(name)
+                    try:
+                        args = [value[key] for key in cls.serialize]
+                    except KeyError:
+                        raise SerializationError(name + ': ' + repr(data))
+                    else:
+                        return cls(*args)
             return None
         return traverse(json.loads(message), postDecodeFn)
 
