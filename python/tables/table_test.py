@@ -5,9 +5,9 @@ import unittest
 from serf.serializer import encodes, decodes
 
 from notification_tracker import NotificationTracker
-from table import Client, KeyValuePair, Indexer, FieldValue, CopyField, JoinSpec
-from merge_records import mergeSpec
+from table import *
 from query import *
+from merge_records import mergeSpec
 
 class TableTest(unittest.TestCase):
     client = Client()
@@ -62,7 +62,7 @@ class TableTest(unittest.TestCase):
             self.table.insertBatch(['foonly', 'garply'])
 
         with tracker.expect(0):
-            self.table.insertNoNotify('quarply')
+            self.table.insertBatch(['quarply'])
 
         with tracker.expect(0):
             self.table.setBatch([KeyValuePair(13, 'goober')])
@@ -116,11 +116,11 @@ class TableTest(unittest.TestCase):
             self.table.insert(fred)
         self.assertEqual(tup(tracker.events[0]), (4, '', fred))
         with tracker.expect(0):
-            self.table.insertNoNotify(barney) # pkey = 8
+            self.table.insertBatch([barney]) # pkey = 8
         with tracker.expect(0):
             self.table.insertBatch([wilma]) # pkey = 12
         with tracker.expect(1):
-            self.table.insertKey(':name str', betty)
+            self.table.setKey(':name str', betty, replace=False)
         self.assertEqual(tup(tracker.events[0]), (16, '', betty))
 
         with tracker.expect(1):
@@ -208,13 +208,13 @@ class TableTest(unittest.TestCase):
         self.table.subscribe('change', tracker.callback)
         with tracker.expect(0):
             fred = encodes({'name': 'Fred', 'age': 5})
-            pk = self.table.insertKey(':name str', fred)
+            pk = self.table.setKey(':name str', fred, replace=False)
 
         self.assertEqual(pk, -1)
 
         with tracker.expect(1):
             bert = encodes({'name': 'Bert', 'age': 35})
-            pk = self.table.insertKey(':name str', bert)
+            pk = self.table.setKey(':name str', bert, replace=False)
 
         self.assertEqual(tracker.events[0].key, pk)
         self.assertEqual(tracker.events[0].value, bert)
@@ -458,11 +458,15 @@ class TableTest(unittest.TestCase):
             self.table.update(key, values)
 
         rec = decodes(self.table.select(key))
-        self.assertEqual(rec['name'], 'Joseph')
-        self.assertEqual(rec['age'], 14)
-        self.assertEqual(rec['id'], '90') # Unchanged.
+        self.assertEqual(rec, dict(name='Joseph', age=14, id='90'))
 
         self.assertRaises(KeyError, self.table.update, key+1, values)
+
+        # Update with values taken from another record.
+        updates = [CopyField(':id', ':newid')]
+        self.table.update(key, updates, encodes(dict(newid='99')))
+        rec = decodes(self.table.select(key))
+        self.assertEqual(rec, dict(name='Joseph', age=14, id='99'))
 
     def testUpdateKey(self):
         self._insertPerson('Tom', id='2')

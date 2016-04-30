@@ -10,6 +10,13 @@ from serf.serializer import decodes, encodes
 from query import getMember, setMember, checkField, matchQuery
 from merge_records import mergeRecords
 
+class TableCodec(object):
+    def encodes(self, obj):
+        return encodes(obj)
+
+    def decodes(self, data):
+        return decodes(data)
+
 class FieldValue(object):
     serialize = ('field', 'value', 'when')
 
@@ -45,6 +52,12 @@ class CopyField(object):
         return setMember(rec, self.field, getMember(vrec, self.copy))
 
 def updateFields(rec, fields, vrec=None):
+    """Updates values in rec.
+
+    :param rec: POD object to update
+    :param fields: list of field updaters (e.g. FieldValue, CopyField)
+    :param vrec: POD object which may supply values
+    """
     modified = False
     for f in fields:
         if f.update(rec, vrec):
@@ -141,7 +154,6 @@ class ColsIndexer(object):
         split_nkey = [i.normalize(k) for i, k in zip(self.indexers, split_key)]
         return '::'.join(split_nkey)
 
-
 class Table(Publisher):
     def __init__(self, client, id, indexers=None):
         Publisher.__init__(self)
@@ -156,10 +168,6 @@ class Table(Publisher):
         self.sink = None
         self.time_index = None
 
-    def insertBatch(self, records):
-        for r in records:
-            self.put(r, notify=False)
-            
     def setBatch(self, records): 
         for r in records:
             self.set(r.key, r.value, notify=False)
@@ -168,7 +176,7 @@ class Table(Publisher):
         return list(sorted(self.primary.keys()))
     
     def countQuery(self, query):
-        return len(self.selectQuery(query, 0, 2**31))
+        return len(self._selectQuery(query))
 
     def _maxIndex(self):
         return max(self.primary.keys())
@@ -242,7 +250,7 @@ class Table(Publisher):
     def size(self):
         return len(self.primary)
 
-    def put(self, data, notify=True):
+    def _put(self, data, notify=True):
         self.pkey += 4
         self.primary[self.pkey] = data
         if notify:
@@ -252,13 +260,13 @@ class Table(Publisher):
         self._index(self.pkey, data)
         
     def insert(self, data):
-        self.put(data)
+        self._put(data)
         return self.pkey
     
-    def insertNoNotify(self,data):
-        self.put(data,notify=False)
-        return self.pkey
-
+    def insertBatch(self, records):
+        for r in records:
+            self._put(r, notify=False)
+            
     def set(self, pkey, data, notify=True):
         try:
             old = self.primary[pkey]
@@ -275,11 +283,16 @@ class Table(Publisher):
         if pkey > self.pkey:
             self.pkey = pkey
 
-    def update(self, pkey, values, vrec=None):
+    def _update(self, pkey, values, vrec):
         rec = decodes(self.select(pkey))
         modified = updateFields(rec, values, vrec)
         if modified:
             self.set(pkey, encodes(rec))
+
+    def update(self, pkey, values, vrec=None):
+        if vrec is not None:
+            vrec = decodes(vrec)
+        self._update(pkey, values, vrec)
 
     def updateKey(self, spec, key, values):
         matches = self.selectKey(spec, key)
@@ -292,7 +305,7 @@ class Table(Publisher):
         return pkeys
 
     def updateQuery(self, query, values):
-        matches = self.selectQuery(query, 0, 2**31)
+        matches = self._selectQuery(query)
         count = 0
         for kv in matches:
             rec = decodes(kv.value)
@@ -351,7 +364,7 @@ class Table(Publisher):
                 for pkey, data in sorted(self.primary.items())
                 if lo <= pkey < hi]
 
-    def selectKey(self, spec, key, q=[]):
+    def selectKey(self, spec, key, query=None):
         if spec.startswith('# int'):
             results = []
             try:
@@ -366,9 +379,9 @@ class Table(Publisher):
                 return []
             results = [KeyValuePair(pkey, self.primary[pkey])
                        for pkey in sorted(index[key])]
-        if not q:
+        if query is None:
             return results
-        return [kv for kv in results if matchQuery(q, kv.value)]
+        return [kv for kv in results if matchQuery(query, kv.value)]
 
     def selectUniqueKey(self, spec, key):
         key = self._getIndexer(spec).normalize(key)
@@ -383,8 +396,8 @@ class Table(Publisher):
     def selectUniqueKeyRange(self, spec, key, lo, hi):
         return self.selectUniqueKey(spec, key)[lo:hi]
 
-    def selectKeyRange(self, spec, key, lo, hi, q=[]):
-        return self.selectKey(spec, key, q)[lo:hi]
+    def selectKeyRange(self, spec, key, lo, hi, query=None):
+        return self.selectKey(spec, key, query)[lo:hi]
 
     def setKey(self, spec, message, replace=True):
         """Inserts or updates a record indexed by spec.
@@ -405,14 +418,11 @@ class Table(Publisher):
         else:
             return self.insert(message)
 
-    def insertKey(self, spec, message):
-        return self.setKey(spec, message, replace=False)
+    def _selectQuery(self, query):
+        return [r for r in self.selectAll() if matchQuery(query, r.value)]
 
-    def _selectQuery(self, q):
-        return [r for r in self.selectAll() if matchQuery(q, r.value)]
-
-    def selectQuery(self, q, lo, hi):
-        return self._selectQuery(q)[lo:hi]
+    def selectQuery(self, query, lo=0, hi=None):
+        return self._selectQuery(query)[lo:hi]
 
     def selectQueryPKR(self, q, lo, hi):
         return [kv for kv in self._selectQuery(q) if lo <= kv.key < hi]
@@ -440,7 +450,7 @@ class Table(Publisher):
 
     def removeQuery(self, query):
         to_remove = [
-            item.key for item in self.selectQuery(query, 0, self.size())]
+            item.key for item in self._selectQuery(query)]
         for pkey in to_remove:
               self.remove(pkey)
         return len(to_remove)
@@ -491,7 +501,7 @@ class Table(Publisher):
         count = [0]
         join.nulls = 0 # don't want any cases of r_pk not in the table.
         def doUpdate(s_pk, s_rec, r_pk, r_rec):
-            self.update(r_pk, values, s_rec)
+            self._update(r_pk, values, s_rec)
             count[0] += 1
         self._join(stream, join, query, doUpdate)
         return count[0]
