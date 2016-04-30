@@ -3,6 +3,7 @@
 import re
 import copy
 import sys
+from itertools import islice
 
 from serf.publisher import Publisher
 from serf.serializer import decodes, encodes
@@ -64,17 +65,10 @@ def updateFields(rec, fields, vrec=None):
             modified = True
     return modified
 
-class KeyValuePair(object):
-    serialize = ('key', 'value')
-
-    def __init__(self, key, value):
-        self.key = key
-        self.value = value
-
-class SKeyKeyValueTriple(object):
+class KeyValue(object):
     serialize = ('key', 'value', 'skey')
 
-    def __init__(self, key, value, skey):
+    def __init__(self, key, value, skey=None):
         self.key = key
         self.value = value
         self.skey = skey
@@ -154,33 +148,185 @@ class ColsIndexer(object):
         split_nkey = [i.normalize(k) for i, k in zip(self.indexers, split_key)]
         return '::'.join(split_nkey)
 
+# generators
+
+class All(object):
+    def generate(self, table):
+        return table._selectAll()
+
+class PKey(object):
+    def __init__(self, pk, required=True):
+        self.pk = pk
+        self.required = required
+
+    def generate(self, table):
+        return table._get(self.pk, self.required)
+
+class Key(object):
+    def __init__(self, index, key):
+        self.index = index
+        self.key = key
+
+    def generate(self, table):
+        return table._selectKey(self.index, self.key)
+
+class KeyPrefix(object):
+    def __init__(self, index, prefix, unique=False):
+        self.index = index
+        self.prefix = prefix
+        self.unique = unique
+
+    def generate(self, table):
+        return table._selectKeyPrefix(self.index, self.prefix, self.unique)
+
+class KeyRange(object):
+    def __init__(self, index, lo=None, hi=None, reverse=False):
+        self.index = index
+        self.lo = lo
+        self.hi = hi
+        self.reverse = reverse
+
+    def generate(self, table):
+        return table._selectKeyRange(self.index, self.lo, self.hi, self.reverse)
+
+# filters
+
+class Range(object):
+    def __init__(self, begin, end=None):
+        self.begin = begin
+        self.end = end
+
+    def filter(self, iter):
+        return islice(iter, self.begin, self.end)
+
+class Query(object):
+    def __init__(self, query):
+        self.query = query
+
+    def filter(self, iter):
+        for kv in iter:
+            if matchQuery(self.query, kv.value):
+                yield kv
+
+class Text(object):
+    def __init__(self, text):
+        if type(text) is unicode:
+            text = text.encode('utf8')
+        self.text = text
+
+    def filter(self, iter):
+        for kv in iter:
+            if self.text in kv.value:
+                yield kv
+
+class PKeyRange(object):
+    def __init__(self, lo, hi):
+        self.lo = lo
+        self.hi = hi
+
+    def generate(self, table):
+        return table._selectPKR(self.lo, self.hi)
+
+    def filter(self, iter):
+        for kv in iter:
+            if self.lo <= kv.key < self.hi:
+                yield kv
+
+def genFilters(filter):
+    if filter is None:
+        return All(), []
+    if type(filter) is not list:
+        filter = [filter]
+    if not filter:
+        return All(), filter
+    if hasattr(filter[0], 'generate'):
+        return filter[0], filter[1:]
+    return All(), filter
+
 class Table(Publisher):
-    def __init__(self, client, id, indexers=None):
+    def __init__(self, indexers=None):
         Publisher.__init__(self)
-        self.client = client
-        self.id = id
         self.primary = {}
         self.indexers = indexers or {}
         self.indices = {}
         self.pkey = 0
         for col in self.indexers:
             self.indices[col] = {}
-        self.sink = None
-        self.time_index = None
 
-    def setBatch(self, records): 
+    def select(self, filter=None):
+        gen, filters = genFilters(filter)
+        result = gen.generate(self)
+        for f in filters:
+            if not hasattr(f, 'filter'):
+                f = Query(f) # assume it's a query
+            result = f.filter(result)
+        # Should we return an interator?
+        return list(result)
+
+    def _selectAll(self):
+        return [KeyValue(pkey, data)
+                for pkey, data in sorted(self.primary.iteritems())]
+
+    def _selectPKR(self, lo, hi):
+        return [KeyValue(pkey, data)
+                for pkey, data in sorted(self.primary.items())
+                if lo <= pkey < hi]
+
+    def _selectKey(self, spec, key, unique=False):
+        if spec.startswith('# int'):
+            results = []
+            try:
+                value = self.primary[key]
+                results.append(KeyValue(key, value, key))
+            except KeyError:
+                pass
+        else:
+            key = self._getIndexer(spec).normalize(key)
+            index = self._getIndex(spec)
+            if key not in index:
+                return []
+            results = [KeyValue(pkey, self.primary[pkey], key)
+                       for pkey in sorted(index[key])]
+        return results
+
+    def _selectKeyPrefix(self, spec, prefix, unique=False):
+        prefix = self._getIndexer(spec).normalize(prefix)
+        index = self._getIndex(spec)
+        pkl = [pk for sk, pk in sorted(index.iteritems()) if sk.startswith(prefix)]
+        if unique:
+            pkeys = [pk[0] for pk in pkl]
+        else:
+            pkeys = []
+            for pk in pkl: pkeys.extend(pk)
+        return [KeyValue(pkey, self.primary[pkey]) for pkey in pkeys]
+
+    def _selectKeyRange(self, spec, lo=None, hi=None, reverse=False):
+        normalize = self._getIndexer(spec).normalize
+        index = self._getIndex(spec)
+        range = sorted(index.iteritems(), reverse=reverse)
+        if lo is not None:
+            lo = normalize(lo)
+            range = dropwhile(lambda kv: kv[0] < lo, range)
+        if hi is not None:
+            hi = normalize(hi)
+            range = takewhile(lambda kv: kv[0] < hi, range)
+        for sk, pks in range:
+            for pk in pks:
+                yield KeyValue(pk, self.primary[pk], sk)
+
+    def count(self, filter=None):
+        if filter is None:
+            return len(self.primary)
+        gen, filters = genFilters(filter)
+        return len(self.select(filter))
+
+    def setBatch(self, records, notify=False): 
         for r in records:
-            self.set(r.key, r.value, notify=False)
+            self.set(r.key, r.value, notify)
 
-    def pkeys(self):
-        return list(sorted(self.primary.keys()))
+    def pkeys(self, filter=None):
+        return [kv.key for kv in self.select(filter)]
     
-    def countQuery(self, query):
-        return len(self._selectQuery(query))
-
-    def _maxIndex(self):
-        return max(self.primary.keys())
-
     def _index(self, pkey, data):
         for col, indexer in self.indexers.iteritems():
             key = indexer(data)
@@ -199,32 +345,12 @@ class Table(Publisher):
                 if len(index[key]) == 0:
                     del index[key]
                     
-    def copy(self, id):
-        t = self._copy()
-        t.id = id
-        self.client.grid.TABLES[id] = t
-
-    def erase(self):
-        self.client.eraseDb(self.id)
-        # The MockClient currently abuses a ClientProxy in openDb
-        # in order to make iter methods realistic. It puts a reference
-        # to the table in, rather than a proxy and opener.
-        # Because the ClientProxy hangs onto this Table, we need
-        # to simulate the erase by clearing the table as well.
+    def _erase(self):
         self.primary = {}
         self.pkey = 0
         self.indexers = {}
         self.indices = {}
         
-    def _copy(self):
-        from copy import deepcopy
-        copy = Table(self.client, self.id)
-        copy.primary = deepcopy(self.primary)
-        copy.indexers = deepcopy(self.indexers)
-        copy.indices = deepcopy(self.indices)
-        copy.pkey = self.pkey
-        return copy
-
     def _ensureIndex(self, unspec):
         spec = normalizeSpec(unspec)
         if spec not in self.indexers:
@@ -247,9 +373,6 @@ class Table(Publisher):
     def _getIndex(self, spec):
         return self.indices[normalizeSpec(spec)]
 
-    def size(self):
-        return len(self.primary)
-
     def _put(self, data, notify=True):
         self.pkey += 4
         self.primary[self.pkey] = data
@@ -259,13 +382,12 @@ class Table(Publisher):
             self.notify('key:%s' % self.pkey, info)
         self._index(self.pkey, data)
         
-    def insert(self, data):
-        self._put(data)
-        return self.pkey
-    
-    def insertBatch(self, records):
+    def insert(self, records, notify=True):
+        keys = []
         for r in records:
-            self._put(r, notify=False)
+            self._put(r, notify)
+            keys.append(self.pkey)
+        return keys
             
     def set(self, pkey, data, notify=True):
         try:
@@ -284,40 +406,22 @@ class Table(Publisher):
             self.pkey = pkey
 
     def _update(self, pkey, values, vrec):
-        rec = decodes(self.select(pkey))
-        modified = updateFields(rec, values, vrec)
-        if modified:
+        rec = decodes(self.get(pkey))
+        if updateFields(rec, values, vrec):
             self.set(pkey, encodes(rec))
 
-    def update(self, pkey, values, vrec=None):
-        if vrec is not None:
-            vrec = decodes(vrec)
-        self._update(pkey, values, vrec)
-
-    def updateKey(self, spec, key, values):
-        matches = self.selectKey(spec, key)
+    def update(self, filter, values, model=None):
         pkeys = []
-        for kv in matches:
+        if model is not None:
+            model = decodes(model)
+        for kv in self.select(filter):
             rec = decodes(kv.value)
-            if updateFields(rec, values):
+            if updateFields(rec, values, model):
                 pkeys.append(kv.key)
                 self.set(kv.key, encodes(rec))
         return pkeys
 
-    def updateQuery(self, query, values):
-        matches = self._selectQuery(query)
-        count = 0
-        for kv in matches:
-            rec = decodes(kv.value)
-            if updateFields(rec, values):
-                count += 1
-                self.set(kv.key, encodes(rec))
-        return count
-
-    def countKey(self, spec, value):
-        return len(self.selectKey(spec, value))
-
-    def pop(self, pkey, notify=True):
+    def _pop(self, pkey, notify=True):
         try:
             data = self.primary[pkey]
         except KeyError:
@@ -331,73 +435,44 @@ class Table(Publisher):
             self.notify('key:%s' % pkey, info)
         return data
 
-    def remove(self, pkey):
-        if pkey not in self.primary:
-            return
-        self.pop(pkey)
+    def pop(self, filter=None, notify=True):
+        kvs = self.select(filter)
+        for kv in kvs:
+            self._pop(kv.key, notify)
+        return kvs
 
-    def removeAll(self):
+    def _removeAll(self):
         count = len(self.primary)
         info = KeyValueChange(-1, '', '')
         for pkey in list(self.primary):
-            self.pop(pkey, notify=False)
+            self._pop(pkey, notify=False)
             self.notify('key:%s' % pkey, info)
         if count > 0:
             self.notify('delete', KeyValueChange(-count, '', ''))
         self.pkey = 0
         return count
 
-    def select(self, pkey):
+    def remove(self, filter=None):
+        if filter is None:
+            return self._removeAll()
+        to_remove = [item.key for item in self.select(filter)]
+        for pkey in to_remove:
+            self._pop(pkey)
+        return len(to_remove)
+
+    def _get(self, pkey, required):
+        value = self.primary.get(pkey)
+        if required and value is None:
+            raise KeyError(pkey)
+        return [] if value is None else [KeyValue(pkey, value)]
+
+    def get(self, pkey):
         if int(pkey) not in self.primary:
             raise KeyError(pkey)
         return self.primary[pkey]
 
-    def selectAll(self):
-        return [KeyValuePair(pkey, data)
-                for pkey, data in sorted(self.primary.iteritems())]
-
-    def values(self):
-        return [data for pkey, data in sorted(self.primary.items())]
-
-    def selectPKR(self, lo, hi):
-        return [KeyValuePair(pkey, data)
-                for pkey, data in sorted(self.primary.items())
-                if lo <= pkey < hi]
-
-    def selectKey(self, spec, key, query=None):
-        if spec.startswith('# int'):
-            results = []
-            try:
-                value = self.primary[key]
-                results.append(KeyValuePair(key, value))
-            except KeyError:
-                pass
-        else:
-            key = self._getIndexer(spec).normalize(key)
-            index = self._getIndex(spec)
-            if key not in index:
-                return []
-            results = [KeyValuePair(pkey, self.primary[pkey])
-                       for pkey in sorted(index[key])]
-        if query is None:
-            return results
-        return [kv for kv in results if matchQuery(query, kv.value)]
-
-    def selectUniqueKey(self, spec, key):
-        key = self._getIndexer(spec).normalize(key)
-        index = self._getIndex(spec)
-        pkeys = [pk[0] for sk, pk in sorted(index.iteritems())
-                 if sk.startswith(key)]
-        return [KeyValuePair(pkey, self.primary[pkey]) for pkey in pkeys]
-
-    def countUniqueKey(self, spec, key):
-        return len(self.selectUniqueKey(spec, key))
-
-    def selectUniqueKeyRange(self, spec, key, lo, hi):
-        return self.selectUniqueKey(spec, key)[lo:hi]
-
-    def selectKeyRange(self, spec, key, lo, hi, query=None):
-        return self.selectKey(spec, key, query)[lo:hi]
+    def values(self, filter=None):
+        return [pk.value for pk in self.select(filter)]
 
     def setKey(self, spec, message, replace=True):
         """Inserts or updates a record indexed by spec.
@@ -407,63 +482,16 @@ class Table(Publisher):
         """
         indexer = self._getIndexer(spec)
         key = indexer(message)
-        to_remove = [item.key for item in self.selectKey(spec, key)]
+        to_remove = [item.key for item in self._selectKey(spec, key)]
         if len(to_remove) > 0:
             if not replace:
                 return -1
             for pkey in to_remove[1:]:
-                self.remove(pkey)
+                self._pop(pkey)
             self.set(to_remove[0], message)
             return to_remove[0]
         else:
-            return self.insert(message)
-
-    def _selectQuery(self, query):
-        return [r for r in self.selectAll() if matchQuery(query, r.value)]
-
-    def selectQuery(self, query, lo=0, hi=None):
-        return self._selectQuery(query)[lo:hi]
-
-    def selectQueryPKR(self, q, lo, hi):
-        return [kv for kv in self._selectQuery(q) if lo <= kv.key < hi]
-
-    def selectText(self, text):
-        if type(text) is unicode:
-            text = text.encode('utf8')
-        ltext = text.lower()
-        return [kv for kv in self.selectAll() if ltext in kv.value.lower()]
-
-    def firstByKey(self, spec):
-        self._ensureIndex(spec)
-        index = self._getIndex(spec)
-        if len(index) == 0:
-            raise Exception('empty')
-        skey = sorted(index.keys())[0]
-        pkey = index[skey][0]
-        return SKeyKeyValueTriple(pkey, self.primary[pkey], skey)
-
-    def removeKey(self, spec, key):
-        to_remove = [item.key for item in self.selectKey(spec, key)]
-        for pkey in to_remove:
-            self.remove(pkey)
-        return len(to_remove)
-
-    def removeQuery(self, query):
-        to_remove = [
-            item.key for item in self._selectQuery(query)]
-        for pkey in to_remove:
-              self.remove(pkey)
-        return len(to_remove)
-
-    def selectRange(self, begin, end):
-        return [KeyValuePair(i, self.primary[i])
-                for i in sorted(self.primary.keys())[begin:end]]
-        
-    def selectSortedRange(self, query, index, begin, end, desc):
-        assert False, 'not implemented'
-
-    def matchKeyQuery(self, pkey, q):
-        return matchQuery(q, self.select(pkey))
+            return self.insert([message])[0]
 
     def _join(self, left, join, query, func):
         for lkv in left:
@@ -482,9 +510,10 @@ class Table(Publisher):
         except (KeyError, AttributeError):
             to_join = []
         else:
-            to_join = self.selectKeyRange(spec, key, 0, limit, query)
+            filters = [query, Range(0, limit)] if query is not None else [Range(0, limit)]
+            to_join = self.select([Key(spec, key)] + filters)
         if not to_join and join.nulls:
-            to_join.append(KeyValuePair(0, encodes({})))
+            to_join.append(KeyValue(0, encodes({})))
         for kv in to_join:
             right = decodes(kv.value)
             func(l_pk, left, kv.key, right)
@@ -493,7 +522,7 @@ class Table(Publisher):
         results = []
         def buildJoin(s_pk, s_rec, r_pk, r_rec):
             out = mergeRecords(s_pk, s_rec, r_pk, r_rec, merge, {})
-            results.append(KeyValuePair(s_pk, encodes(out)))
+            results.append(KeyValue(s_pk, encodes(out)))
         self._join(left, join, query, buildJoin)
         return results
 
@@ -506,28 +535,19 @@ class Table(Publisher):
         self._join(stream, join, query, doUpdate)
         return count[0]
 
-    def setTimeIndex(self, index):
-        self.time_index = index
-
-    def getTimeIndex(self):
-        return self.time_index
-
-    def setSink(self, sink):
-        self.sink = sink
-
-    def getSink(self):
-        return self.sink
-
-    def maxId(self):
-        return max(list(self.primary))
+    def maxPK(self):
+        return max(self.primary)
 
 class Client(object):
+    def __init__(self):
+        self._tables = {}
+
     def openDb(self, name):
-        return Table(self, name)
+        if name not in self._tables:
+            self._tables[name] = Table()
+        return self._tables[name]
 
     def eraseDb(self, name):
-        #try:
-        #    del self.grid.TABLES[name]
-        #except KeyError:
-        #    pass
-        pass
+        table = self._tables.pop(name, None)
+        if table is not None:
+            table._erase()

@@ -16,14 +16,12 @@ class TableTest(unittest.TestCase):
         self.table = self.client.openDb('test/table-1')
         self.info = None
         self.all_info = []
-        if self.table.size():
-            self.table.erase()
 
     def tearDown(self):
-        self.table.erase()
+        self.client.eraseDb('test/table-1')
 
     def _insertPerson(self, name, age=0, id=''):
-        return self.table.insert(encodes({'name': name, 'age': age, 'id': id}))
+        return self.table.insert([encodes({'name': name, 'age': age, 'id': id})])[0]
 
     def _insertTestData(self):
         id = self._insertPerson('Fred', 35)
@@ -48,24 +46,24 @@ class TableTest(unittest.TestCase):
 
         # Notification for remove has empty value.
         with tracker.expect(1):
-            self.table.remove(100)
+            self.table.remove(PKey(100))
         self.assertEqual(tracker.events[0].value, '')
 
         # Check notification for insert.
         self.table.subscribe('change', tracker.callback)
         with tracker.expect(1):
-            self.table.insert('baz')
+            self.table.insert(['baz'])
         self.assertEqual(tracker.events[0].value, 'baz')
 
-        # Check no notifications for insertBatch
+        # Check no notifications for insert
         with tracker.expect(0):
-            self.table.insertBatch(['foonly', 'garply'])
+            self.table.insert(['foonly', 'garply'], False)
 
         with tracker.expect(0):
-            self.table.insertBatch(['quarply'])
+            self.table.insert(['quarply'], False)
 
         with tracker.expect(0):
-            self.table.setBatch([KeyValuePair(13, 'goober')])
+            self.table.setBatch([KeyValue(13, 'goober')])
 
         # Add another specific subscriber and reinsert record 100.
         with tracker.expect(2):
@@ -75,10 +73,10 @@ class TableTest(unittest.TestCase):
         # Check we get two notifications, one "delete" with -(record-count)
         # and one for 'key:100' but none for 'key:200'.
         self.table.subscribe('delete', tracker.callback)
-        size = self.table.size()
+        size = self.table.count()
         self.all_info = []
         with tracker.expect(2):
-            self.table.removeAll()
+            self.table.remove()
         self.assertTrue(-size in [info.key for info in tracker.events])
 
         # Check 'key:200' notification for pop.
@@ -88,7 +86,7 @@ class TableTest(unittest.TestCase):
         self.table.unsubscribe('delete', tracker.callback)
         self.table.unsubscribe('change', tracker.callback)
         with tracker.expect(1):
-            self.table.pop(200)
+            self.table.pop(PKey(200))
         self.assertEqual(tracker.events[0].key, 200)
         self.assertEqual(tracker.events[0].value, '')
 
@@ -113,12 +111,12 @@ class TableTest(unittest.TestCase):
         pebble4 = person('pebble', 4, 'P4')
 
         with tracker.expect(1):
-            self.table.insert(fred)
+            self.table.insert([fred])
         self.assertEqual(tup(tracker.events[0]), (4, '', fred))
         with tracker.expect(0):
-            self.table.insertBatch([barney]) # pkey = 8
+            self.table.insert([barney], False) # pkey = 8
         with tracker.expect(0):
-            self.table.insertBatch([wilma]) # pkey = 12
+            self.table.insert([wilma], False) # pkey = 12
         with tracker.expect(1):
             self.table.setKey(':name str', betty, replace=False)
         self.assertEqual(tup(tracker.events[0]), (16, '', betty))
@@ -127,7 +125,7 @@ class TableTest(unittest.TestCase):
             self.table.set(4, pebble)
         self.assertEqual(tup(tracker.events[0]), (4, fred, pebble))
         with tracker.expect(0):
-            self.table.setBatch([KeyValuePair(8, pebble3)])
+            self.table.setBatch([KeyValue(8, pebble3)])
         with tracker.expect(2):
             self.table.setKey(':name str', pebble4)
         self.assertEqual(tup(tracker.events[0]), (8, pebble3, ''))
@@ -138,37 +136,36 @@ class TableTest(unittest.TestCase):
 
         update = [FieldValue(':age', 3), FieldValue(':id', 'P3')]
         with tracker.expect(1):
-            self.table.update(4, update)
+            self.table.update(PKey(4), update)
         self.assertEqual(tup(tracker.events[0]), (4, pebble4, pebble3))
         with tracker.expect(1):
-            self.table.updateKey(':name str', 'betty',
-                                [FieldValue(':age', 17)])
+            self.table.update(Key(':name str', 'betty'), [FieldValue(':age', 17)])
         self.assertEqual(tup(tracker.events[0]), (16, betty, betty17))
         query = QTerm(':id', 'eq', 'BT')
         with tracker.expect(1):
-            self.table.updateQuery(query, [FieldValue(':age', 16)])
+            self.table.update(query, [FieldValue(':age', 16)])
         self.assertEqual(tup(tracker.events[0]), (16, betty17, betty))
 
         # For updateIter.. see testUpdateIterNotifications
         
         with tracker.expect(1):
-            self.table.remove(4)
+            self.table.remove(PKey(4))
         self.assertEqual(tup(tracker.events[0]), (4, pebble3, ''))
         with tracker.expect(1):
-            n = self.table.removeQuery(query) # id eq BT
+            n = self.table.remove([query]) # id eq BT
         self.assertEqual(n, 1)
         self.assertEqual(tup(tracker.events[0]), (16, betty, ''))
         with tracker.expect(1):
-            self.table.removeKey(':name str', 'barney')
+            self.table.remove(Key(':name str', 'barney'))
         self.assertEqual(tup(tracker.events[0]), (8, barney, ''))
         with tracker.expect(1):
-            data = self.table.pop(12)
+            data = self.table.pop(PKey(12))
         self.assertEqual(tup(tracker.events[0]), (12, wilma, ''))
 
         # Now add two more in order to test removeAll
-        self.table.insertBatch([fred, barney])
+        self.table.insert([fred, barney], False)
         with tracker.expect(1):
-            n = self.table.removeAll()
+            n = self.table.remove()
         self.assertEqual(n, 2)
         self.assertEqual(tup(tracker.events[0]), (-2, '', ''))
 
@@ -177,15 +174,15 @@ class TableTest(unittest.TestCase):
     def testSetThenGet(self):
         l = self.table
         self.table.set(123, 'quux')
-        self.assertEqual(self.table.select(123), 'quux')
-        self.assertRaises(KeyError, self.table.select, 145)
+        self.assertEqual(self.table.get(123), 'quux')
+        self.assertRaises(KeyError, self.table.get, 145)
         
     def testInsert(self):
         tracker = NotificationTracker(fast=True)
 
         self.table.subscribe('change', tracker.callback)
         with tracker.expect(1):
-            key = self.table.insert('baz')
+            key = self.table.insert(['baz'])[0]
 
         self.assertEqual(tracker.events[0].key, key)
         self.assertEqual(tracker.events[0].value, 'baz')
@@ -223,9 +220,9 @@ class TableTest(unittest.TestCase):
 
     def testRemove(self):
         self.table.set(100, 'bar')
-        self.assertEqual(self.table.select(100), 'bar')
-        self.table.remove(100)
-        self.assertRaises(KeyError, self.table.select, 100)
+        self.assertEqual(self.table.get(100), 'bar')
+        self.table.remove(PKey(100))
+        self.assertRaises(KeyError, self.table.get, 100)
 
     def testSetKey(self):
         self._insertTestData()
@@ -249,9 +246,9 @@ class TableTest(unittest.TestCase):
         self.table.subscribe('delete', tracker.callback)
 
         with tracker.expect(2):
-            count = self.table.removeKey(':age int', 35)
+            count = self.table.remove(Key(':age int', 35))
         self.assertEqual(count, 2)
-        self.assertEqual(self.table.size(), 1)
+        self.assertEqual(self.table.count(), 1)
         events = [(e.key, e.value) for e in tracker.events]
         events.sort()
         self.assertEqual(events, [(4, ''), (12, '')])
@@ -266,109 +263,98 @@ class TableTest(unittest.TestCase):
     def testQuery(self):
         id = self._insertTestData()
         fred35 = self._fred35Query()
-        count = self.table.countQuery(fred35)
+        count = self.table.count(fred35)
         self.assertEqual(count, 1)
-        results = self.table.selectQuery(fred35, 0, 100)
+        results = self.table.select(fred35)
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].key, id)
 
     def testSelectQueryPKR(self):
-        id = self._insertTestData()
-        fred35 = self._fred35Query();
-        results = self.table.selectQueryPKR(fred35, 0, 100)
-        self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].key, id)
+        self._insertTestData()
+        results = self.table.select([QTerm(':name', 'eq', 'Fred'), PKeyRange(6, 14)])
+        self.assertEqual([kv.key for kv in results], [8])
+        results = self.table.pkeys(PKeyRange(6, 14))
+        self.assertEqual(results, [8, 12])
 
     def testSelectRange(self):
         self._insertTestData()
-        results = self.table.selectRange(0, 2)
+        results = self.table.select([Range(0, 2)])
         self.assertEqual(len(results), 2)
         self.assertEqual(results[1].key, 8)
 
     def testSelectAll(self):
         self._insertTestData()
         self.assertEqual(self.table.pkeys(), [4, 8, 12])
-        self.assertEqual(self.table.maxId(), 12)
-        results = self.table.selectAll()
+        self.assertEqual(self.table.maxPK(), 12)
+        results = self.table.select()
         self.assertEqual(len(results), 3)
 
     def testSelectKey(self):
         self._insertTestData()
-        results = self.table.selectKey(':name str', 'Fred')
+        results = self.table.select(Key(':name str', 'Fred'))
         self.assertEqual(len(results), 2)
-        results = self.table.selectKey(':age int', 64)
+        results = self.table.select(Key(':age int', 64))
         self.assertEqual(len(results), 1)
-        count = self.table.countKey(':name str', 'Fred')
+        count = self.table.count(Key(':name str', 'Fred'))
         self.assertEqual(count, 2)
-        count = self.table.countKey(':age int', 64)
+        count = self.table.count(Key(':age int', 64))
         self.assertEqual(count, 1)
 
     def testSelectKeyRange(self):
         self._insertTestData()
-        # Use selectKeyRange to pick up up to two duplicates.
-        results = self.table.selectKeyRange(':name str', 'Fred', 1, 3)
+        results = self.table.select([Key(':name str', 'Fred'), Range(1, 3)])
         self.assertEqual(len(results), 1)
+        names = [kv.skey for kv in self.table.select(KeyRange(':name str', reverse=True))]
+        self.assertEqual(names, ['Louise', 'Fred', 'Fred'])
 
     def testFirstByKey(self):
         self._insertPerson('Brian', 39) # 4
         self._insertPerson('Albert', 45) # 8
         self._insertPerson('Alice', 25) # 12
-        kvs = self.table.firstByKey(':name str')
+        kvs = self.table.select([KeyRange(':name str'), Range(0,1)])[0]
         self.assertEqual(kvs.key, 8)
         self.assertEqual(kvs.skey, 'Albert')
         rec = decodes(kvs.value)
         self.assertEqual(rec['age'], 45)
 
-    def testSelectUniqueKey(self):
-        # This horribly mis-named method really means
-        # match on a prefix and skip duplicates.
+    def testSelectKeyPrefix(self):
         self._insertPerson('Albert', 45) # 1st match
         self._insertPerson('Alice', 21) # 2nd match
         self._insertPerson('Alice', 25) # skipped
         self._insertPerson('Brian', 39)
         self._insertPerson('David', 55)
-        count = self.table.countUniqueKey(':name str', 'Al')
+        count = self.table.count(KeyPrefix(':name str', 'Al', unique=True))
         self.assertEqual(count, 2)
-        results = self.table.selectUniqueKeyRange(':name str', 'Al', 1, 4)
+        results = self.table.select([KeyPrefix(':name str', 'Al', unique=True), Range(1, 4)])
         self.assertEqual(len(results), 1)
         rec = decodes(results[0].value)
         self.assertEqual(rec['name'], 'Alice')
 
-    def testMatchKeyQuery(self):
-        self._insertTestData()
-        fred35 = self._fred35Query()
-        # Another one which ought to be renamed since it has
-        # nothing to do with secondary keys like the other Key methods.
-        self.assertTrue(self.table.matchKeyQuery(4, fred35))
-        self.assertFalse(self.table.matchKeyQuery(12, fred35))
-
     def testSelectText(self):
         self._insertTestData()
-        kvs = self.table.selectText('Fred')
+        kvs = self.table.select([Text('Fred')])
         self.assertEqual([kv.key for kv in kvs], [4, 8])
         self.assertEqual(decodes(kvs[-1].value)['age'], 64)
 
     def testSelectQuery(self):
         id = self._insertTestData()
         fred35 = self._fred35Query()
-        results = self.table.selectQuery(fred35, 0, 100)
+        results = self.table.select(fred35)
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].key, id)
-        # QText is a query term which supersedes selectText.
-        fredq = QText('Fred')
-        kvs = self.table.selectQuery(fredq, 0, 10)
+        kvs = self.table.select(Text('Fred'))
         self.assertEqual([kv.key for kv in kvs], [4, 8])
         self.assertEqual(decodes(kvs[-1].value)['age'], 64)
 
     def testSelectPKR(self):
         self._insertTestData()
-        results = list(self.table.selectPKR(8, 12))
+        results = self.table.select(PKeyRange(8, 12))
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].key, 8)
     
     def testDataKeyType(self):
-        self.table.insert(encodes({'name': 'fred', 'id': '111'}))
-        recs = self.table.selectKey(':id data', '111')
+        self.table.insert([encodes({'name': 'fred', 'id': '111'})])
+        recs = self.table.select(Key(':id data', '111'))
         self.assertEqual(len(recs), 1)
         self.assertEqual(decodes(recs[0].value)['name'], 'fred')
     
@@ -379,10 +365,10 @@ class TableTest(unittest.TestCase):
         tracker = NotificationTracker()
         self.table.subscribe('delete', tracker.callback)
         with tracker.expect(1):
-            count = self.table.removeQuery(fred35)
+            count = self.table.remove([fred35])
 
         self.assertEqual(count, 1)
-        self.assertEqual(self.table.size(), 2)
+        self.assertEqual(self.table.count(), 2)
         self.assertEqual(tracker.events[0].key, id)
 
     def testCaseInsensitiveIndex(self):
@@ -394,34 +380,33 @@ class TableTest(unittest.TestCase):
         self._insertPerson('BARNEY', id='CCC')
 
         self.assertEqual(
-            self.table.countKey(':name str-i', 'fReD'), 3)
-        recs = self.table.selectKey(':name str-i', 'Fred')
+            self.table.count(Key(':name str-i', 'fReD')), 3)
+        recs = self.table.select(Key(':name str-i', 'Fred'))
         self.assertEqual(len(recs), 3)
         self.assertEqual([decodes(r.value)['name'] for r in recs],
                          ['fred', 'Fred', 'FRED'])
-        recs = self.table.selectKeyRange(
-            ':name str-i', 'Fred', 1, 2)
+        recs = self.table.select([Key(':name str-i', 'Fred'), Range(1, 2)])
         self.assertEqual(len(recs), 1)
         self.assertEqual(decodes(recs[0].value)['name'], 'Fred')
 
         self.assertEqual(
-            self.table.countKey(':id data-i', 'bBb'), 2)
+            self.table.count(Key(':id data-i', 'bBb')), 2)
 
         barney = encodes({'name': 'Barney', 'id': 'ddd'})
         self.table.setKey(':name str-i', barney) # 3 barneys -> 1
-        self.assertEqual(self.table.size(), 4)
+        self.assertEqual(self.table.count(), 4)
         self.assertEqual(
-            self.table.countKey(':id data-i', 'DDD'), 1)
+            self.table.count(Key(':id data-i', 'DDD')), 1)
 
         self.assertEqual(
-            self.table.removeKey(':name str-i', 'fRED'), 3)
-        recs = self.table.selectAll()
+            self.table.remove(Key(':name str-i', 'fRED')), 3)
+        recs = self.table.select()
         self.assertEqual([decodes(r.value)['id'] for r in recs], ['ddd'])
 
         self._insertPerson('wilma', id='aaa')
         self._insertPerson('Wilma', id='AAA')
         self._insertPerson('WILMA', id='bbb')
-        item = self.table.firstByKey(':name str-i')
+        item = self.table.select([KeyRange(':name str-i'), Range(0,1)])[0]
         self.assertEqual(item.skey, 'barney') # skey is lowercase
         self.assertEqual(decodes(item.value)['name'], 'Barney')
 
@@ -433,19 +418,17 @@ class TableTest(unittest.TestCase):
         self._insertPerson('barbara')
         self._insertPerson('ALFRED')
 
-        recs = self.table.selectUniqueKey(':name str-i', 'a')
+        recs = self.table.select(KeyPrefix(':name str-i', 'a', unique=True))
         self.assertEqual([decodes(r.value)['name'] for r in recs],
                          ['aaron', 'ALFRED', 'ali', 'Azalea'])
-        recs = self.table.selectUniqueKey(
-            ':name str-i', 'al')
+        recs = self.table.select(KeyPrefix(':name str-i', 'al', unique=True))
         self.assertEqual([decodes(r.value)['name'] for r in recs],
                          ['ALFRED', 'ali'])
-        recs = self.table.selectUniqueKeyRange(
-            ':name str-i', 'a', 1, 3)
+        recs = self.table.select([KeyPrefix(':name str-i', 'a', unique=True), Range(1, 3)])
         self.assertEqual([decodes(r.value)['name'] for r in recs],
                          ['ALFRED', 'ali'])
         self.assertEqual(
-            self.table.countUniqueKey(':name str-i', 'a'), 4)
+            self.table.count(KeyPrefix(':name str-i', 'a', unique=True)), 4)
 
     def testUpdate(self):
         key = self._insertPerson('Joe', id='90')
@@ -455,17 +438,17 @@ class TableTest(unittest.TestCase):
         values = [FieldValue(':name', 'Joseph'), FieldValue(':age', 14)]
 
         with tracker.expect(1):
-            self.table.update(key, values)
+            self.table.update(PKey(key), values)
 
-        rec = decodes(self.table.select(key))
+        rec = decodes(self.table.get(key))
         self.assertEqual(rec, dict(name='Joseph', age=14, id='90'))
 
-        self.assertRaises(KeyError, self.table.update, key+1, values)
+        self.assertRaises(KeyError, self.table.update, PKey(key+1), values)
 
         # Update with values taken from another record.
         updates = [CopyField(':id', ':newid')]
-        self.table.update(key, updates, encodes(dict(newid='99')))
-        rec = decodes(self.table.select(key))
+        self.table.update(PKey(key), updates, encodes(dict(newid='99')))
+        rec = decodes(self.table.get(key))
         self.assertEqual(rec, dict(name='Joseph', age=14, id='99'))
 
     def testUpdateKey(self):
@@ -478,10 +461,10 @@ class TableTest(unittest.TestCase):
         values = [FieldValue(':age', 14)]
 
         with tracker.expect(2):
-            pkeys = self.table.updateKey(':id data', '4', values)
+            pkeys = self.table.update(Key(':id data', '4'), values)
 
         self.assertEqual(pkeys, [8, 12])
-        results = self.table.selectKey(':id data', '4')
+        results = self.table.select(Key(':id data', '4'))
         self.assertEqual([decodes(r.value)['age'] for r in results], [14, 14])
 
     def testUpdateQuery(self):
@@ -495,10 +478,10 @@ class TableTest(unittest.TestCase):
 
         query = QTerm(':id', 'eq', '4')
         with tracker.expect(2):
-            count = self.table.updateQuery(query, values)
+            count = len(self.table.update(query, values))
 
         self.assertEqual(count, 2)
-        results = self.table.selectQuery(query, 0, 100)
+        results = self.table.select([query])
         self.assertEqual([decodes(r.value)['age'] for r in results], [14, 14])
 
     def testUpdateQueryWithWhere(self):
@@ -516,8 +499,8 @@ class TableTest(unittest.TestCase):
             FieldValue(':name', 'Oldie', ageGe3),
             FieldValue(':name', 'Pirate', pirate)]
 
-        pkeys = self.table.updateQuery(query, values)
-        names = [decodes(kv.value)['name'] for kv in self.table.selectAll()]
+        pkeys = self.table.update(query, values)
+        names = [decodes(kv.value)['name'] for kv in self.table.select()]
         self.assertEqual(names, ['Tom', 'Oldie', 'Pirate'])
 
     def _pet(self, name, owner, age):
@@ -536,7 +519,7 @@ class TableTest(unittest.TestCase):
         join = JoinSpec('name', 'owner', 'str')
         merge = mergeSpec('R:owner->. L:* R:*->pet_%')
 
-        people = self.table.selectAll()
+        people = self.table.select()
         results = pets.join(people, join, None, merge)
         recs = [decodes(kv.value) for kv in results]
 
@@ -550,7 +533,7 @@ class TableTest(unittest.TestCase):
 
         query = QTerm(':age', 'eq', 2)
 
-        people = self.table.selectAll()
+        people = self.table.select()
         results = pets.join(people, join, query, merge)
         recs = [decodes(kv.value) for kv in results]
 
@@ -564,7 +547,7 @@ class TableTest(unittest.TestCase):
         join.limit = 1
         join.keepOpen = True
 
-        people = self.table.selectAll()
+        people = self.table.select()
         results = pets.join(people, join, QAlways(True), merge)
         recs = [decodes(kv.value) for kv in results]
 
@@ -603,7 +586,7 @@ class TableTest(unittest.TestCase):
 
         join = JoinSpec('#', 'person_id', 'int')
         merge = mergeSpec('L:* R:*')
-        people = self.table.selectAll()
+        people = self.table.select()
         results = vets.join(people, join, QAlways(True), merge)
         recs = [decodes(kv.value) for kv in results]
 
@@ -617,7 +600,7 @@ class TableTest(unittest.TestCase):
 
         join = JoinSpec('person_id', '#', 'int')
         merge = mergeSpec('L:* R:*')
-        all_vets = vets.selectAll()
+        all_vets = vets.select()
         results = self.table.join(all_vets, join, QAlways(True), merge)
         recs = [decodes(kv.value) for kv in results]
 
@@ -635,7 +618,7 @@ class TableTest(unittest.TestCase):
 
         number = self.client.openDb('test/number')
         number.set(4, encodes({'pkey': 4}))
-        numbers = number.selectAll()
+        numbers = number.select()
 
         join = JoinSpec('pkey', '#', 'int')
         merge = mergeSpec('R:* R:#->pkey')
@@ -659,23 +642,23 @@ class TableTest(unittest.TestCase):
         # person['name'] = pets.owner
         join = JoinSpec('owner', 'name', 'str')
         values = [FieldValue(':id', '9'), CopyField(':age', ':age')]
-        pet_stream = pets.selectAll()
+        pet_stream = pets.select()
 
         count = self.table.updateIter(pet_stream, join, None, values)
 
         self.assertEqual(count, 2)
 
-        tom = decodes(self.table.select(4))
+        tom = decodes(self.table.get(4))
         self.assertEqual(tom['name'], 'Tom')
         self.assertEqual(tom['id'], '9')
         self.assertEqual(tom['age'], 3) # from Fido.
 
-        dick = decodes(self.table.select(8))
+        dick = decodes(self.table.get(8))
         self.assertEqual(dick['name'], 'Dick')
         self.assertEqual(dick['id'], '9')
         self.assertEqual(dick['age'], 2) # from Oscar.
 
-        harry = decodes(self.table.select(12))
+        harry = decodes(self.table.get(12))
         self.assertEqual(harry['name'], 'Harry')
         self.assertEqual(harry['id'], '4')
         self.assertEqual(harry['age'], 15)
@@ -694,7 +677,7 @@ class TableTest(unittest.TestCase):
         tom_u = person('Tom', 3, '9')
         dick_u = person('Dick', 2, '9')
 
-        self.table.insertBatch([tom, dick, harry])
+        self.table.insert([tom, dick, harry], False)
 
         pets = self.client.openDb('test/two_pets')
         pets.set(4, self._pet('Fido', 'Tom', 3))
@@ -704,7 +687,7 @@ class TableTest(unittest.TestCase):
         # person['name'] = pets.owner
         join = JoinSpec('owner', 'name', 'str')
         values = [FieldValue(':id', '9'), CopyField(':age', ':age')]
-        pet_stream = pets.selectAll()
+        pet_stream = pets.select()
 
         with tracker.expect(2):
             count = self.table.updateIter(pet_stream, join, None, values)
@@ -717,18 +700,18 @@ class TableTest(unittest.TestCase):
     def testUpdateIterNumericKey(self):
         BIGN = 123456789101112
         rec = {'n': BIGN, 'what': 'no'}
-        self.table.insert(encodes(rec))
+        self.table.insert([encodes(rec)])
 
         numeric = self.client.openDb('test/numeric')
         rec['what'] = 'match'
         numeric.set(4, encodes(rec))
-        stream = numeric.selectAll()
+        stream = numeric.select()
 
         join = JoinSpec('n', 'n', 'int')
         values = [FieldValue(':what', 'yes')]
         self.table.updateIter(stream, join, None, values)
 
-        updated = decodes(self.table.select(4))
+        updated = decodes(self.table.get(4))
         self.assertEqual(updated['what'], 'yes')
 
     def printResults(self, results):
@@ -737,28 +720,28 @@ class TableTest(unittest.TestCase):
             print kv.key, decodes(kv.value)
 
     def xtestIntsetQuery(self):
-        self.table.insert(encodes({'tags': set()}))
-        self.table.insert(encodes({'tags': set([0])}))
-        self.table.insert(encodes({'tags': set([1])}))
-        self.table.insert(encodes({'tags': set([0,1])}))
+        self.table.insert([encodes({'tags': set()})])
+        self.table.insert([encodes({'tags': set([0])})])
+        self.table.insert([encodes({'tags': set([1])})])
+        self.table.insert([encodes({'tags': set([0,1])})])
 
         includes0 = QTerm('tags', 'includes', 0)
         includes1 = QTerm('tags', 'includes', 1)
         excludes0 = QTerm('tags', 'excludes', 0)
 
-        results = self.table.selectQuery(includes0, 0, 10)
+        results = self.table.select([includes0])
         keys = [kv.key for kv in results]
         self.assertEqual(keys, [8, 16])
 
-        results = self.table.selectQuery(QOr([includes0, includes1]), 0, 10)
+        results = self.table.select([QOr([includes0, includes1])])
         keys = [kv.key for kv in results]
         self.assertEqual(keys, [8, 12, 16])
 
-        results = self.table.selectQuery(QOr([includes1, excludes0]), 0, 10)
+        results = self.table.select([QOr([includes1, excludes0])])
         keys = [kv.key for kv in results]
         self.assertEqual(keys, [4, 12, 16])
 
-        results = self.table.selectQuery(QAnd([includes0, includes1]), 0, 10)
+        results = self.table.select([QAnd([includes0, includes1])])
         keys = [kv.key for kv in results]
         self.assertEqual(keys, [16])
 
@@ -779,17 +762,17 @@ class TableTest(unittest.TestCase):
         update = [IntSetUpdate('tags', 1, True),
                   IntSetUpdate('tags', 2, False)]
 
-        self.table.updateQuery(None, update)
-        self.assertEqual(decodes(self.table.select(1))['tags'], set([1]))
-        self.assertEqual(decodes(self.table.select(2))['tags'], set([1, 3]))
+        self.table.update(None, update)
+        self.assertEqual(decodes(self.table.get(1))['tags'], set([1]))
+        self.assertEqual(decodes(self.table.get(2))['tags'], set([1, 3]))
 
         # Use a global query: remove 1 if 3 is present.
         query = QTerm('tags', 'includes', 3)
         update = [IntSetUpdate('tags', 1, False)]
 
-        self.table.updateQuery(query, update)
-        self.assertEqual(decodes(self.table.select(1))['tags'], set([1]))
-        self.assertEqual(decodes(self.table.select(2))['tags'], set([3]))
+        self.table.update(query, update)
+        self.assertEqual(decodes(self.table.get(1))['tags'], set([1]))
+        self.assertEqual(decodes(self.table.get(2))['tags'], set([3]))
 
         # Use per-field queries: if 1 present, add 4, if 1 not present add 5.
         qi1  = QTerm('tags', 'includes', 1)
@@ -797,9 +780,9 @@ class TableTest(unittest.TestCase):
         update = [IntSetUpdate('tags', 4, True, qi1),
                   IntSetUpdate('tags', 5, True, qe1)]
 
-        self.table.updateQuery(None, update)
-        self.assertEqual(decodes(self.table.select(1))['tags'], set([1, 4]))
-        self.assertEqual(decodes(self.table.select(2))['tags'], set([3, 5]))
+        self.table.update(None, update)
+        self.assertEqual(decodes(self.table.get(1))['tags'], set([1, 4]))
+        self.assertEqual(decodes(self.table.get(2))['tags'], set([3, 5]))
 
     def xtestIntSetUpdateVar(self):
         var = {}
@@ -811,9 +794,9 @@ class TableTest(unittest.TestCase):
         update = [IntSetUpdate(':tags', 1, True),
                   IntSetUpdate(':tags', 2, False)]
 
-        self.table.updateQuery(None, update)
-        self.assertEqual(decodes(self.table.select(1))['tags'], set([1]))
-        self.assertEqual(decodes(self.table.select(2))['tags'], set([1, 3]))
+        self.table.update(None, update)
+        self.assertEqual(decodes(self.table.get(1))['tags'], set([1]))
+        self.assertEqual(decodes(self.table.get(2))['tags'], set([1, 3]))
 
     def xtestBitUpdate(self):
         self.table.set(1, encodes({'flags': 0}))
@@ -822,17 +805,17 @@ class TableTest(unittest.TestCase):
         update = [IntSetUpdate(':flags', 1, True),
                   IntSetUpdate(':flags', 2, False)]
 
-        self.table.updateQuery(None, update)
-        self.assertEqual(decodes(self.table.select(1))['flags'], 0b0010)
-        self.assertEqual(decodes(self.table.select(2))['flags'], 0b1010)
+        self.table.update(None, update)
+        self.assertEqual(decodes(self.table.get(1))['flags'], 0b0010)
+        self.assertEqual(decodes(self.table.get(2))['flags'], 0b1010)
 
         # Use a global query: remove 1 if 3 is present.
         query = QTerm(':flags', 'includes', 3)
         update = [IntSetUpdate(':flags', 1, False)]
 
-        self.table.updateQuery(query, update)
-        self.assertEqual(decodes(self.table.select(1))['flags'], 0b0010)
-        self.assertEqual(decodes(self.table.select(2))['flags'], 0b1000)
+        self.table.update(query, update)
+        self.assertEqual(decodes(self.table.get(1))['flags'], 0b0010)
+        self.assertEqual(decodes(self.table.get(2))['flags'], 0b1000)
 
         # Use per-field queries: if 1 present, add 4, if 1 not present add 5.
         qi1  = QTerm(':flags', 'includes', 1)
@@ -840,12 +823,12 @@ class TableTest(unittest.TestCase):
         update = [IntSetUpdate(':flags', 4, True, qi1),
                   IntSetUpdate(':flags', 5, True, qe1)]
 
-        self.table.updateQuery(None, update)
-        self.assertEqual(decodes(self.table.select(1))['flags'], 0b010010)
-        self.assertEqual(decodes(self.table.select(2))['flags'], 0b101000)
+        self.table.update(None, update)
+        self.assertEqual(decodes(self.table.get(1))['flags'], 0b010010)
+        self.assertEqual(decodes(self.table.get(2))['flags'], 0b101000)
 
     def queryKeys(self, query):
-        return [kv.key for kv in self.table.selectQuery(query, 0, 100)]
+        return [kv.key for kv in self.table.select([query])]
 
     def testNestingQuery(self):
         self._insertPerson('Tom', age=20) # 4
@@ -874,10 +857,10 @@ class TableTest(unittest.TestCase):
     def testIndexingBug(self):
         person = {'name': 'fred', 'age': 15}
         self.table.set(4, encodes(person))
-        self.assertEqual(self.table.countKey(':name str', 'fred'), 1)
+        self.assertEqual(self.table.count(Key(':name str', 'fred')), 1)
         person['name'] = 'ginger'
         self.table.set(4, encodes(person))
-        self.assertEqual(self.table.countKey(':name str', 'fred'), 0)
+        self.assertEqual(self.table.count(Key(':name str', 'fred')), 0)
 
 if __name__ == '__main__':
     unittest.main()

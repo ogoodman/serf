@@ -162,15 +162,6 @@ class QAlways(object):
     def match(self, rec):
         return self.value
 
-class QText(object):
-    serialize = ('text',)
-
-    def __init__(self, text):
-        self.text = text.lower()
-
-    def match(self, rec):
-        return self.text in encodes(rec).lower()
-
 def matchQuery(query, rec):
     if type(rec) is str:
         try:
