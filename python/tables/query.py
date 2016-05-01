@@ -1,6 +1,5 @@
 import re
 from datetime import datetime, timedelta
-from serf.serializer import decodes, encodes
 
 MEMSPECI_RE = re.compile('([#@:])([^#@:]+)')
 MEMSPEC_RE = re.compile('([#@:][^#@:]+)*$')
@@ -162,17 +161,6 @@ class QAlways(object):
     def match(self, rec):
         return self.value
 
-def matchQuery(query, rec):
-    if type(rec) is str:
-        try:
-            rec = decodes(rec)
-        except:
-            return False
-    try:
-        return query.match(rec)
-    except KeyError:
-        raise Exception('Unexpected query type %s' % query.__class__)
-
 class QDate(object):
     serialize = ('field', 'year', 'month', 'day')
 
@@ -186,7 +174,6 @@ class QDate(object):
     def match(self, rec):
         dt = getMember(rec, self.field)
         if type(dt) is not datetime:
-            print 'not a datetime', dt
             return False
         q_day = self.day
         if q_day < 0:

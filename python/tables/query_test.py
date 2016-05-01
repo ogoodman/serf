@@ -2,9 +2,11 @@
 
 import unittest
 from datetime import datetime
-from serf.serializer import encodes
 from serf.obj import obj
 from query import *
+
+def matchQuery(query, rec):
+    return query.match(rec)
 
 class QueryTest(unittest.TestCase):
 
@@ -30,7 +32,7 @@ class QueryTest(unittest.TestCase):
         self.assertEquals(rec[2], {'id': 61})
         
     def testSimpleStrQuery(self):
-        rec = encodes({'name': 'test1'})
+        rec = {'name': 'test1'}
 
         self.assertTrue(matchQuery(QTerm(':name', 'eq', 'test1'), rec))
         self.assertFalse(matchQuery(QTerm(':name', 'eq', 'test2'), rec))
@@ -48,7 +50,7 @@ class QueryTest(unittest.TestCase):
         self.assertTrue(matchQuery(QTerm(':name', 'notnull'), rec))
         self.assertFalse(matchQuery(QTerm(':name', 'isnull'), rec))
 
-        rec = encodes({'name': 'TEst1'})
+        rec = {'name': 'TEst1'}
 
         self.assertTrue(matchQuery(QTerm(':name', 'like', 'teST'), rec))
         self.assertFalse(matchQuery(QTerm(':name', 'like', 'tUST'), rec))
@@ -56,7 +58,7 @@ class QueryTest(unittest.TestCase):
         self.assertTrue(matchQuery(QTerm(':name', 'unlike', 'TUST'), rec))
 
     def testSimpleNumeric(self):
-        rec = encodes({'age': 18})
+        rec = {'age': 18}
 
         self.assertTrue(matchQuery(QTerm(':age', 'eq', 18), rec))
         self.assertFalse(matchQuery(QTerm(':age', 'ne', 18), rec))
@@ -77,7 +79,7 @@ class QueryTest(unittest.TestCase):
 
     def testSimpleTime(self):
         dt = datetime(year=2010, month=12, day=1, hour=1)
-        rec = encodes({'due': dt})
+        rec = {'due': dt}
         
         self.assertTrue(matchQuery(QTerm(':due', 'eq', dt), rec))
 
@@ -91,9 +93,9 @@ class QueryTest(unittest.TestCase):
         self.assertFalse(matchQuery(QTerm(':due', 'ge', 1461478401), rec))
 
     def testQueriesAndOr(self) :
-        tom = encodes({'age': 18, 'gender': 'M'})
-        lucy = encodes({'age': 18, 'gender': 'F'})
-        bubs = encodes({'age': 3, 'gender': 'M'})
+        tom = {'age': 18, 'gender': 'M'}
+        lucy = {'age': 18, 'gender': 'F'}
+        bubs = {'age': 3, 'gender': 'M'}
 
         male = QTerm(':gender', 'eq', 'M')
         adult = QTerm(':age', 'ge', 18)
@@ -110,7 +112,7 @@ class QueryTest(unittest.TestCase):
         self.assertTrue(matchQuery(QAnd([male, QNot(adult)]), bubs))
    
     def testMissingField(self):
-        rec = encodes({})
+        rec = {}
 
         self.assertTrue(matchQuery(QTerm(':field', 'isnull'), rec))
         self.assertFalse(matchQuery(QTerm(':field', 'notnull'), rec))
@@ -122,14 +124,14 @@ class QueryTest(unittest.TestCase):
         self.assertTrue(matchQuery(QTerm(':field', 'eq'), rec))
 
     def testWrongType(self):
-        rec = encodes({'status': 2})
+        rec = {'status': 2}
 
         self.assertFalse(matchQuery(QTerm(':status', 'eq', '2'), rec))
         self.assertFalse(matchQuery(QTerm(':status', 'le', '2'), rec))
         self.assertFalse(matchQuery(QTerm(':status', 'ge', '2'), rec))
         
     def testNoQuery(self):
-        rec = encodes({})
+        rec = {}
         
         self.assertTrue(matchQuery(QAnd([]), rec))
         self.assertFalse(matchQuery(QOr([]), rec))

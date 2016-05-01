@@ -1,6 +1,7 @@
 """A few tests for Tables."""
 
 import unittest
+from datetime import datetime
 
 from serf.serializer import encodes, decodes
 from serf.storage import Storage
@@ -8,7 +9,6 @@ from serf.storage import Storage
 from notification_tracker import NotificationTracker
 from table import *
 from query import *
-from merge_records import mergeSpec
 
 class TableTest(unittest.TestCase):
     client = Client()
@@ -824,6 +824,49 @@ class TableTest(unittest.TestCase):
         person['name'] = 'ginger'
         self.table.set(4, encodes(person))
         self.assertEqual(self.table.count(Key(':name str', 'fred')), 0)
+
+    def testMergeRecords(self):
+        now = datetime.utcnow()
+        l = {'name': 'Fred', 'state': 'vic', 'age': 34, 'updated': now}
+
+        r = {'name': 'Fido', 'age': 3, 'category': 9}
+        w = {}
+
+        # Merge values from L first then R.
+        o = mergeRecords(1, l, 2, r, mergeSpec('L:* R:*'), {})
+        self.assertEqual(o['name'], 'Fred')
+
+        # Merge values from L then R with a sensible prefix.
+        o = mergeRecords(
+            1, l, 2, r, mergeSpec('L:* R:*->pet_%'), {})
+        self.assertEqual(o['name'], 'Fred')
+        self.assertEqual(o['pet_name'], 'Fido')
+        self.assertEqual(o['pet_category'], 9)
+
+        # Merge age from R, then L, the the rest of R.
+        o = mergeRecords(
+            1, l, 2, r, mergeSpec('R:age L:* R:*'), {})
+        self.assertEqual(o['age'], 3)
+
+        # Drop age and updated from L, merge rest of L followed by R.
+        o = mergeRecords(
+            1, l, 2, r, mergeSpec('L:age->. L:updated->. L:* R:*'), {})
+        self.assertEqual(o['age'], 3)
+        self.assertTrue('updated' not in o)
+
+        # Adds the primary keys.
+        o = mergeRecords(
+            1, l, 2, r, 
+            mergeSpec('L:#->l_pk R:#->r_pk R:* L:name->owner'), {})
+        self.assertEqual(o['l_pk'], 1)
+        self.assertEqual(o['r_pk'], 2)
+        self.assertEqual(o['owner'], 'Fred')
+
+        # Specifying a non-existent input key.
+        o = mergeRecords(
+            1, l, 2, r, mergeSpec('L:address R:* L:name->owner'), {})
+        self.assertTrue('address' not in o)
+        self.assertEqual(o['owner'], 'Fred')
 
 if __name__ == '__main__':
     unittest.main()
