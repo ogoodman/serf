@@ -172,5 +172,28 @@ class SerializationTest(unittest.TestCase):
         self.assertEqual(encodes(DATA), 'Yr')
         self.assertEqual(type(DATA), type(decodes('Yr')))
 
+    def testDictEncodings(self):
+        self.assertEqual(encodes(findDictEncoder({})), 'YMkA')
+        self.assertEqual(decodes(encodes({})), {})
+
+        self.assertEqual(encodes(findDictEncoder({'a': 1})), 'YMkA')
+        dec = decodes(encodes({'a': 1}))
+        self.assertEqual(dec, {'a': 1})
+        self.assertEqual(map(type, dec), [str]) # key types
+        
+        self.assertEqual(encodes(findDictEncoder({u'a': 1})), 'YMuA')
+        dec = decodes(encodes({u'a': 1}))
+        self.assertEqual(dec, {u'a': 1})
+        self.assertEqual(map(type, dec), [unicode])
+
+        self.assertEqual(encodes(findDictEncoder({1: 'a', 2L: 'b'})), 'YMqA')
+        dec = decodes(encodes({1: 'a', 2L: 'b'}))
+        self.assertEqual(dec, {1: 'a', 2: 'b'}) # long folds to int.
+        self.assertEqual(map(type, dec), [int, int])
+
+        self.assertEqual(encodes(findDictEncoder({1: 'a', 'Z': 'b'})), 'YMAA')
+        dec = decodes(encodes({1: 'a', 'Z': 'b'}))
+        self.assertEqual(dec, {1: 'a', 'Z': 'b'})
+
 if __name__ == '__main__':
     unittest.main()

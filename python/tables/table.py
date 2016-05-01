@@ -244,14 +244,14 @@ def genFilters(filter):
     return All(), filter
 
 class Table(Publisher):
-    def __init__(self, indexers=None):
+    serialize = ('primary', 'indices', 'pkey')
+
+    def __init__(self, primary=None, indices=None, pkey=None):
         Publisher.__init__(self)
-        self.primary = {}
-        self.indexers = indexers or {}
-        self.indices = {}
-        self.pkey = 0
-        for col in self.indexers:
-            self.indices[col] = {}
+        self.primary = primary or {}
+        self.indices = indices or {}
+        self.pkey = pkey or 0
+        self._indexers = {}
 
     def select(self, filter=None):
         gen, filters = genFilters(filter)
@@ -328,18 +328,18 @@ class Table(Publisher):
         return [kv.key for kv in self.select(filter)]
     
     def _index(self, pkey, data):
-        for col, indexer in self.indexers.iteritems():
-            key = indexer(data)
-            index = self.indices[col]
+        for col, index in self.indices.iteritems():
+            key = self._getIndexer(col)(data)
+            if key is None:
+                continue
             if key not in index:
                 index[key] = []
             if pkey not in index[key]:
                 index[key].append(pkey)
 
     def _unindex(self, pkey, data):
-        for col, indexer in self.indexers.iteritems():
-            key = indexer(data)
-            index = self.indices[col]
+        for col, index in self.indices.iteritems():
+            key = self._getIndexer(col)(data)
             if key in index and pkey in index[key]:
                 index[key].remove(pkey)
                 if len(index[key]) == 0:
@@ -347,17 +347,19 @@ class Table(Publisher):
                     
     def _erase(self):
         self.primary = {}
-        self.pkey = 0
-        self.indexers = {}
         self.indices = {}
+        self.pkey = 0
+        self._indexers = {}
         
     def _ensureIndex(self, unspec):
         spec = normalizeSpec(unspec)
-        if spec not in self.indexers:
-            self.indexers[spec] = indexer = getIndexer(spec)
+        if spec not in self.indices:
             self.indices[spec] = index = {}
+            indexer = self._getIndexer(spec)
             for pkey, data in self.primary.iteritems():
                 key = indexer(data)
+                if key is None:
+                    continue
                 if key not in index:
                     index[key] = []
                 if pkey not in index[key]:
@@ -366,9 +368,9 @@ class Table(Publisher):
     def _getIndexer(self, unspec):
         spec = normalizeSpec(unspec)
         self._ensureIndex(spec)
-        if spec not in self.indexers:
-            self.indexers[spec] = getIndexer(spec)
-        return self.indexers[spec]
+        if spec not in self._indexers:
+            self._indexers[spec] = getIndexer(spec)
+        return self._indexers[spec]
 
     def _getIndex(self, spec):
         return self.indices[normalizeSpec(spec)]

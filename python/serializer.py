@@ -268,7 +268,14 @@ class MAP(Codec):
         key_type = TYPE.decode(f, ctx)
         value_type = TYPE.decode(f, ctx)
         return MAP(key_type, value_type)
+
 DICT = MAP(TOKEN, ANY)
+DICT_FOR_KEY = {
+    str: DICT,
+    unicode: MAP(TEXT, ANY),
+    int: MAP(INT64, ANY),
+}
+DICT_ANY_KEY = MAP(ANY, ANY)
 
 FIELD_SPEC = ARRAY(TUPLE(TOKEN, TYPE))
 
@@ -461,6 +468,17 @@ def findStringEncoder(value):
     except UnicodeDecodeError:
         return DATA
 
+def findDictEncoder(value):
+    key_types = set(map(type, value))
+    if long in key_types:
+        key_types.discard(long)
+        key_types.add(int)
+    if not key_types:
+        return DICT
+    if len(key_types) == 1:
+        return DICT_FOR_KEY.get(list(key_types)[0], DICT_ANY_KEY)
+    return DICT_ANY_KEY
+
 ENCODER[type(None)] = lambda v: NULL
 ENCODER[bool] = lambda v: BOOL
 ENCODER[int] = findIntEncoder
@@ -470,5 +488,5 @@ ENCODER[list] = lambda v: LIST
 ENCODER[tuple] = lambda v: LIST
 ENCODER[str] = findStringEncoder
 ENCODER[unicode] = lambda v: TEXT
-ENCODER[dict] = lambda v: DICT
+ENCODER[dict] = findDictEncoder
 ENCODER[datetime.datetime] = lambda v: TIME

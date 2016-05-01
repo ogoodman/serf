@@ -3,6 +3,7 @@
 import unittest
 
 from serf.serializer import encodes, decodes
+from serf.storage import Storage
 
 from notification_tracker import NotificationTracker
 from table import *
@@ -713,6 +714,41 @@ class TableTest(unittest.TestCase):
 
         updated = decodes(self.table.get(4))
         self.assertEqual(updated['what'], 'yes')
+
+    def testIndex(self):
+        self.table.insert([encodes(dict(name='Fred', id=1))])
+        self.assertEqual(self.table.count(KeyRange(':name str')), 1)
+
+        self.table.insert([encodes(dict(name='George', id=2))])
+        self.assertEqual(self.table.count(KeyRange(':name str')), 2)
+
+        self.table.insert([encodes(dict(name='Fred', id=3))])
+        self.assertEqual(self.table.count(KeyRange(':name str')), 3)
+
+        # Records are indexed only if the key field has the right type.
+        self.table.insert([encodes(dict(name=99, id=4))])
+        self.assertEqual(self.table.count(KeyRange(':name str')), 3)
+        self.assertEqual(self.table.count(KeyRange(':name int')), 1)
+
+    def testPersistence(self):
+        store = {}
+        obj_store = Storage(store)
+        self._insertTestData()
+        self.assertEqual(self.table.count(KeyRange(':age int')), 3)
+
+        def toTup(kv):
+            return kv.key, kv.value, kv.skey
+
+        # dump keys, values and skeys in form suitable for equality testing.
+        p_dump = map(toTup, self.table.select())
+        s_dump = map(toTup, self.table.select(KeyRange(':age int')))
+
+        obj_store['table'] = self.table
+        obj_store.clearCache()
+        table = obj_store['table']
+
+        self.assertEqual(p_dump, map(toTup, table.select()))
+        self.assertEqual(s_dump, map(toTup, table.select(KeyRange(':age int'))))
 
     def printResults(self, results):
         for rr in results:
