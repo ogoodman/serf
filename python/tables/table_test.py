@@ -58,13 +58,13 @@ class TableTest(unittest.TestCase):
 
         # Check no notifications for insert
         with tracker.expect(0):
-            self.table.insert(['foonly', 'garply'], False)
+            self.table.insert(['foonly', 'garply'], notify=False)
 
         with tracker.expect(0):
-            self.table.insert(['quarply'], False)
+            self.table.insert(['quarply'], notify=False)
 
         with tracker.expect(0):
-            self.table.setBatch([KeyValue(13, 'goober')])
+            self.table.setBatch([KeyValue(13, 'goober')], notify=False)
 
         # Add another specific subscriber and reinsert record 100.
         with tracker.expect(2):
@@ -126,7 +126,7 @@ class TableTest(unittest.TestCase):
             self.table.set(4, pebble)
         self.assertEqual(tup(tracker.events[0]), (4, fred, pebble))
         with tracker.expect(0):
-            self.table.setBatch([KeyValue(8, pebble3)])
+            self.table.setBatch([KeyValue(8, pebble3)], notify=False)
         with tracker.expect(2):
             self.table.setKey(':name str', pebble4)
         self.assertEqual(tup(tracker.events[0]), (8, pebble3, ''))
@@ -731,137 +731,64 @@ class TableTest(unittest.TestCase):
         self.assertEqual(self.table.count(KeyRange(':name int')), 1)
 
     def testPersistence(self):
-        store = {}
-        obj_store = Storage(store)
         self._insertTestData()
         self.assertEqual(self.table.count(KeyRange(':age int')), 3)
+
+        store = {}
+        obj_store = Storage(store)
+        obj_store['table'] = self.table
+
+        self.sval = store['caps/table']
+        def svalChanged():
+            self.assertNotEqual(self.sval, store['caps/table'])
+            self.sval = store['caps/table']
+
+        self.table.insert([encodes(dict(name='Albert', age=37))])
+        svalChanged()
+
+        self.table.set(4, encodes(dict(name='Fred', age=35, id='F1')))
+        svalChanged()
+
+        self.table.setKey(':id str', encodes(dict(name='Fred', age=36, id='F1')))
+        svalChanged()
+
+        kv = KeyValue(8, encodes(dict(name='Fred', age=64, id='F2')))
+        self.table.setBatch([kv])
+        svalChanged()
+
+        self.table.update(PKey(16), [FieldValue(':id', 'A1')])
+        svalChanged()
+
+        items = [KeyValue(4, encodes(dict(birthday='Louise', years=36)))]
+        join = JoinSpec('birthday', 'name', 'str')
+        values = [CopyField(':age', ':years')]
+
+        self.table.updateIter(items, join, None, values)
+        svalChanged()
+
+        self.table.pop(PKey(8))
+        svalChanged()
 
         def toTup(kv):
             return kv.key, kv.value, kv.skey
 
-        # dump keys, values and skeys in form suitable for equality testing.
+        # Dump keys, values and skeys in form suitable for equality testing.
         p_dump = map(toTup, self.table.select())
         s_dump = map(toTup, self.table.select(KeyRange(':age int')))
 
-        obj_store['table'] = self.table
         obj_store.clearCache()
         table = obj_store['table']
 
         self.assertEqual(p_dump, map(toTup, table.select()))
         self.assertEqual(s_dump, map(toTup, table.select(KeyRange(':age int'))))
 
+        table.remove() # different code-path from pop when removing all.
+        svalChanged()
+
     def printResults(self, results):
         for rr in results:
             kv = decodes(rr) if type(rr) is str else rr
             print kv.key, decodes(kv.value)
-
-    def xtestIntsetQuery(self):
-        self.table.insert([encodes({'tags': set()})])
-        self.table.insert([encodes({'tags': set([0])})])
-        self.table.insert([encodes({'tags': set([1])})])
-        self.table.insert([encodes({'tags': set([0,1])})])
-
-        includes0 = QTerm('tags', 'includes', 0)
-        includes1 = QTerm('tags', 'includes', 1)
-        excludes0 = QTerm('tags', 'excludes', 0)
-
-        results = self.table.select([includes0])
-        keys = [kv.key for kv in results]
-        self.assertEqual(keys, [8, 16])
-
-        results = self.table.select([QOr([includes0, includes1])])
-        keys = [kv.key for kv in results]
-        self.assertEqual(keys, [8, 12, 16])
-
-        results = self.table.select([QOr([includes1, excludes0])])
-        keys = [kv.key for kv in results]
-        self.assertEqual(keys, [4, 12, 16])
-
-        results = self.table.select([QAnd([includes0, includes1])])
-        keys = [kv.key for kv in results]
-        self.assertEqual(keys, [16])
-
-    def xtestBitQuery(self):
-        self.table.set(3, encodes({'flags': 0x3}))
-        self.table.set(5, encodes({'flags': 0x5}))
-        self.table.set(6, encodes({'flags': 0x6}))
-
-        query = QTerm('flags', 'includes', 0)
-        self.assertEqual(self.queryKeys(query), [3, 5])
-        query = QTerm('flags', 'excludes', 1)
-        self.assertEqual(self.queryKeys(query), [5])
-
-    def xtestIntSetUpdate(self):
-        self.table.set(1, encodes({'tags': set()}))
-        self.table.set(2, encodes({'tags': set([2, 3])}))
-
-        update = [IntSetUpdate('tags', 1, True),
-                  IntSetUpdate('tags', 2, False)]
-
-        self.table.update(None, update)
-        self.assertEqual(decodes(self.table.get(1))['tags'], set([1]))
-        self.assertEqual(decodes(self.table.get(2))['tags'], set([1, 3]))
-
-        # Use a global query: remove 1 if 3 is present.
-        query = QTerm('tags', 'includes', 3)
-        update = [IntSetUpdate('tags', 1, False)]
-
-        self.table.update(query, update)
-        self.assertEqual(decodes(self.table.get(1))['tags'], set([1]))
-        self.assertEqual(decodes(self.table.get(2))['tags'], set([3]))
-
-        # Use per-field queries: if 1 present, add 4, if 1 not present add 5.
-        qi1  = QTerm('tags', 'includes', 1)
-        qe1  = QTerm('tags', 'excludes', 1)
-        update = [IntSetUpdate('tags', 4, True, qi1),
-                  IntSetUpdate('tags', 5, True, qe1)]
-
-        self.table.update(None, update)
-        self.assertEqual(decodes(self.table.get(1))['tags'], set([1, 4]))
-        self.assertEqual(decodes(self.table.get(2))['tags'], set([3, 5]))
-
-    def xtestIntSetUpdateVar(self):
-        var = {}
-        var['tags'] = set()
-        self.table.set(1, encodes(var))
-        var['tags'] = set([2, 3])
-        self.table.set(2, encodes(var))
-
-        update = [IntSetUpdate(':tags', 1, True),
-                  IntSetUpdate(':tags', 2, False)]
-
-        self.table.update(None, update)
-        self.assertEqual(decodes(self.table.get(1))['tags'], set([1]))
-        self.assertEqual(decodes(self.table.get(2))['tags'], set([1, 3]))
-
-    def xtestBitUpdate(self):
-        self.table.set(1, encodes({'flags': 0}))
-        self.table.set(2, encodes({'flags': 0b1100}))
-
-        update = [IntSetUpdate(':flags', 1, True),
-                  IntSetUpdate(':flags', 2, False)]
-
-        self.table.update(None, update)
-        self.assertEqual(decodes(self.table.get(1))['flags'], 0b0010)
-        self.assertEqual(decodes(self.table.get(2))['flags'], 0b1010)
-
-        # Use a global query: remove 1 if 3 is present.
-        query = QTerm(':flags', 'includes', 3)
-        update = [IntSetUpdate(':flags', 1, False)]
-
-        self.table.update(query, update)
-        self.assertEqual(decodes(self.table.get(1))['flags'], 0b0010)
-        self.assertEqual(decodes(self.table.get(2))['flags'], 0b1000)
-
-        # Use per-field queries: if 1 present, add 4, if 1 not present add 5.
-        qi1  = QTerm(':flags', 'includes', 1)
-        qe1  = QTerm(':flags', 'excludes', 1)
-        update = [IntSetUpdate(':flags', 4, True, qi1),
-                  IntSetUpdate(':flags', 5, True, qe1)]
-
-        self.table.update(None, update)
-        self.assertEqual(decodes(self.table.get(1))['flags'], 0b010010)
-        self.assertEqual(decodes(self.table.get(2))['flags'], 0b101000)
 
     def queryKeys(self, query):
         return [kv.key for kv in self.table.select([query])]

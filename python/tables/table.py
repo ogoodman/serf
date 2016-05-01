@@ -151,10 +151,14 @@ class ColsIndexer(object):
 # generators
 
 class All(object):
+    serialize = ()
+
     def generate(self, table):
         return table._selectAll()
 
 class PKey(object):
+    serialize = ('pk', 'required')
+
     def __init__(self, pk, required=True):
         self.pk = pk
         self.required = required
@@ -163,6 +167,8 @@ class PKey(object):
         return table._get(self.pk, self.required)
 
 class Key(object):
+    serialize = ('index', 'key')
+
     def __init__(self, index, key):
         self.index = index
         self.key = key
@@ -171,6 +177,8 @@ class Key(object):
         return table._selectKey(self.index, self.key)
 
 class KeyPrefix(object):
+    serialize = ('index', 'prefix', 'unique')
+
     def __init__(self, index, prefix, unique=False):
         self.index = index
         self.prefix = prefix
@@ -180,6 +188,8 @@ class KeyPrefix(object):
         return table._selectKeyPrefix(self.index, self.prefix, self.unique)
 
 class KeyRange(object):
+    serialize = ('index', 'lo', 'hi', 'reverse')
+
     def __init__(self, index, lo=None, hi=None, reverse=False):
         self.index = index
         self.lo = lo
@@ -192,6 +202,8 @@ class KeyRange(object):
 # filters
 
 class Range(object):
+    serialize = ('begin', 'end')
+
     def __init__(self, begin, end=None):
         self.begin = begin
         self.end = end
@@ -200,6 +212,8 @@ class Range(object):
         return islice(iter, self.begin, self.end)
 
 class Query(object):
+    serialize = ('query',)
+
     def __init__(self, query):
         self.query = query
 
@@ -209,6 +223,8 @@ class Query(object):
                 yield kv
 
 class Text(object):
+    serialize = ('text',)
+
     def __init__(self, text):
         if type(text) is unicode:
             text = text.encode('utf8')
@@ -220,6 +236,8 @@ class Text(object):
                 yield kv
 
 class PKeyRange(object):
+    serialize = ('lo', 'hi')
+
     def __init__(self, lo, hi):
         self.lo = lo
         self.hi = hi
@@ -320,7 +338,7 @@ class Table(Publisher):
         gen, filters = genFilters(filter)
         return len(self.select(filter))
 
-    def setBatch(self, records, notify=False): 
+    def setBatch(self, records, notify=True): 
         for r in records:
             self.set(r.key, r.value, notify)
 
@@ -378,11 +396,11 @@ class Table(Publisher):
     def _put(self, data, notify=True):
         self.pkey += 4
         self.primary[self.pkey] = data
+        self._index(self.pkey, data)
         if notify:
             info = KeyValueChange(self.pkey, data, '')
             self.notify('change', info)
             self.notify('key:%s' % self.pkey, info)
-        self._index(self.pkey, data)
         
     def insert(self, records, notify=True):
         keys = []
@@ -399,13 +417,13 @@ class Table(Publisher):
         else:
             self._unindex(pkey, old)
         self.primary[pkey] = data
+        self._index(pkey, data)
+        if pkey > self.pkey:
+            self.pkey = pkey
         if notify:
             info = KeyValueChange(pkey, data, old)
             self.notify('change', info)
             self.notify('key:%s' % pkey, info)
-        self._index(pkey, data)
-        if pkey > self.pkey:
-            self.pkey = pkey
 
     def _update(self, pkey, values, vrec):
         rec = decodes(self.get(pkey))
@@ -429,7 +447,6 @@ class Table(Publisher):
         except KeyError:
             raise KeyError(pkey)
         self._unindex(pkey, data)
-
         del self.primary[pkey]
         if notify:
             info = KeyValueChange(pkey, '', data)
@@ -539,6 +556,10 @@ class Table(Publisher):
 
     def maxPK(self):
         return max(self.primary)
+
+    def _on_addref(self):
+        self.subscribe('change', self.ref._save)
+        self.subscribe('delete', self.ref._save)
 
 class Client(object):
     def __init__(self):

@@ -13,6 +13,11 @@ from serf.proxy import Proxy
 from serf.repl_proxy import REPLProxy
 from serf.po.printer import Printer
 
+from serf.tables.table import *
+from serf.tables.query import *
+from serf.serializer import encodes, decodes
+from serf.tables.table_handle import TableHandle
+
 SERVER = '127.0.0.1:6506'
 
 def lfunc(a):
@@ -47,3 +52,5 @@ model = wrap(Proxy(SERVER, 'model', rpc))
 proxy = rpc.makeProxy('printer')
 sub = rpc.makeProxy('subscriber')
 lfun = rpc.makeProxy('func')
+
+th = TableHandle(table)

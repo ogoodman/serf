@@ -100,6 +100,7 @@ class Storage(object):
         if type(getattr(svalue, 'serialize', None)) is tuple:
             if type(getattr(svalue, 'ref', None)) is not Ref:
                 svalue.ref = Ref(self, path)
+                getattr(svalue, '_on_addref', lambda: None)()
 
     def _load(self, path):
         ctx = StorageCtx(self, path)
@@ -126,6 +127,9 @@ class Storage(object):
             del self.cache[path]
         except KeyError:
             pass
+
+    def __contains__(self, path):
+        return ('caps/' + path) in self.store
 
     def clearCache(self):
         self.cache = {}

@@ -44,6 +44,9 @@ class CallLog(object):
     def _save(self):
         pass
 
+    def _on_addref(self):
+        pass
+
     def begin(self):
         return self.data_log.begin()
 

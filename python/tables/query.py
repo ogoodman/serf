@@ -111,7 +111,7 @@ class QTerm(object):
                 if t_val is unicode and t_rec_val is str:
                     value = value.encode('utf8')
                 elif t_val is str and t_rec_val is unicode:
-                    rec_val = rec_val.encode('utf8')
+                    rec_value = rec_value.encode('utf8')
             elif t_val in (int, long, float):
                 if t_rec_val not in (int, long, float):
                     return self.type_mismatch()

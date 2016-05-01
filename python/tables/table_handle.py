@@ -48,7 +48,7 @@ class TableHandle(object):
     def setKey(self, index, value, replace=True):
         self._table.setKey(index, self._codec.encodes(value), replace)
 
-    def setBatch(self, items, notify=False):
+    def setBatch(self, items, notify=True):
         self._table.setBatch(self._encode_kvs(items), notify)
 
     def insert(self, values, notify=True):

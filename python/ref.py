@@ -60,7 +60,7 @@ class Ref(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def _save(self):
+    def _save(self, *_):
         if self._facet:
             raise ReferenceError('Cannot save via a facet reference')
         self._vat.save(self._path)
