@@ -193,13 +193,22 @@ define(['when/when'], function(when) {
         return mcall;
     }
 
+    let handler = {
+        get(remote, name) {
+            if (!remote[name]) {
+                remote.addMethod(name);
+            }
+            return remote[name];
+        }
+    };
+
     /**
      * Represents a server-side object.
      * @constructor
      * @param {WSServer} server Server where the object resides
      * @param {string} objId Id of a server-side object
      */
-    function Proxy(server, objId, node) {
+    function Ref(server, objId, node) {
         this.server = server;
         this.objId = objId;
         this.node = node || 'server';
@@ -213,28 +222,27 @@ define(['when/when'], function(when) {
      * Makes a proxy for the named server-side object.
      * @param {string} objId Id of a server-side object
      */
-    WSServer.prototype.getProxy = function(objId) {
-        // FIXME: not sure what node was for, leave out for now.
-        return new Proxy(this, objId);
+    WSServer.prototype.getProxy = function(objId, node) {
+        return new Proxy(new Ref(this, objId, node), handler);
     };
 
     /**
      * Add a method stub to the proxy.
      *
-     * A newly created Proxy does not know what server-side
+     * A newly created Ref does not know what server-side
      * methods are available. We have to add method stubs for
      * each method we want to be able to call.
      *
      * @param {string} name Method name to add
      */
-    Proxy.prototype.addMethod = function(name) {
+    Ref.prototype.addMethod = function(name) {
         var that = this;
         this[name] = function() {
             return that.server.callRemote(that.objId, name, Array.prototype.slice.call(arguments));
         };
     };
 
-    Proxy.prototype._notify = function(event, info) {
+    Ref.prototype._notify = function(event, info) {
         var subs = this._subs[event] || [];
         var i, n = subs.length;
         for (i = 0; i < n; ++i ) subs[i](event, info);
@@ -247,7 +255,7 @@ define(['when/when'], function(when) {
      * @param {string} event Event name
      * @param {function} cb Callback
      */
-    Proxy.prototype.subscribe = function(event, cb) {
+    Ref.prototype.subscribe = function(event, cb) {
         if (!(event in this._subs)) {
             this._subs[event] = [cb];
             this.server.callRemote(this.objId, 'subscribe', [event, new BoundMethod(this.objId, '_notify')]);
@@ -256,7 +264,7 @@ define(['when/when'], function(when) {
         }
     };
 
-    Proxy.prototype.ext_encoding = function() {
+    Ref.prototype.ext_encoding = function() {
         return {name: 'Proxy', args:{o: this.objId, n:this.node}};
     };
 
@@ -265,13 +273,50 @@ define(['when/when'], function(when) {
         // but nonetheless there should be no harm in resolving it
         // to a direct reference to the object.
         if (args.n == 'browser') return this.obj[args.o];
-        return new Proxy(server, args.o);
+        return new Proxy(new Ref(server, args.o), handler);
     };
+
+    /**
+     * Creates and adds hooks for a new POD (plain old data) class.
+     * 
+     * For this to work the server must register a class having the same
+     * name and constructor argument list.
+     * 
+     * Example:
+     *   // Having registered QTerm we can send one to the server.
+     *   QTerm = makePODClass('QTerm', ['field', 'condition', 'value']);
+     *   res_p = tproxy.select(QTerm(':name', 'eq', 'Fred'));
+     *
+     * @param {string} name Name for matching class on server
+     * @param {array} params Argument and member names
+     */
+    function makePODClass(name, params) {
+        var Cls = function() {
+            for (var i = 0, n = params.length; i < n; ++i) {
+                this[params[i]] = arguments[i];
+            }
+        };
+        Cls.prototype.ext_encoding = function() {
+            var values = [];
+            for (var i = 0, n = params.length; i < n; ++i) {
+                values[i] = this[params[i]];
+            }
+            return {name: name, args: values};
+        }
+        rpc.WSServer.prototype.hooks[name] = function(server, args) {
+            function ClsB() {
+                return Cls.apply(this, args);
+            }
+            ClsB.prototype = Cls.prototype;
+            return new ClsB;
+        };
+        return Cls;
+    }
 
     return {
         WSServer: WSServer,
         BoundMethod: BoundMethod,
         makeBoundMethod: makeBoundMethod,
-        Proxy: Proxy
+        makePODClass: makePODClass
     };
 });

@@ -53,7 +53,6 @@ function(when, rpc, publisher) {
     };
 
     window.HookCls = HookCls;
-    window.Proxy = rpc.Proxy;
 
     window.h = new HookCls("hi");
 
@@ -61,12 +60,7 @@ function(when, rpc, publisher) {
     var input = document.getElementById('input1');
     function doBind() {
         if (!bound) {
-            window.model = new rpc.Proxy(serv, 'shared');
-            window.model.addMethod('get');
-            window.model.addMethod('set');
-            window.model.addMethod('notify');
-            window.model.addMethod('subscribers');
-
+            window.model = serv.getProxy('shared');
             bindInput(input, model, 'name');
             bound = true;
         } else {
@@ -75,24 +69,22 @@ function(when, rpc, publisher) {
     }
 
     // Test for passing proxy to server.
-    function Squarer() { // for Maud
+    function Squarer() {
     }
     Squarer.prototype.square = function(n) {
         console.log('squaring', n);
         return n * n;
     };
 
-    var sqc = new rpc.Proxy(serv, 'sqcaller');
-    sqc.addMethod('useSquarer');
-    sqc.addMethod('subscribeToClient');
+    var sqc = serv.getProxy('sqcaller');
 
     serv.obj['pub'] = new Publisher();
-    var pp = new rpc.Proxy(serv, 'pub', 'browser');
+    var pp = serv.getProxy('pub', 'browser');
 
     function sendProxyToServer() {
         serv.obj['squarer'] = new Squarer();
         console.log('serv.obj.squarer', serv.obj['squarer']);
-        var sq = new rpc.Proxy(serv, 'squarer', 'browser');
+        var sq = serv.getProxy('squarer', 'browser');
         sqc.useSquarer(sq, 3).done(rlog);
     }
 
