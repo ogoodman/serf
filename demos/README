@@ -1,0 +1,40 @@
+Installing the live_table demo
+------------------------------
+
+The web root for the virtual server hosting the demo should contain
+the following:
+
+  live_table.html
+
+  js/live_table.js
+  js/serf -> serf/js
+
+Other required web assets:
+
+  js/when
+  js/require.js
+  js/jquery-2.1.1.min.js
+  js/w2ui-1.4.3.min.js
+
+  css/w2ui-1.4.3.min.css
+
+Run live_table_server.py in this directory. It will listen for
+websocket connections on port 9900 and for serf connections on
+port 6506.
+
+Your Apache virtual host config should contain:
+
+	ProxyPass /tables/ ws://localhost:9900/
+	ProxyPassReverse /tables/ ws://localhost:9900/
+
+Or for Nginx:
+
+  location /tables/ {
+    proxy_pass http://localhost:9900;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+  }
+
+With Nginx you will get disconnects unless you add a heartbeat to the
+js code (e.g. setInterval(() => t.count(), 15000);).
