@@ -240,8 +240,8 @@ class Transport(Publisher):
         self.thread = threading.currentThread()
 
     def listen(self):
-        addr = getAddr(self.node_id)
-        self.lsock = eventlet.listen(addr)
+        port = int(getAddr(self.node_id)[1])
+        self.lsock = eventlet.listen(('0.0.0.0', port))
         self.notify('online', self.node_id)
 
     def start(self):
