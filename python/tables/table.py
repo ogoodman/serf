@@ -492,11 +492,13 @@ class Table(Publisher):
         self.primary[self.pkey] = data
         self._index(self.pkey, data)
         if notify:
-            info = KeyValueChange(self.pkey, data, '')
+            info = KeyValueChange(self.pkey, data, None)
             self.notify('change', info)
             self.notify('key:%s' % self.pkey, info)
         
     def insert(self, records, notify=True):
+        if type(records) is not list:
+            records = [records]
         keys = []
         for r in records:
             self._put(r, notify)
@@ -504,11 +506,8 @@ class Table(Publisher):
         return keys
             
     def set(self, pkey, data, notify=True):
-        try:
-            old = self.primary[pkey]
-        except KeyError:
-            old = ''
-        else:
+        old = self.primary.get(pkey)
+        if old is not None:
             self._unindex(pkey, old)
         self.primary[pkey] = data
         self._index(pkey, data)
@@ -543,8 +542,8 @@ class Table(Publisher):
         self._unindex(pkey, data)
         del self.primary[pkey]
         if notify:
-            info = KeyValueChange(pkey, '', data)
-            self.notify('delete', info)
+            info = KeyValueChange(pkey, None, data)
+            self.notify('change', info)
             self.notify('key:%s' % pkey, info)
         return data
 
@@ -556,12 +555,12 @@ class Table(Publisher):
 
     def _removeAll(self):
         count = len(self.primary)
-        info = KeyValueChange(-1, '', '')
+        info = KeyValueChange(-1, None, None)
         for pkey in list(self.primary):
             self._pop(pkey, notify=False)
             self.notify('key:%s' % pkey, info)
         if count > 0:
-            self.notify('delete', KeyValueChange(-count, '', ''))
+            self.notify('change', KeyValueChange(-count, None, None))
         self.pkey = 0
         return count
 
@@ -653,7 +652,6 @@ class Table(Publisher):
 
     def _on_addref(self):
         self.subscribe('change', self.ref._save)
-        self.subscribe('delete', self.ref._save)
 
 class Client(object):
     def __init__(self):

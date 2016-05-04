@@ -4,6 +4,7 @@ Handles encoding and decoding of table records.
 """
 
 from table import TableCodec
+from serf.weak_list import getAdapter
 
 class TableHandle(object):
     def __init__(self, table):
@@ -15,6 +16,17 @@ class TableHandle(object):
 
     def _encode_kvs(self, items):
         return [KeyValue(k, self._codec.encodes(v)) for k, v in items]
+
+    def _do_notify(self, cb, event, kvc):
+        old = None if kvc.old is None else self._codec.decodes(kvc.old)
+        value = None if kvc.value is None else self._codec.decodes(kvc.value)
+        cb(event, [kvc.key, old, value])
+
+    def subscribe(self, event, cb):
+        self._table.subscribe(event, getAdapter(cb, self._do_notify))
+
+    def unsubscribe(self, event, cb):
+        self._table.unsubscribe(event, getAdapter(cb, self._do_notify))
 
     # query
 
@@ -52,6 +64,8 @@ class TableHandle(object):
         self._table.setBatch(self._encode_kvs(items), notify)
 
     def insert(self, values, notify=True):
+        if type(values) is not list:
+            values = [values]
         return self._table.insert(map(self._codec.encodes, values), notify)
 
     def update(self, filter, values, model=None):

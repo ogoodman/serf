@@ -41,12 +41,12 @@ class JSONCodec(object):
 
         serialize = getattr(cls, 'serialize', None)
         if type(serialize) is tuple:
-            name = '%s.%s' % (cls.__module__, cls.__name__)
-            value = {}
+            name = cls.__name__
+            value = []
             for key in serialize:
                 if key.startswith('_'):
                     return None # requires local capabilities
-                value[key] = getattr(data, key, None)
+                value.append(getattr(data, key, None))
         else:
             try:
                 name, value = data._ext_encoding()

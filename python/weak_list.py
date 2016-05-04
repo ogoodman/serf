@@ -30,3 +30,41 @@ class WeakList(object):
     def __len__(self):
         """Number of items in the set."""
         return len(self._items)
+
+class SubAdapter(object):
+    def __init__(self, subscriber, func, method_name):
+        """Make a subscriber equivalent to lambda e, i: func(subscriber, e, i)."""
+        self.subscriber = weakref.ref(subscriber)
+        self.func = func
+        self.method_name = method_name
+
+    def __call__(self, event, info):
+        """Calls func(subscriber, event, info) if subscriber is still live."""
+        subscriber = self.subscriber()
+        if subscriber is not None:
+            if self.method_name is not None:
+                subscriber = getattr(subscriber, self.method_name)
+            self.func(subscriber, event, info)
+
+def getAdapter(subscriber, func, name=None):
+    """Makes a new subscriber equivalent to lambda e, i: func(subscriber, e, i).
+
+    I.e. when the new subscriber is called, func gets to decide whether
+    the original is called and, if so, what it is passed.
+
+    The new subscriber is referenced by the original and only weakly references
+    it so that (absent any other references to the new subscriber) it will
+    become unreferenced as soon as the original is.
+    """
+    name = name or func.__name__ # key for this adapter
+    if type(subscriber) is types.MethodType:
+        method_name = subscriber.im_func.__name__
+        subscriber = subscriber.im_self
+    else:
+        method_name = None
+    arefs = getattr(subscriber, '_adapter_refs', None)
+    if arefs is None:
+        arefs = subscriber._adapter_refs = {}
+    if name not in arefs:
+        arefs[name] = SubAdapter(subscriber, func, method_name)
+    return arefs[name]

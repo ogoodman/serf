@@ -48,7 +48,7 @@ class TableTest(unittest.TestCase):
         # Notification for remove has empty value.
         with tracker.expect(1):
             self.table.remove(PKey(100))
-        self.assertEqual(tracker.events[0].value, '')
+        self.assertEqual(tracker.events[0].value, None)
 
         # Check notification for insert.
         self.table.subscribe('change', tracker.callback)
@@ -71,9 +71,8 @@ class TableTest(unittest.TestCase):
             self.table.subscribe('key:200', tracker.callback)
             self.table.set(100, 'quux')
 
-        # Check we get two notifications, one "delete" with -(record-count)
+        # Check we get two notifications, one "change" with -(record-count)
         # and one for 'key:100' but none for 'key:200'.
-        self.table.subscribe('delete', tracker.callback)
         size = self.table.count()
         self.all_info = []
         with tracker.expect(2):
@@ -84,19 +83,17 @@ class TableTest(unittest.TestCase):
         with tracker.expect(2): # key:200 and change.
             self.table.set(200, 'garply')
 
-        self.table.unsubscribe('delete', tracker.callback)
         self.table.unsubscribe('change', tracker.callback)
         with tracker.expect(1):
             self.table.pop(PKey(200))
         self.assertEqual(tracker.events[0].key, 200)
-        self.assertEqual(tracker.events[0].value, '')
+        self.assertEqual(tracker.events[0].value, None)
 
         tracker.finish()
 
     def testChangeNotifications(self):
         tracker = NotificationTracker(fast=True)
         self.table.subscribe('change', tracker.callback)
-        self.table.subscribe('delete', tracker.callback)
 
         def tup(kvc):
             return (kvc.key, kvc.old, kvc.value)
@@ -113,14 +110,14 @@ class TableTest(unittest.TestCase):
 
         with tracker.expect(1):
             self.table.insert([fred])
-        self.assertEqual(tup(tracker.events[0]), (4, '', fred))
+        self.assertEqual(tup(tracker.events[0]), (4, None, fred))
         with tracker.expect(0):
             self.table.insert([barney], False) # pkey = 8
         with tracker.expect(0):
             self.table.insert([wilma], False) # pkey = 12
         with tracker.expect(1):
             self.table.setKey(':name str', betty, replace=False)
-        self.assertEqual(tup(tracker.events[0]), (16, '', betty))
+        self.assertEqual(tup(tracker.events[0]), (16, None, betty))
 
         with tracker.expect(1):
             self.table.set(4, pebble)
@@ -129,11 +126,11 @@ class TableTest(unittest.TestCase):
             self.table.setBatch([KeyValue(8, pebble3)], notify=False)
         with tracker.expect(2):
             self.table.setKey(':name str', pebble4)
-        self.assertEqual(tup(tracker.events[0]), (8, pebble3, ''))
+        self.assertEqual(tup(tracker.events[0]), (8, pebble3, None))
         self.assertEqual(tup(tracker.events[1]), (4, pebble, pebble4))
         with tracker.expect(1):
             self.table.set(8, barney)
-        self.assertEqual(tup(tracker.events[0]), (8, '', barney))
+        self.assertEqual(tup(tracker.events[0]), (8, None, barney))
 
         update = [FieldValue(':age', 3), FieldValue(':id', 'P3')]
         with tracker.expect(1):
@@ -151,24 +148,24 @@ class TableTest(unittest.TestCase):
         
         with tracker.expect(1):
             self.table.remove(PKey(4))
-        self.assertEqual(tup(tracker.events[0]), (4, pebble3, ''))
+        self.assertEqual(tup(tracker.events[0]), (4, pebble3, None))
         with tracker.expect(1):
             n = self.table.remove([query]) # id eq BT
         self.assertEqual(n, 1)
-        self.assertEqual(tup(tracker.events[0]), (16, betty, ''))
+        self.assertEqual(tup(tracker.events[0]), (16, betty, None))
         with tracker.expect(1):
             self.table.remove(Key(':name str', 'barney'))
-        self.assertEqual(tup(tracker.events[0]), (8, barney, ''))
+        self.assertEqual(tup(tracker.events[0]), (8, barney, None))
         with tracker.expect(1):
             data = self.table.pop(PKey(12))
-        self.assertEqual(tup(tracker.events[0]), (12, wilma, ''))
+        self.assertEqual(tup(tracker.events[0]), (12, wilma, None))
 
         # Now add two more in order to test removeAll
         self.table.insert([fred, barney], False)
         with tracker.expect(1):
             n = self.table.remove()
         self.assertEqual(n, 2)
-        self.assertEqual(tup(tracker.events[0]), (-2, '', ''))
+        self.assertEqual(tup(tracker.events[0]), (-2, None, None))
 
         tracker.finish()
 
@@ -229,7 +226,6 @@ class TableTest(unittest.TestCase):
         self._insertTestData()
         tracker = NotificationTracker(fast=True)
         self.table.subscribe('change', tracker.callback)
-        self.table.subscribe('delete', tracker.callback)
 
         new_fred = encodes({'name': 'Fred', 'age': 5})
         with tracker.expect(2):
@@ -237,14 +233,14 @@ class TableTest(unittest.TestCase):
         self.assertEqual(self.table.pkeys(), [4, 12])
         events = [(e.key, e.value) for e in tracker.events]
         events.sort()
-        self.assertEqual(events, [(4, new_fred), (8, '')])
+        self.assertEqual(events, [(4, new_fred), (8, None)])
 
         tracker.finish()
 
     def testRemoveKey(self):
         self._insertTestData()
         tracker = NotificationTracker(fast=True)
-        self.table.subscribe('delete', tracker.callback)
+        self.table.subscribe('change', tracker.callback)
 
         with tracker.expect(2):
             count = self.table.remove(Key(':age int', 35))
@@ -252,7 +248,7 @@ class TableTest(unittest.TestCase):
         self.assertEqual(self.table.count(), 1)
         events = [(e.key, e.value) for e in tracker.events]
         events.sort()
-        self.assertEqual(events, [(4, ''), (12, '')])
+        self.assertEqual(events, [(4, None), (12, None)])
 
         tracker.finish()
 
@@ -364,7 +360,7 @@ class TableTest(unittest.TestCase):
         fred35 = self._fred35Query();
 
         tracker = NotificationTracker()
-        self.table.subscribe('delete', tracker.callback)
+        self.table.subscribe('change', tracker.callback)
         with tracker.expect(1):
             count = self.table.remove([fred35])
 
