@@ -1,13 +1,14 @@
-import sys, traceback
+import sys
+import traceback
 import struct
+import weakref
+import eventlet
 from base64 import b64encode
 from hashlib import sha1
 from mimetools import Message
 from cStringIO import StringIO
 from serf.publisher import Publisher
 from serf.weak_list import WeakList
-
-CURRENT = WeakList()
 
 class SocketBuffer(object):
     def __init__(self, sock):
@@ -58,21 +59,26 @@ class WebSocketHandler(Publisher):
     """Implements Transport. Connector for WebSocket clients."""
     magic = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
 
-    def __init__(self, sock, address):
+    def __init__(self, sock, address, client_id='browser', transport=None):
         Publisher.__init__(self)
         self.sock = SocketBuffer(sock)
         self.client_address = address
         self.client_ip = address[0]
         self.node_id = 'server'
+        self.client_id = client_id
         self.path = ''
         self.close_sent = False
-        CURRENT.add(self)
+        if transport is None:
+            self.transport = weakref.proxy(self)
+        else:
+            self.transport = transport
 
     def handle(self):
         if not self.handshake():
             return
         while self.read_next_message():
             pass
+        self.on_close()
 
     def read_next_message(self):
         data = self.sock.read(2)
@@ -102,7 +108,6 @@ class WebSocketHandler(Publisher):
                 print self.client_ip, 'sent CLOSE'
             except:
                 pass
-            self.on_close()
             return False
         else:
             self.on_message(decoded)
@@ -139,11 +144,52 @@ class WebSocketHandler(Publisher):
         return True
 
     def on_message(self, message):
-        self.notify('message', {'from': 'browser', 'pcol': 'json', 'message': message})
+        self.transport.notify('message', {'from': self.client_id, 'pcol': 'json', 'message': message})
 
     def on_close(self):
-        self.notify('close', None)
+        self.transport.notify('close', None)
 
     def on_handshake(self):
-        self.notify('handshake', None)
+        self.transport.notify('handshake', None)
 
+class WSTransport(Publisher):
+    """Implements Transport for WebSocket clients.
+
+    If a handler is provided it will be passed each connection
+    to which it can subscribe. It must call connection.handle()
+    which blocks until the connection is closed.
+    """
+    def __init__(self, port, handler=None):
+        Publisher.__init__(self)
+        self.port = port
+        self.handler = handler
+        self.pool = eventlet.GreenPool(10000)
+        self.connections = weakref.WeakValueDictionary()
+
+    def serve(self):
+        server = eventlet.listen(('0.0.0.0', self.port))
+        try:
+            while True:
+                socket, address = server.accept()
+                self.pool.spawn_n(self.handle, socket, address)
+        except KeyboardInterrupt:
+            for conn in self.connections.values():
+                conn.send('browser', '', code=0x88) # send CLOSE.
+
+    def handle(self, socket, address):
+        node_id = '%s:%s' % address
+        if self.handler is None:
+            conn = WebSocketHandler(socket, address, node_id, self)
+            self.connections[node_id] = conn
+            conn.handle()
+        else:
+            conn = WebSocketHandler(socket, address)
+            self.connections[node_id] = conn
+            self.handler(conn)
+
+    def send(self, node_id, msg, pcol='json', errh=None):
+        handler = self.connections.get(node_id)
+        if handler is None:
+            print 'Send failed, node:', node_id, 'disconnected'
+        else:
+            handler.send(node_id, msg, pcol, errh)

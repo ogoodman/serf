@@ -8,7 +8,7 @@ TODO: reimplement using pure eventlet websocket module.
 import eventlet
 import weakref
 from serf.eventlet_thread import EventletThread
-from serf.websocket_handler import WebSocketHandler, CURRENT
+from serf.ws_transport import WSTransport
 from serf.model import Model
 from serf.bound_method import BoundMethod
 from serf.rpc_handler import RPCHandler
@@ -37,9 +37,7 @@ class Ping(object):
     def ping(self):
         return 'pong'
 
-def handle(socket, client_address):
-    print client_address, 'connected'
-    transport = WebSocketHandler(socket, client_address)
+def handle(transport):
     thread = EventletThread()
     thread.callFromThread = thread.call
     handler = RPCHandler(transport, {}, t_model=thread, verbose=True)
@@ -48,16 +46,8 @@ def handle(socket, client_address):
     handler.provide('sqcaller', SquareCaller(handler, 'sqcaller'))
     handler.provide('ping', Ping())
     transport.handle()
-    return handler
 
 if __name__ == '__main__':
-    server = eventlet.listen(('0.0.0.0', 9999))
-    pool = eventlet.GreenPool(10000)
-    try:
-        while True:
-            new_sock, address = server.accept()
-            pool.spawn_n(handle, new_sock, address)
-    except KeyboardInterrupt:
-        for conn in CURRENT.items():
-            conn.send('browser', '', code=0x88) # send CLOSE.
-        print '\nBye'
+    transport = WSTransport(9999, handler=handle)
+    transport.serve()
+    print '\nBye'
