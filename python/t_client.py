@@ -20,37 +20,18 @@ from serf.tables.table_handle import TableHandle
 
 SERVER = '127.0.0.1:6506'
 
-def lfunc(a):
-    print 'func(%r)' % a
-
-def subscriber(ev, info):
-    print 'event:', ev, info
-
 transport = Transport()
-objects = {
-    'printer': Printer(),
-    'func': lfunc,
-    'subscriber': subscriber,
-}
 thread = EventletThread()
-rpc = RPCHandler(transport, objects, t_model=thread)
+rpc = RPCHandler(transport, {}, t_model=thread)
 rpc.safe.append('serf.tables')
 
-def wrap(x):
-    return REPLProxy(x, thread)
+def proxy(name):
+    return REPLProxy(Proxy(SERVER, name, rpc), thread)
 
 # thread.start(True) means start a new thread.
 thread.start(True)
 thread.callFromThread(transport.start)
 
-table = wrap(Proxy(SERVER, 'table', rpc))
-printer = wrap(Proxy(SERVER, 'printer', rpc))
-caller = wrap(Proxy(SERVER, 'proxy_caller', rpc))
-func = wrap(Proxy(SERVER, 'func', rpc))
-model = wrap(Proxy(SERVER, 'model', rpc))
-
-proxy = rpc.makeProxy('printer')
-sub = rpc.makeProxy('subscriber')
-lfun = rpc.makeProxy('func')
-
-th = TableHandle(table)
+table = TableHandle(proxy('table'))
+users = TableHandle(proxy('users'))
+login = proxy('login')

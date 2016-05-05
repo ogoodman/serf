@@ -195,6 +195,10 @@ define(['when/when'], function(when) {
 
     let handler = {
         get(remote, name) {
+            if (name == 'then') {
+                // Automatically adding 'then' confuses when.js.
+                return undefined;
+            }
             if (!remote[name]) {
                 remote.addMethod(name);
             }

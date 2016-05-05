@@ -8,7 +8,7 @@ from serf.synchronous import Synchronous
 from serf.util import randomString, rmap, importSymbol
 from serf.proxy import Proxy
 from serf.storage import Storage
-from serf.json_codec import JSON_CODEC
+from serf.json_codec import JSONCodec
 
 # Most of what happens here is converting stuff, either for
 # passing it to another RPCHandler or for saving to disk.
@@ -133,7 +133,21 @@ class RemoteCtx(object):
 
 
 class RPCHandler(object):
-    def __init__(self, transport, storage, t_model=None, verbose=False):
+    """Exposes a dictionary of objects for remote procedure calls.
+
+    Calls are received by subscribing to the transport's 'message' event.
+    Responses are sent using transport.send.
+
+    A codec for messages is selected depending on the protocol indicated
+    by transport for the incoming message.
+
+    :param transport: implementation of Transport
+    :param storage: dictionary-like collection of objects
+    :param t_model: a thread model
+    :param verbose: whether to print debugging output
+    :param jc_opts: options for the JSONCodec
+    """
+    def __init__(self, transport, storage, t_model=None, verbose=False, jc_opts=None):
         thread_model = Synchronous() if t_model is None else t_model
         self.storage = storage
         self.node_id = transport.node_id
@@ -150,6 +164,7 @@ class RPCHandler(object):
         if hasattr(storage, 'setRPC'):
             storage.setRPC(self)
         self.remote_ctx = RemoteCtx(self)
+        self.json_codec = JSONCodec(self, **(jc_opts or {}))
 
     def setNode(self, node):
         self.node = node
@@ -187,7 +202,7 @@ class RPCHandler(object):
         pcol = msg_data['pcol']
         from_ = msg_data['from']
         if pcol == 'json':
-            msg = JSON_CODEC.decode(self, msg_data['message'])
+            msg = self.json_codec.decode(msg_data['message'])
             if self.verbose:
                 print getattr(self.node, 'client_ip', ''), 'In', msg
         elif pcol == 'local':
@@ -260,7 +275,7 @@ class RPCHandler(object):
         if node == 'browser':
             if self.verbose:
                 print getattr(self.node, 'client_ip', ''), 'Out', msg
-            enc = JSON_CODEC.encode(self, msg)
+            enc = self.json_codec.encode(msg)
             pcol = 'json'
         elif node == self.node_id:
             enc = rmap(self.delocalize, msg)
