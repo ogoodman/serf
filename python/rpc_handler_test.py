@@ -4,7 +4,7 @@
 
 import unittest
 import weakref
-from serf.rpc_handler import RPCHandler, convert
+from serf.rpc_handler import RPCHandler, convert, makeBoundMethod
 from serf.mock_net import MockNet, MockTransport
 from serf.proxy import Proxy
 from serf.ref import Ref
@@ -16,7 +16,6 @@ from serf.worker import Worker
 from serf.test_handler import TestHandler
 from serf.eventlet_thread import EventletThread
 from serf.storage import Storage, _str
-from serf.json_codec import makeBoundMethod
 from serf.publisher import Publisher
 from serf.model import Model
 

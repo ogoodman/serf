@@ -2,7 +2,7 @@ doc:
 	epydoc serf
 
 test:
-	nosetests --exe
+	nosetests -s --exe
 
 test-coverage:
 	mkdir -p coverage

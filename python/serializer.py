@@ -340,12 +340,15 @@ def fallbackEncode(f, value, ctx):
     if type(value) is not Record:
         try:
             value = ctx.record(value)
-            assert(type(value) is Record)
+            assert(type(value) in (Record, tuple))
         except:
             raise SerializationError(value.__class__.__name__)
 
-    # If it is an opaque message holder, write it out.
-    type_name, body = value.type_name, value.value
+    if type(value) is tuple:
+        type_name, body = value
+    else:
+        type_name, body = value.type_name, value.value
+
     if type_name == '@':
         f.write('@')
         INT32.encode(f, value.type_id, ctx)
@@ -392,8 +395,7 @@ class Registry(object):
             return None
         return factory(value)
     def record(self, any):
-        name, value = any.get_state()
-        return Record(name, value)
+        return any.get_state()
 
 DECODER = {}
 ENCODER = {}

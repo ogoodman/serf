@@ -1,7 +1,7 @@
 """Dictionary of persistent objects."""
 
 import weakref
-from serf.serializer import encodes, decodes, SerializationError, Record
+from serf.serializer import encodes, decodes, SerializationError
 from serf.po.file import File
 from serf.ref import Ref
 from serf.proxy import Proxy
@@ -64,16 +64,16 @@ class StorageCtx(object):
             data = {'path': inst._path}
             if inst._facet:
                 data['facet'] = inst._facet
-            return Record('ref', data)
+            return 'ref', data
         if t is Proxy:
-            return Record('ref', {'path': inst._path, 'node': inst._node})
+            return 'ref', {'path': inst._path, 'node': inst._node}
         if type(getattr(t, 'serialize', None)) is tuple:
             data = getDict(inst)
             cls = inst.__class__
             data['CLS'] = '%s.%s' % (cls.__module__, cls.__name__)
             if hasattr(cls, '_save'):
                 inst._save = self.save
-            return Record('inst', data)
+            return 'inst', data
         raise SerializationError(str(t))
 
     def codec(self, type_id):
@@ -198,7 +198,8 @@ class Storage(object):
         return file
 
 def getDict(inst):
-    return dict([(key, getattr(inst, key)) for key in inst.serialize
+    prefix = '_' if getattr(inst.__class__, '_private', False) else ''
+    return dict([(key, getattr(inst, prefix + key)) for key in inst.serialize
                  if not key.startswith('_')])
 
 def _str(inst, lev=0):

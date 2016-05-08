@@ -2,13 +2,15 @@
 
 import weakref
 from cStringIO import StringIO
-from serf.serializer import encode, decode, encodes, decodes, SerializationError, POD_TYPES, Record
+from serf.serializer import encode, decode, encodes, decodes, SerializationError, POD_TYPES
 from serf.ref import Ref
 from serf.synchronous import Synchronous
 from serf.util import randomString, rmap, importSymbol
 from serf.proxy import Proxy
 from serf.storage import Storage
-from serf.json_codec import JSONCodec
+from serf.json_codec import JSON_CODEC
+from serf.bound_method import BoundMethod
+
 
 # Most of what happens here is converting stuff, either for
 # passing it to another RPCHandler or for saving to disk.
@@ -105,15 +107,15 @@ class RemoteCtx(object):
     def record(self, inst):
         t = type(inst)
         if isinstance(inst, Exception):
-            return Record('exc', encodeException(inst))
+            return 'exc', encodeException(inst)
         ref = getattr(inst, 'ref', None)
         if type(ref) is Ref:
             t, inst = Ref, ref
         if t is Ref and not inst._facet:
             # TODO: make a slot property for storing facet ref slots.
-            return Record('ref', {'path': inst._path, 'node': self.node_id})
+            return 'ref', {'path': inst._path, 'node': self.node_id}
         if t is Proxy:
-            return Record('ref', {'path': inst._path, 'node': inst._node})
+            return 'ref', {'path': inst._path, 'node': inst._node}
 
         # Serialize instances without any capability members.
         s_attrs = getattr(t, 'serialize', None)
@@ -121,7 +123,7 @@ class RemoteCtx(object):
             data = dict([(key, getattr(inst, key)) for key in s_attrs])
             cls = inst.__class__
             data['CLS'] = '%s.%s' % (cls.__module__, cls.__name__)
-            return Record('inst', data)
+            return 'inst', data
 
         raise SerializationError(str(t))
 
@@ -130,6 +132,102 @@ class RemoteCtx(object):
 
     def namedCodec(self, type_name):
         return None, None
+
+
+# JSONCodec context class for RPCHandler.
+
+def makeProxy(vat, data):
+    """Rehydrates an incoming Proxy."""
+    node, path = data['n'], data['o']
+    if node == vat.node_id and path in vat.storage:
+        return vat.storage[path]
+    proxy = Proxy(data['n'], data['o'], vat)
+    vat.refs.append(proxy)
+    return proxy
+
+def makeBoundMethod(vat, data):
+    """Rehydrates an incoming BoundMethod."""
+    method = BoundMethod(vat, data['o'], data['m'], data.get('n', 'browser'))
+    vat.refs.append(method)
+    return method
+
+DEFAULT_HOOKS = {
+    'BoundMethod': makeBoundMethod,
+    'Proxy': makeProxy,
+}
+
+class JSONCodecCtx(object):
+    def __init__(self, rpc, hooks=None, safe=None, auto_proxy=False):
+        self.rpc = weakref.ref(rpc)
+        self.auto_proxy = auto_proxy
+        self.node_id = rpc.node_id
+        self.hooks = dict(DEFAULT_HOOKS)
+        self.hooks.update(hooks or {})
+        self.safe = safe or []
+
+    def _safe_cls(self, cls):
+        for prefix in self.safe:
+            if cls.startswith(prefix):
+                return True
+        return False
+
+    def custom(self, name, value):
+        # FIXME: have we set up the full serializability code
+        # below only to use hooks here instead for stuff like QTerm?
+
+        if name in self.hooks:
+            return self.hooks[name](self.rpc(), value)
+
+        if not self._safe_cls(name):
+            raise SerializationError('Unsafe type: ' + name)
+
+        cls = importSymbol(name)
+        try:
+            args = [value[key] for key in cls.serialize]
+        except KeyError:
+            raise SerializationError(name + ': ' + repr(data))
+        else:
+            return cls(*args)
+
+    def _autoProxy(self, obj):
+        """Store persistent objects in rpc.storage and return a Proxy."""
+        ref = getattr(obj, 'ref', None)
+        if type(ref) is not Ref:
+            return None
+        # FIXME: need to make prefix depend on the vat so as to avoid
+        # ambiguous paths when objects come from multiple vats.
+        path = 'vat:' + ref._path
+        store = self.rpc().storage
+        if path in store:
+            assert store[path] is obj, 'Ambiguous path issues'
+        else:
+            store[path] = obj
+        # JSON codec encoding for a Proxy(ref._node, ref._path)
+        value = dict(n=self.node_id, o=path)
+        return 'Proxy', value
+
+    def record(self, data):
+        cls = data.__class__
+
+        if self.auto_proxy:
+            result = self._autoProxy(data)
+            if result is not None:
+                return result
+
+        serialize = getattr(cls, 'serialize', None)
+        if type(serialize) is tuple:
+            name = cls.__name__
+            value = []
+            for key in serialize:
+                if key.startswith('_'):
+                    return None # requires local capabilities
+                value.append(getattr(data, key, None))
+            return name, value
+
+        try:
+            return data._ext_encoding()
+        except AttributeError:
+            raise SerializationError('cannot serialize: ' + cls.__name__)
 
 
 class RPCHandler(object):
@@ -164,7 +262,7 @@ class RPCHandler(object):
         if hasattr(storage, 'setRPC'):
             storage.setRPC(self)
         self.remote_ctx = RemoteCtx(self)
-        self.json_codec = JSONCodec(self, **(jc_opts or {}))
+        self.json_ctx = JSONCodecCtx(self, **(jc_opts or {}))
 
     def setNode(self, node):
         self.node = node
@@ -202,7 +300,7 @@ class RPCHandler(object):
         pcol = msg_data['pcol']
         from_ = msg_data['from']
         if pcol == 'json':
-            msg = self.json_codec.decode(msg_data['message'])
+            msg = JSON_CODEC.decode(msg_data['message'], self.json_ctx)
             if self.verbose:
                 print getattr(self.node, 'client_ip', ''), 'In', msg
         elif pcol == 'local':
@@ -275,7 +373,7 @@ class RPCHandler(object):
         if node == 'browser':
             if self.verbose:
                 print getattr(self.node, 'client_ip', ''), 'Out', msg
-            enc = self.json_codec.encode(msg)
+            enc = JSON_CODEC.encode(msg, self.json_ctx)
             pcol = 'json'
         elif node == self.node_id:
             enc = rmap(self.delocalize, msg)

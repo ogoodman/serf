@@ -18,3 +18,18 @@ def traverse(data, fn):
     else:
         new = data
     return new
+
+def traverse_ctx(data, fn, ctx):
+    r = fn(data, ctx)
+    if r is not None:
+        return r
+    t = type(data)
+    if t is dict:
+        new = {}
+        for k, v in data.iteritems():
+            new[k] = traverse_ctx(v, fn, ctx)
+    elif t in (list, tuple):
+        new = [traverse_ctx(v, fn, ctx) for v in data]
+    else:
+        new = data
+    return new

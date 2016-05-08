@@ -357,12 +357,13 @@ def genFilters(filter):
 
 class Table(Publisher):
     serialize = ('primary', 'indices', 'pkey')
+    _private = True
 
     def __init__(self, primary=None, indices=None, pkey=None):
         Publisher.__init__(self)
-        self.primary = primary or {}
-        self.indices = indices or {}
-        self.pkey = pkey or 0
+        self._primary = primary or {}
+        self._indices = indices or {}
+        self._pkey = pkey or 0
         self._indexers = {}
 
     def select(self, filter=None):
@@ -377,18 +378,18 @@ class Table(Publisher):
 
     def _selectAll(self):
         return [KeyValue(pkey, data)
-                for pkey, data in sorted(self.primary.iteritems())]
+                for pkey, data in sorted(self._primary.iteritems())]
 
     def _selectPKR(self, lo, hi):
         return [KeyValue(pkey, data)
-                for pkey, data in sorted(self.primary.items())
+                for pkey, data in sorted(self._primary.items())
                 if lo <= pkey < hi]
 
     def _selectKey(self, spec, key, unique=False):
         if spec.startswith('# int'):
             results = []
             try:
-                value = self.primary[key]
+                value = self._primary[key]
                 results.append(KeyValue(key, value, key))
             except KeyError:
                 pass
@@ -397,7 +398,7 @@ class Table(Publisher):
             index = self._getIndex(spec)
             if key not in index:
                 return []
-            results = [KeyValue(pkey, self.primary[pkey], key)
+            results = [KeyValue(pkey, self._primary[pkey], key)
                        for pkey in sorted(index[key])]
         return results
 
@@ -410,7 +411,7 @@ class Table(Publisher):
         else:
             pkeys = []
             for pk in pkl: pkeys.extend(pk)
-        return [KeyValue(pkey, self.primary[pkey]) for pkey in pkeys]
+        return [KeyValue(pkey, self._primary[pkey]) for pkey in pkeys]
 
     def _selectKeyRange(self, spec, lo=None, hi=None, reverse=False):
         normalize = self._getIndexer(spec).normalize
@@ -424,11 +425,11 @@ class Table(Publisher):
             range = takewhile(lambda kv: kv[0] < hi, range)
         for sk, pks in range:
             for pk in pks:
-                yield KeyValue(pk, self.primary[pk], sk)
+                yield KeyValue(pk, self._primary[pk], sk)
 
     def count(self, filter=None):
         if filter is None:
-            return len(self.primary)
+            return len(self._primary)
         gen, filters = genFilters(filter)
         return len(self.select(filter))
 
@@ -440,7 +441,7 @@ class Table(Publisher):
         return [kv.key for kv in self.select(filter)]
     
     def _index(self, pkey, data):
-        for col, index in self.indices.iteritems():
+        for col, index in self._indices.iteritems():
             key = self._getIndexer(col)(data)
             if key is None:
                 continue
@@ -450,7 +451,7 @@ class Table(Publisher):
                 index[key].append(pkey)
 
     def _unindex(self, pkey, data):
-        for col, index in self.indices.iteritems():
+        for col, index in self._indices.iteritems():
             key = self._getIndexer(col)(data)
             if key in index and pkey in index[key]:
                 index[key].remove(pkey)
@@ -458,17 +459,17 @@ class Table(Publisher):
                     del index[key]
                     
     def _erase(self):
-        self.primary = {}
-        self.indices = {}
-        self.pkey = 0
+        self._primary = {}
+        self._indices = {}
+        self._pkey = 0
         self._indexers = {}
         
     def _ensureIndex(self, unspec):
         spec = normalizeSpec(unspec)
-        if spec not in self.indices:
-            self.indices[spec] = index = {}
+        if spec not in self._indices:
+            self._indices[spec] = index = {}
             indexer = self._getIndexer(spec)
-            for pkey, data in self.primary.iteritems():
+            for pkey, data in self._primary.iteritems():
                 key = indexer(data)
                 if key is None:
                     continue
@@ -485,16 +486,16 @@ class Table(Publisher):
         return self._indexers[spec]
 
     def _getIndex(self, spec):
-        return self.indices[normalizeSpec(spec)]
+        return self._indices[normalizeSpec(spec)]
 
     def _put(self, data, notify=True):
-        self.pkey += 4
-        self.primary[self.pkey] = data
-        self._index(self.pkey, data)
+        self._pkey += 4
+        self._primary[self._pkey] = data
+        self._index(self._pkey, data)
         if notify:
-            info = KeyValueChange(self.pkey, data, None)
+            info = KeyValueChange(self._pkey, data, None)
             self.notify('change', info)
-            self.notify('key:%s' % self.pkey, info)
+            self.notify('key:%s' % self._pkey, info)
         
     def insert(self, records, notify=True):
         if type(records) is not list:
@@ -502,17 +503,17 @@ class Table(Publisher):
         keys = []
         for r in records:
             self._put(r, notify)
-            keys.append(self.pkey)
+            keys.append(self._pkey)
         return keys
             
     def set(self, pkey, data, notify=True):
-        old = self.primary.get(pkey)
+        old = self._primary.get(pkey)
         if old is not None:
             self._unindex(pkey, old)
-        self.primary[pkey] = data
+        self._primary[pkey] = data
         self._index(pkey, data)
-        if pkey > self.pkey:
-            self.pkey = pkey
+        if pkey > self._pkey:
+            self._pkey = pkey
         if notify:
             info = KeyValueChange(pkey, data, old)
             self.notify('change', info)
@@ -536,11 +537,11 @@ class Table(Publisher):
 
     def _pop(self, pkey, notify=True):
         try:
-            data = self.primary[pkey]
+            data = self._primary[pkey]
         except KeyError:
             raise KeyError(pkey)
         self._unindex(pkey, data)
-        del self.primary[pkey]
+        del self._primary[pkey]
         if notify:
             info = KeyValueChange(pkey, None, data)
             self.notify('change', info)
@@ -554,14 +555,14 @@ class Table(Publisher):
         return kvs
 
     def _removeAll(self):
-        count = len(self.primary)
+        count = len(self._primary)
         info = KeyValueChange(-1, None, None)
-        for pkey in list(self.primary):
+        for pkey in list(self._primary):
             self._pop(pkey, notify=False)
             self.notify('key:%s' % pkey, info)
         if count > 0:
             self.notify('change', KeyValueChange(-count, None, None))
-        self.pkey = 0
+        self._pkey = 0
         return count
 
     def remove(self, filter=None):
@@ -573,15 +574,15 @@ class Table(Publisher):
         return len(to_remove)
 
     def _get(self, pkey, required):
-        value = self.primary.get(pkey)
+        value = self._primary.get(pkey)
         if required and value is None:
             raise KeyError(pkey)
         return [] if value is None else [KeyValue(pkey, value)]
 
     def get(self, pkey):
-        if int(pkey) not in self.primary:
+        if int(pkey) not in self._primary:
             raise KeyError(pkey)
-        return self.primary[pkey]
+        return self._primary[pkey]
 
     def values(self, filter=None):
         return [pk.value for pk in self.select(filter)]
@@ -648,7 +649,7 @@ class Table(Publisher):
         return count[0]
 
     def maxPK(self):
-        return max(self.primary)
+        return max(self._primary)
 
     def _on_addref(self):
         self.subscribe('change', self.ref._save)
