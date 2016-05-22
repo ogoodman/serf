@@ -1,4 +1,9 @@
-define(['when/when'], function(when) {
+//#include promise.js
+
+var rpc = (function() {
+
+    var Promise = promise.Promise;
+
     /**
      * Provides RPC between client-side javascript and a Serf-WS server.
      * @module serf/rpc
@@ -68,16 +73,12 @@ define(['when/when'], function(when) {
         if (this.ws !== undefined) {
             if (this.ws.readyState < 2) return this.conn;
         }
+        this.conn = new Promise();
         this.ws = new WebSocket(that.url);
-        this.conn = when.promise(function(resolve, reject) {
-            if (that.ws === undefined) {
-                reject('connection closed');
-            }
-            that.ws.onopen = function(event) {
-                that.onopen();
-                resolve();
-            };
-        });
+        this.ws.onopen = e => {
+            that.onopen();
+            that.conn.resolve();
+        };
         this.ws.onmessage = function(event) {
             // console.log(event.data);
             var data = traverse(JSON.parse(event.data), postDecodeFn);
@@ -153,13 +154,13 @@ define(['when/when'], function(when) {
             a: args,
             O: this.callId
         };
-        var deferred = this.pendingCalls[this.callId] = when.defer();
+        var promise = this.pendingCalls[this.callId] = new Promise();
         this.connect().done(function() {
             that.ws.send(JSON.stringify(traverse(msg, preEncodeFn)));
         }, function(error) {
-            deferred.reject(['connection error', error]);
+            promise.reject(['connection error', error]);
         });
-        return deferred.promise;
+        return promise;
     };
 
     function BoundMethod(oid, method) {
@@ -195,8 +196,8 @@ define(['when/when'], function(when) {
 
     let handler = {
         get(remote, name) {
-            if (name == 'then') {
-                // Automatically adding 'then' confuses when.js.
+            if (name === 'then') {
+                // Automatically adding 'then' confuses Promise.isPromise.
                 return undefined;
             }
             if (!remote[name]) {
@@ -323,4 +324,4 @@ define(['when/when'], function(when) {
         makeBoundMethod: makeBoundMethod,
         makePODClass: makePODClass
     };
-});
+})();

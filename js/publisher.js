@@ -1,4 +1,4 @@
-define(function() {
+var publisher = (function() {
     function Publisher() {
         this._subs = {};
     }
@@ -25,4 +25,4 @@ define(function() {
     };
 
     return {Publisher: Publisher};
-});
+})();

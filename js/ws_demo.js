@@ -1,5 +1,7 @@
-require(['when/when', 'serf/rpc', 'serf/publisher'],
-function(when, rpc, publisher) {
+//#include publisher.js
+//#include rpc.js
+
+window.onload = function() {
 
     var Publisher = publisher.Publisher;
 
@@ -117,4 +119,4 @@ function(when, rpc, publisher) {
 
     doBind();
     window.doBind = doBind;
-});
+};

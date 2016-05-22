@@ -1,14 +1,9 @@
+//#include /js/serf/rpc.js
+
 // Some boilerplate to ensure that AMD require modules and
 // jquery are all ready before we run the main program.
 
-require(['serf/rpc'],
-function(rpc) {
-    window.rpc = rpc;
-
-    $(mainprog);
-});
-
-function mainprog() {
+$(function() {
     // Register some classes we can pass to and from the server.
     // 
     // NOTE: On the server these classes actually do something. Here
@@ -76,5 +71,4 @@ function mainprog() {
         t.update(new PKey(event.recid), [new FieldValue(':' + field, event.value_new)]);
         event.onComplete = () => grid.save();
     });
-}
-
+});
