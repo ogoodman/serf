@@ -10,30 +10,39 @@ from cStringIO import StringIO
 from serf.publisher import Publisher
 from serf.weak_list import WeakList
 
+WS_FRAME_CONTINUATION = 0x0
+WS_FRAME_TEXT = 0x1
+WS_FRAME_BINARY = 0x2
+WS_FRAME_CLOSE = 0x8
+WS_FRAME_PING = 0x9
+WS_FRAME_PONG = 0xA
+
 class SocketBuffer(object):
     def __init__(self, sock):
         self.sock = sock
         self.buff = ''
 
-    def _buffer(self, n):
+    def _buffer(self, n, sink=None):
         data = self.sock.recv(n)
         if not data: # at EOF
             if self.buff:
-                print >>sys.stderr, 'Truncated read %r' % self.buff
+                print >>sys.stderr, 'Truncated read: expected %d got %d' % (n, len(self.buff))
             return False
-        # FIXME: this will be inefficient for very large, highly
-        # fragmented reads.
         self.buff += data
+        if sink is not None:
+            sink.write(data)
         return True
 
-    def read(self, n):
+    def read(self, n, sink=None):
         """Reads exactly n bytes from the socket.
 
         If the socket reaches EOF before n bytes are read, returns
         an empty string, discarding any partial read.
         """
+        if sink is not None:
+            sink.write(self.buff[:n])
         while len(self.buff) < n:
-            if not self._buffer(n - len(self.buff)):
+            if not self._buffer(n - len(self.buff), sink):
                 return ''
         data, self.buff = self.buff[:n], self.buff[n:]
         return data
@@ -53,7 +62,87 @@ class SocketBuffer(object):
 
     def send(self, data):
         return self.sock.send(data)
-        
+
+class Decoder(object):
+    """A Decoder acts as a filter for a writable file-like object.
+
+    Data is exclusive-or-ed with the mask which is expected
+    to be an array of 4 byte-sized integers.
+
+    :param mask: array of 4 byte sized integers
+    :param out: writeable file-like object for output
+    """
+    def __init__(self, mask, out):
+        self._mask = mask
+        self._out = out
+        self._n = 0
+
+    def write(self, data):
+        """Decodes the data and passes it to the output object.
+
+        :param data: string data to be decoded
+        """
+        buf = ''
+        for char in data:
+            buf += chr(ord(char) ^ self._mask[self._n % 4])
+            self._n += 1
+        self._out.write(buf)
+
+    def close(self):
+        """Closes the output object."""
+        self._out.close()
+
+class BinaryHandler(object):
+    """A BinaryHandler dispatches a key-prefixed binary string to a handler.
+
+    Data is fed to the BinaryHandler via its write method.
+    It is expected that the data will be prefixed with a key
+    of at most 20 chars, followed by a ':'. In that case, the key
+    is removed, the matching handler is popped, and remaining data
+    is fed to the handler.
+
+    :param handlers: a dictionary of handlers
+    """
+    def __init__(self, handlers):
+        self._handlers = handlers
+        self._key = ''
+        self._handler = None
+        self._ok = True
+        self._done = 0
+
+    def write(self, data):
+        self._done += len(data)
+
+        # We look for a key delimited by a ':' within the first
+        # 20 chars of the binary data. If found we call a handler
+        # which has hopefully been registered in advance.
+        if self._ok and self._handler is None:
+            self._key += data
+            pos = self._key[:20].find(':')
+            if pos < 0:
+                if len(self._key) >= 21:
+                    self._ok = False
+            else:
+                # Found a ':'.
+                self._key, data = self._key[:pos], self._key[pos + 1:]
+                if self._key in self._handlers:
+                    self._handler = self._handlers.pop(self._key)
+                else:
+                    self._ok = False
+
+        # pass data on to the handler
+        if self._handler is not None:
+            try:
+                self._handler.write(data)
+            except Exception, e:
+                print 'Handler for binary with key:', self._key, 'raised:', e
+                self._handler = None
+
+    def close(self):
+        if self._handler is None:
+            print 'Discarded %d bytes of data' % self._done
+        else:
+            self._handler.close()
 
 class WebSocketHandler(Publisher):
     """Implements Transport. Connector for WebSocket clients."""
@@ -72,6 +161,7 @@ class WebSocketHandler(Publisher):
             self.transport = weakref.proxy(self)
         else:
             self.transport = transport
+        self.binaries = {}
 
     def handle(self):
         if not self.handshake():
@@ -92,10 +182,14 @@ class WebSocketHandler(Publisher):
         elif length == 127:
             length = struct.unpack(">Q", self.sock.read(8))[0]
         masks = [ord(byte) for byte in self.sock.read(4)]
-        decoded = ""
-        for char in self.sock.read(length):
-            decoded += chr(ord(char) ^ masks[len(decoded) % 4])
-        if ctrl == 8:
+
+        # If it's not binary we decode it immediately.
+        if ctrl != WS_FRAME_BINARY:
+            decoded = ''
+            for char in self.sock.read(length):
+                decoded += chr(ord(char) ^ masks[len(decoded) % 4])
+
+        if ctrl == WS_FRAME_CLOSE:
             print self.client_ip, 'CLOSE', repr(decoded)
             if self.close_sent:
                 return False
@@ -109,9 +203,27 @@ class WebSocketHandler(Publisher):
             except:
                 pass
             return False
-        else:
+        elif ctrl == WS_FRAME_BINARY:
+            sink = Decoder(masks, BinaryHandler(self.binaries))
+            self.sock.read(length, sink)
+            sink.close()
+        elif ctrl == WS_FRAME_TEXT:
             self.on_message(decoded)
         return True
+
+    def add_binary_handler(self, key, handler):
+        """Sets a handler to receive a binary message.
+
+        A handler must have 'write' and 'close' methods.
+        The key must be at most 20 chars long and not contain a ':'.
+        When a binary message is received, prefixed with a matching
+        key followed by a ':', the remainder of the message is fed
+        to the matching handler.
+
+        :param key: key under which to store a handler
+        :param handler: handler to store
+        """
+        self.binaries[key] = handler
 
     def send(self, node, message, pcol='json', errh=None, code=0x81):
         self.sock.send(chr(code))

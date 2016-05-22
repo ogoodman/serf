@@ -264,9 +264,6 @@ class RPCHandler(object):
         self.remote_ctx = RemoteCtx(self)
         self.json_ctx = JSONCodecCtx(self, **(jc_opts or {}))
 
-    def setNode(self, node):
-        self.node = node
-
     def makeProxy(self, path, node=None):
         return Proxy(node or self.node_id, path, self)
 
