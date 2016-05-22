@@ -17,6 +17,8 @@ WS_FRAME_CLOSE = 0x8
 WS_FRAME_PING = 0x9
 WS_FRAME_PONG = 0xA
 
+WS_FIN = 0x80
+
 class SocketBuffer(object):
     def __init__(self, sock):
         self.sock = sock
@@ -175,26 +177,48 @@ class WebSocketHandler(Publisher):
         if not data:
             print self.client_ip, 'EOF', repr(data)
             return False
-        ctrl = ord(data[0]) & 0xF
+
+        frame = ord(data[0]) & 0xF
+        first = frame != WS_FRAME_CONTINUATION
+        final = ord(data[0]) & WS_FIN
+
+        if first:
+            # save the frame type
+            self._frame = frame
+        else:
+            # continuation, same frame type
+            frame = self._frame
+
         length = ord(data[1]) & 127
         if length == 126:
             length = struct.unpack(">H", self.sock.read(2))[0]
         elif length == 127:
             length = struct.unpack(">Q", self.sock.read(8))[0]
+
         masks = [ord(byte) for byte in self.sock.read(4)]
 
-        # If it's not binary we decode it immediately.
-        if ctrl != WS_FRAME_BINARY:
+        if frame != WS_FRAME_BINARY:
             decoded = ''
             for char in self.sock.read(length):
                 decoded += chr(ord(char) ^ masks[len(decoded) % 4])
+            if first:
+                self._decoded = decoded
+            else:
+                self._decoded += decoded
+        else:
+            if first:
+                self._sink = Decoder(masks, BinaryHandler(self.binaries))
+            self.sock.read(length, self._sink)
 
-        if ctrl == WS_FRAME_CLOSE:
-            print self.client_ip, 'CLOSE', repr(decoded)
+        if not final:
+            return True
+
+        if frame == WS_FRAME_CLOSE:
+            print self.client_ip, 'CLOSE', repr(self._decoded)
             if self.close_sent:
                 return False
-            if len(decoded) >= 2:
-                close_buf = decoded[:2]
+            if len(self._decoded) >= 2:
+                close_buf = self._decoded[:2]
             else:
                 close_buf = ''
             try:
@@ -203,12 +227,13 @@ class WebSocketHandler(Publisher):
             except:
                 pass
             return False
-        elif ctrl == WS_FRAME_BINARY:
-            sink = Decoder(masks, BinaryHandler(self.binaries))
-            self.sock.read(length, sink)
-            sink.close()
-        elif ctrl == WS_FRAME_TEXT:
-            self.on_message(decoded)
+
+        elif frame == WS_FRAME_BINARY:
+            self._sink.close()
+        elif frame == WS_FRAME_TEXT:
+            self.on_message(self._decoded)
+        else:
+            print 'FRAME:', frame
         return True
 
     def add_binary_handler(self, key, handler):
