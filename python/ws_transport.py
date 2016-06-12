@@ -63,7 +63,7 @@ class SocketBuffer(object):
         return data
 
     def send(self, data):
-        return self.sock.send(data)
+        self.sock.sendall(data)
 
 class Decoder(object):
     """A Decoder acts as a filter for a writable file-like object.
