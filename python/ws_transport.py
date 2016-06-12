@@ -71,12 +71,20 @@ class Decoder(object):
     Data is exclusive-or-ed with the mask which is expected
     to be an array of 4 byte-sized integers.
 
-    :param mask: array of 4 byte sized integers
     :param out: writeable file-like object for output
+    :param mask: array of 4 byte sized integers
     """
-    def __init__(self, mask, out):
-        self._mask = mask
+    def __init__(self, out, mask=None):
         self._out = out
+        self._mask = mask or [0] * 4
+        self._n = 0
+
+    def set_mask(self, mask):
+        """Sets the mask to use for subsequent writes.
+
+        :param mask: array of 4 byte sized integers.
+        """
+        self._mask = mask
         self._n = 0
 
     def write(self, data):
@@ -207,7 +215,8 @@ class WebSocketHandler(Publisher):
                 self._decoded += decoded
         else:
             if first:
-                self._sink = Decoder(masks, BinaryHandler(self.binaries))
+                self._sink = Decoder(BinaryHandler(self.binaries))
+            self._sink.set_mask(masks)
             self.sock.read(length, self._sink)
 
         if not final:

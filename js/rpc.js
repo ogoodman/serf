@@ -53,6 +53,7 @@ var rpc = (function() {
         this.onopen = function() {};
         this.onclose = function() {};
         this.obj = {};
+        this.binary_handler = {};
     };
 
     /**
@@ -80,7 +81,19 @@ var rpc = (function() {
             that.conn.resolve();
         };
         this.ws.onmessage = function(event) {
-            // console.log(event.data);
+            // Deal with incoming binary data.
+            if (typeof event.data !== "string") {
+                var reader = new FileReader();
+                reader.onloadend = function() {
+                    var key = reader.result;
+                    var handler = that.binary_handler[key];
+                    delete that.binary_handler[key];
+                    handler(key, event.data.slice(11));
+                };
+                reader.readAsText(event.data.slice(0, 10));
+                return;
+            }
+
             var data = traverse(JSON.parse(event.data), postDecodeFn);
             if ('m' in data) { // call (currently one-way only from server)
                 var prx = that.obj[data.o];
@@ -302,8 +315,16 @@ var rpc = (function() {
             }
         };
         Cls.prototype.ext_encoding = function() {
+            var n;
             var values = [];
-            for (var i = 0, n = params.length; i < n; ++i) {
+            // Find the number of defined values.
+            for (var i = params.length - 1; i >= 0; --i) {
+                if (this[params[i]] !== undefined) {
+                    n = i + 1;
+                    break;
+                }
+            }
+            for (var i = 0; i < n; ++i) {
                 values[i] = this[params[i]];
             }
             return {name: name, args: values};

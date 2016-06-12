@@ -33,7 +33,7 @@ class WSTransportTest(unittest.TestCase):
     def testDecoder(self):
         out = StringIO()
         mask = [0, 1, 0, 1]
-        decoder = Decoder(mask, out)
+        decoder = Decoder(out, mask)
         decoder.write('I am fred')
         decoder.write(' I am george')
         encoded = out.getvalue()
@@ -41,7 +41,7 @@ class WSTransportTest(unittest.TestCase):
 
         # Repeat should decode.
         out = StringIO()
-        decoder = Decoder(mask, out)
+        decoder = Decoder(out, mask)
         decoder.write(encoded)
         self.assertEquals(out.getvalue(), 'I am fred I am george')
         decoder.close()

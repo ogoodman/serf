@@ -10,7 +10,6 @@ var promise = (function() {
     };
 
     Promise.prototype.call = function(func) {
-        assert(this.state === 'pending');
         // This can't throw unless this.reject throws.
         try {
             this.resolve(func());
