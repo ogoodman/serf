@@ -43,7 +43,7 @@ $(function() {
     });
 
     // Connect to table on the server.
-    t = serv.getProxy('table');
+    t = serv.getProxy('table', ['select', 'update']);
 
     // Populate the table.
     t.select().done(rows => {

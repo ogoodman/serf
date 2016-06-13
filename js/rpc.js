@@ -76,7 +76,7 @@ var rpc = (function() {
         }
         this.conn = new Promise();
         this.ws = new WebSocket(that.url);
-        this.ws.onopen = e => {
+        this.ws.onopen = function(e) {
             that.onopen();
             that.conn.resolve();
         };
@@ -207,7 +207,7 @@ var rpc = (function() {
         return mcall;
     }
 
-    let handler = {
+    var handler = {
         get(remote, name) {
             if (name === 'then') {
                 // Automatically adding 'then' confuses Promise.isPromise.
@@ -240,8 +240,12 @@ var rpc = (function() {
      * Makes a proxy for the named server-side object.
      * @param {string} objId Id of a server-side object
      */
-    WSServer.prototype.getProxy = function(objId, node) {
-        return new Proxy(new Ref(this, objId, node), handler);
+    WSServer.prototype.getProxy = function(objId, methods, node) {
+        var proxy = new Ref(this, objId, node);
+        for (var i = 0, n = (methods ? methods.length : 0); i < n; ++i) {
+            proxy.addMethod(methods[i]);
+        }
+        return proxy;
     };
 
     /**

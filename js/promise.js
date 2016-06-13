@@ -63,15 +63,16 @@ var promise = (function() {
             next = new Promise();
         }
 
+        var that = this;
         if (this.state === 'resolved') {
             if (callback) {
-                next.call(() => callback(this.value));
+                next.call(function() { return callback(that.value); });
             } else {
                 next.resolve(this.value);
             }
         } else if (this.state === 'rejected') {
             if (errback) {
-                next.call(() => errback(this.value));
+                next.call(function() { return errback(that.value); });
             } else {
                 next.reject(this.value);
             }
@@ -106,7 +107,7 @@ var promise = (function() {
     };
 
     Promise.prototype.show = function() {
-        this.done(v => console.log(v));
+        this.done(function(v) { console.log(v); });
     };
 
     Promise.uncaught = function(e) {
@@ -119,7 +120,7 @@ var promise = (function() {
 
     Promise.gather = function(promises) {
         function append(p) {
-            return l => p.then(value => { l.push(value); return l; });
+            return function(l) { return p.then(function(value) { l.push(value); return l; }); };
         }
         var l = Promise.lift([]);
         for (var p of promises) {
@@ -140,7 +141,7 @@ var promise = (function() {
         return function(arg, callback) {
             var result = func_p(arg);
             if (result.then) {
-                result.then(callback, e => errh && callback(errh(e)));
+                result.then(callback, function(e) { return errh && callback(errh(e)); });
             } else {
                 callback(result);
             }
@@ -156,7 +157,7 @@ var promise = (function() {
         return function(arg) {
             var promise = new Promise();
             try {
-                func(arg, v => promise.resolve(v));
+                func(arg, function(v) { return promise.resolve(v); });
             } catch (e) {
                 promise.reject(e);
             }

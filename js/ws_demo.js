@@ -22,6 +22,8 @@ window.onload = function() {
 
     // ------------------------------------------------------------
 
+    var MODEL_METH = ['get', 'set'];
+    var SQ_CALLER_METH = ['useSquarer', 'subscribeToClient'];
 
     function bindInput(elem, model, name) {
         elem.addEventListener('change', function(e) {
@@ -62,7 +64,7 @@ window.onload = function() {
     var input = document.getElementById('input1');
     function doBind() {
         if (!bound) {
-            window.model = serv.getProxy('shared');
+            window.model = serv.getProxy('shared', MODEL_METH);
             bindInput(input, model, 'name');
             bound = true;
         } else {
@@ -78,15 +80,15 @@ window.onload = function() {
         return n * n;
     };
 
-    var sqc = serv.getProxy('sqcaller');
+    var sqc = serv.getProxy('sqcaller', SQ_CALLER_METH);
 
     serv.obj['pub'] = new Publisher();
-    var pp = serv.getProxy('pub', 'browser');
+    var pp = serv.getProxy('pub', [], 'browser');
 
     function sendProxyToServer() {
         serv.obj['squarer'] = new Squarer();
         console.log('serv.obj.squarer', serv.obj['squarer']);
-        var sq = serv.getProxy('squarer', 'browser');
+        var sq = serv.getProxy('squarer', [], 'browser');
         sqc.useSquarer(sq, 3).done(rlog);
     }
 
