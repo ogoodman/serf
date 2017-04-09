@@ -1,26 +1,19 @@
 #!/usr/bin/python
 
-"""Demo of websockets. 
+"""Demo of websockets."""
 
-TODO: reimplement using pure eventlet websocket module.
-"""
-
-import eventlet
 import sys
-import weakref
-from serf.eventlet_thread import EventletThread
-from serf.ws_transport import WSTransport
+from serf.object_server import serve
 from serf.model import Model
 from serf.bound_method import BoundMethod
-from serf.rpc_handler import RPCHandler
 
 SINGLETON_MODEL = Model()
 
 class SquareCaller(object):
-    def __init__(self, vat, oid, verbose=False):
-        self.vat = weakref.ref(vat)
+    def __init__(self, vat, oid):
+        self.vat = vat
         self.oid = oid
-        self.verbose = verbose
+        self.verbose = '-v' in sys.argv
     def useSquarer(self, sq, n):
         r = sq.square(n)
         if self.verbose:
@@ -42,18 +35,13 @@ class Ping(object):
     def ping(self):
         return 'pong'
 
-def handle(transport):
-    verbose = '-v' in sys.argv
-    thread = EventletThread()
-    thread.callFromThread = thread.call
-    handler = RPCHandler(transport, {}, t_model=thread, verbose=verbose)
+def init_session(handler):
     handler.provide('shared', SINGLETON_MODEL)
     handler.provide('private', Model())
-    handler.provide('sqcaller', SquareCaller(handler, 'sqcaller', verbose))
+    handler.provide('sqcaller', SquareCaller(handler, 'sqcaller'))
     handler.provide('ping', Ping())
-    transport.handle()
 
 if __name__ == '__main__':
-    transport = WSTransport(9999, handler=handle)
-    transport.serve()
+    verbose = '-v' in sys.argv
+    serve(init_session, 9999, verbose)
     print '\nBye'
