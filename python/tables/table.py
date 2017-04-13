@@ -8,7 +8,7 @@ from itertools import islice
 from serf.publisher import Publisher
 from serf.serializer import decodes, encodes
 
-from query import getMember, setMember, checkField
+from query import getMember, setMember, checkField, QTerm
 
 
 class TableCodec(object):
@@ -667,3 +667,15 @@ class Client(object):
         table = self._tables.pop(name, None)
         if table is not None:
             table._erase()
+
+# Pass as jc_opts={'hooks':JC_HOOKS} to RPCHandler
+# so as to enable the JSONCodec to pass query instances
+# as values.
+
+JC_HOOKS = {}
+JC_HOOKS['PKey'] = lambda _,args: PKey(*args)
+JC_HOOKS['Key'] = lambda _,args: Key(*args)
+JC_HOOKS['KeyRange'] = lambda _,args: KeyRange(*args)
+JC_HOOKS['KeyPrefix'] = lambda _,args: KeyPrefix(*args)
+JC_HOOKS['FieldValue'] = lambda _,args: FieldValue(*args)
+JC_HOOKS['QTerm'] = lambda _,args: QTerm(*args)

@@ -18,13 +18,14 @@ class FuncAdapter(object):
     def initSession(self, handler):
         self.func(handler)
 
-def serve(factory, port, verbose=False):
+def serve(factory, port, verbose=False, jc_opts=None):
     if type(factory) is types.FunctionType:
         factory = FuncAdapter(factory)
     def handler(transport):
+        # transport is a ws_transport.WebSocketConnection
         thread = EventletThread()
         thread.callFromThread = thread.call
-        handler = RPCHandler(transport, {}, t_model=thread, verbose=verbose)
+        handler = RPCHandler(transport, {}, t_model=thread, verbose=verbose, jc_opts=jc_opts)
         factory.initSession(weakref.proxy(handler))
         transport.handle()
     transport = WSTransport(port, handler=handler)

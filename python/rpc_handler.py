@@ -384,6 +384,10 @@ class RPCHandler(object):
         self.storage[addr] = obj
         return Proxy(self.node_id, addr, self)
 
+    def provideAll(self, d):
+        for addr, obj in d.iteritems():
+            self.provide(addr, obj)
+
     def call(self, node, addr, method, args):
         cb = self.thread_model.makeCallback()
         reply_addr = '@' + self.vat_id + '/' + randomString()
