@@ -1,42 +1,55 @@
-example serializable classes
-po/call_log.py
-po/call_log_reader.py
-po/data.py
-po/data_log.py
-po/file.py
-po/group.py
-po/log_file.py
-po/node_observer.py (implements 'node_observer' role for node)
-po/printer.py
-po/vat_cap.py
+ORGANISATION
+============
+
+All core python modules live at the top-level. Nothing in the core
+depends on anything in the sub-packages.
+
+NOTE: At this time all sub-packages should be treated as demo code.
+
+They are included so that they can be imported and used for building
+backend services, however it should not be assumed that they are
+stable.
+
+CORE
+----
 
 basic utilities
 obj.py
+publisher.py
 util.py
+weak_list.py
 
 serialization
-serialize.py
+serializer.py
+json_codec.py
+traverse.py
 
 rpc
-node.py (routing?)
 proxy.py
-repl_proxy.py (used only by client.py)
-vat.py
+repl_proxy.py
+rpc_handler.py
+bound_method.py
 
 transport
 transport.py
-net.py
-net_base.py
+ws_transport.py
+dispatcher.py
 
 thread model
 eventlet_thread.py
 synchronous.py
 worker.py
+thread_model.py
 
 storage
 fs_dict.py
 ref.py
 storage.py
+
+c++ idl
+idl_cpp_types.py
+idl_parser.py
+idl_types.py
 
 testing
 eventlet_test_handler.py
@@ -48,12 +61,38 @@ test_object.py
 test_person.py
 test_time.py
 
-scripts
-fcat.py
+model.py (belongs in po/ ?)
+object_server.py (merge into ws_transport?)
+
+NON-CORE
+--------
+toy persistent table implementation
+table/*
+
+login and user-caps example
+user/*
+
+example persistent object classes
+po/call_log.py
+po/call_log_reader.py
+po/data.py
+po/data_log.py
+po/file.py
+po/group.py
+po/log_file.py
+po/node_observer.py (implements 'node_observer' role for node)
+po/printer.py
+po/vat_cap.py
 
 full stack examples
 client.py
 server.py
+t_client.py
+t_server.py
+ws_server.py
+
+scripts
+fcat.py
 
 unused
 unused/cap.py (random example)
@@ -65,5 +104,3 @@ unused/person.py (random example)
 unused/segmented_log.py (work in progress?)
 unused/sleeper.py (used for cli testing?)
 unused/type.py
-
-
