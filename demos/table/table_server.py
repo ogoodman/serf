@@ -14,36 +14,25 @@ from serf.tables.table import *
 from serf.tables.query import *
 from serf.tables.table_handle import TableHandle
 
-from login import Login
-
 SERF_NODE = '127.0.0.1:6506'
 
 thread = EventletThread()
 
-store = FSDict('tables')
+store = FSDict('/var/lib/serf/tables')
 storage = Storage(store, t_model=thread)
 
 if 'table' not in storage:
     storage['table'] = Table()
-if 'login' not in storage:
-    storage['login'] = Login(storage)
-LOGIN = storage['login']
 TABLE = storage['table']
 TH_TABLE = TableHandle(TABLE)
 
-HOOKS = {}
-HOOKS['PKey'] = lambda _,args: PKey(*args)
-HOOKS['FieldValue'] = lambda _,args: FieldValue(*args)
-HOOKS['QTerm'] = lambda _,args: QTerm(*args)
-
-JC_OPTS = dict(hooks=HOOKS, safe=['serf.tables'], auto_proxy=True)
+JC_OPTS = dict(hooks=JC_HOOKS, safe=['serf.tables'], auto_proxy=True)
 
 def handle(transport):
     thread = EventletThread()
     thread.callFromThread = thread.call
-    handler = RPCHandler(transport, {}, t_model=thread, verbose=True, jc_opts=JC_OPTS)
+    handler = RPCHandler(transport, {}, t_model=thread, jc_opts=JC_OPTS)
     handler.provide('table', TH_TABLE)
-    handler.provide('login', LOGIN)
     transport.handle()
 
 if __name__ == '__main__':

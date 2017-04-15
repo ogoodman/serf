@@ -1,8 +1,5 @@
 //#include /js/serf/rpc.js
 
-// Some boilerplate to ensure that AMD require modules and
-// jquery are all ready before we run the main program.
-
 $(function() {
     // Register some classes we can pass to and from the server.
     // 
@@ -43,7 +40,7 @@ $(function() {
     });
 
     // Connect to table on the server.
-    t = serv.getProxy('table', ['select', 'update']);
+    t = serv.getProxy('table', ['insert', 'select', 'update']);
 
     // Populate the table.
     t.select().done(rows => {

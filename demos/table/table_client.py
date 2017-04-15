@@ -33,5 +33,3 @@ thread.start(True)
 thread.callFromThread(transport.start)
 
 table = TableHandle(proxy('table'))
-users = TableHandle(proxy('users'))
-login = proxy('login')

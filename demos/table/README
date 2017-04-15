@@ -1,0 +1,62 @@
+Installing the live_table demo
+------------------------------
+
+Add a symlink named 'live_table' from the document root of your web
+server to the www/ directory here.
+
+Ensure that you have a symlink named 'serf' pointing to serf/js under
+your document root's js/ directory.
+
+Your document root should also contain:
+
+  /js/jquery-2.1.1.min.js
+  /js/w2ui-1.4.3.min.js
+
+  /css/w2ui-1.4.3.min.css
+
+Add proxy-pass directives to your web server configs.
+
+For Apache:
+
+	ProxyPass /tables/ ws://localhost:9900/
+	ProxyPassReverse /tables/ ws://localhost:9900/
+
+For Nginx:
+
+  proxy_read_timeout 7d;
+
+  location /tables/ {
+    proxy_pass http://localhost:9900;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+  }
+
+Make a storage root for the table server:
+
+  sudo mkdir -p /var/lib/serf/tables
+
+Run table_server.py in this directory. It will listen for websocket
+connections on port 9900 and for serf connections on port 6506.
+
+Alternatively, install table_server.py as a service. If you're running
+Ubuntu you might find serf/scripts/site.py helpful for this.
+
+With this in place you should be able to browse to /live_table/ and
+see an initially empty table.
+
+Connect via Serf to add rows as follows:
+
+  mewlip:~/serf/demos/table$ python
+  Python 2.7.12 (default, Nov 19 2016, 06:48:10) 
+  [GCC 5.4.0 20160609] on linux2
+  Type "help", "copyright", "credits" or "license" for more information.
+  >>> from table_client import *
+  >>> table.insert({'fname': 'Harry','lname':'Potter', 'email':'harry.potter@hogwarts.wiz', 'sdate':'1997-06-26'})
+  [16]
+  >>> 
+
+You can also insert rows via the JS console for the web page.
+
+  t.insert({fname:'Fred',lname:'Weasley',email:'fred.weasley@theburrow.wiz',sdate:'1996-08-10'}).show()
+
