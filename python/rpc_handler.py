@@ -119,8 +119,9 @@ class RemoteCtx(object):
 
         # Serialize instances without any capability members.
         s_attrs = getattr(t, 'serialize', None)
+        private = getattr(t, '_private', False)
         if type(s_attrs) is tuple and not [a for a in s_attrs if a.startswith('_')]:
-            data = dict([(key, getattr(inst, key)) for key in s_attrs])
+            data = dict([(key, getattr(inst, '_' + key if private else key)) for key in s_attrs])
             cls = inst.__class__
             data['CLS'] = '%s.%s' % (cls.__module__, cls.__name__)
             return 'inst', data

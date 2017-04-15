@@ -1,7 +1,7 @@
 
 # Based on the idlparse.py example supplied with pyparsing.
 
-from pyparsing import Literal, CaselessLiteral, Word, Upcase, OneOrMore,\
+from pyparsing import Literal, CaselessLiteral, Word, OneOrMore,\
     ZeroOrMore, Forward, NotAny, delimitedList, oneOf, Group, Optional,\
     Combine, alphas, nums, restOfLine, cStyleComment, alphanums, printables,\
     empty, quotedString, ParseException, ParseResults, Keyword, Regex
