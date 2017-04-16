@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 """Simple Object RPC service.
 
 TODO: reimplement using pure eventlet websocket module.
@@ -18,7 +16,7 @@ class FuncAdapter(object):
     def initSession(self, handler):
         self.func(handler)
 
-def serve(factory, port, verbose=False, jc_opts=None):
+def serve_ws(factory, port, verbose=False, jc_opts=None):
     if type(factory) is types.FunctionType:
         factory = FuncAdapter(factory)
     def handler(transport):

@@ -292,7 +292,7 @@ SERVER_TPL = '''\
 """%s"""
 
 import sys
-from serf.object_server import serve
+from serf.ws_server import serve_ws
 
 class Ping(object):
     def ping(self):
@@ -302,7 +302,7 @@ def init_session(handler):
     handler.provide('ping', Ping())
 
 port = int(sys.argv[1])
-serve(init_session, port)
+serve_ws(init_session, port)
 '''
 
 def create_server(path, desc):

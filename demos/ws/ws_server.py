@@ -3,7 +3,7 @@
 """Demo of websockets."""
 
 import sys
-from serf.object_server import serve
+from serf.ws_server import serve_ws
 from serf.model import Model
 from serf.bound_method import BoundMethod
 
@@ -43,5 +43,5 @@ def init_session(handler):
 
 if __name__ == '__main__':
     verbose = '-v' in sys.argv
-    serve(init_session, 9999, verbose)
+    serve_ws(init_session, 9999, verbose)
     print '\nBye'

@@ -29,6 +29,7 @@ proxy.py
 repl_proxy.py
 rpc_handler.py
 bound_method.py
+ws_server.py
 
 transport
 transport.py
@@ -62,7 +63,6 @@ test_person.py
 test_time.py
 
 model.py (belongs in po/ ?)
-object_server.py (merge into ws_transport?)
 
 NON-CORE
 --------
