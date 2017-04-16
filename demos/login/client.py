@@ -1,6 +1,17 @@
-#!/usr/bin/env python
+"""Code to interact with the login server from a python shell.
 
-"""Handy stuff for the command line."""
+Usage:
+
+  $ python
+  ...
+  >>> from client import *
+  >>> admin.addUser('fred', 's3cr3t')
+  >>> fred = login.login('fred', 's3cr3t')
+
+The 'fred' value is a proxy to a persistent UserCaps object to which
+we can add 'capabilities', other persistent objects that are available
+to the 'fred' user for getting things done.
+"""
 
 from serf.rpc_handler import RPCHandler
 from serf.transport import Transport
@@ -24,3 +35,4 @@ thread.start(True)
 thread.callFromThread(net.start)
 
 admin = remote('admin')
+login = remote('login')

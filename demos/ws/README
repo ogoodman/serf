@@ -1,0 +1,69 @@
+Main page and JavaScript
+========================
+
+Create a symlink named 'ws_demo' in your web server document root
+pointing to the www/ folder here.
+
+Ensure that /js/serf in your document root links to serf/js, such that
+
+  http://<your.domain>/js/serf/rpc.js
+
+is a working url.
+
+Server-side setup
+=================
+
+Add proxy-pass directives to your web-site configs.
+For Apache add:
+
+  ProxyPass /ws/ ws://localhost:9999/ 
+  ProxyPassReverse /ws/ ws://localhost:9999/
+
+For Nginx:
+
+  proxy_read_timeout 7d;
+
+  location /ws/ {
+    proxy_pass http://localhost:9999;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+  }
+
+and reload/restart your web server.
+
+Run the server:
+
+  python ws_server.py
+
+Alternatively, you could add it as a system service. Ubuntu users may
+find serf/scripts/site.py useful for this. E.g.
+
+  sudo python site.py add-service ws_demo <path-to>/ws_server.py 'Demo webservice'
+
+What you get
+============
+
+With this in place, you should be able to browse to
+
+  http://<your.domain>/ws_demo/
+
+and get a very simple page. If all is well you should see the words
+
+  Status: connected
+
+Open a second page to the same url, type something in the input box,
+then click away (to generate a change event). Returning to the first
+page, you should now see the text you typed there as well.
+
+The html input fields have been 'bound' via javascript code to a
+python object created by ws_server.py. The binding uses the MVC
+pattern.
+
+* The python object is the model.
+
+* The input field and javascript code implement a view by fetching the
+  initial value from the model and subscribing to it for changes.
+
+* The controller is a piece of javascript code which listens for change
+  events on the input field and sends updates to the model.
