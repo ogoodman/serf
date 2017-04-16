@@ -13,6 +13,7 @@ from serf.storage import Storage
 
 from serf.user.login import Login
 from serf.user.admin import Admin
+from serf.tables.table import JC_HOOKS
 
 ROOT_DIR = sys.argv[1]
 
@@ -29,14 +30,12 @@ if 'admin' not in storage:
     storage['admin'] = Admin(storage)
 LOGIN = storage['login']
 
-HOOKS = {}
-
-JC_OPTS = dict(hooks=HOOKS, auto_proxy=True)
+JC_OPTS = dict(hooks={}, auto_proxy=True)
 
 def handle(transport):
     thread = EventletThread()
     thread.callFromThread = thread.call
-    handler = RPCHandler(transport, {}, t_model=thread, verbose=True, jc_opts=JC_OPTS)
+    handler = RPCHandler(transport, {}, t_model=thread, jc_opts=JC_OPTS)
     handler.provide('login', LOGIN)
     transport.handle()
 
@@ -44,7 +43,8 @@ if __name__ == '__main__':
     print 'Cap Server', SERF_NODE
 
     transport = Transport(SERF_NODE)
-    rpc = RPCHandler(transport, storage, thread)
+    rpc = RPCHandler(transport, storage, thread, verbose=True)
+    rpc.safe.append('serf.tables')
     thread.start()
     eventlet.spawn_n(transport.serve)
 

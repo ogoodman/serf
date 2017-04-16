@@ -18,6 +18,7 @@ from serf.transport import Transport
 from serf.eventlet_thread import EventletThread
 from serf.proxy import Proxy
 from serf.repl_proxy import REPLProxy
+from serf.tables.table_handle import TableHandle
 
 SERVER = '127.0.0.1:6508'
 
@@ -25,7 +26,7 @@ net = Transport()
 
 thread = EventletThread()
 rpc = RPCHandler(net, {}, t_model=thread)
-rpc.safe.append('serf.tables.table_handle')
+rpc.safe.append('serf.tables')
 
 def remote(x):
     return REPLProxy(rpc.makeProxy(x, SERVER), thread)
@@ -36,3 +37,4 @@ thread.callFromThread(net.start)
 
 admin = remote('admin')
 login = remote('login')
+users = TableHandle(remote('users'))
