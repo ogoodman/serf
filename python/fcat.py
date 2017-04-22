@@ -60,9 +60,9 @@ def main():
     value = decodes(data)
     dir, name = os.path.split(filename)
     is_name = dir.endswith('names') or opt('-n')
-    if is_name and type(value) is Record and value.name == 'ref':
+    if is_name and type(value) is Record and value.type_name == 'ref':
         try:
-            data = open(os.path.join(dir, '../caps', value.data['path'])).read()
+            data = open(os.path.join(dir, '../caps', value.value['path'])).read()
         except IOError:
             pass
         else:

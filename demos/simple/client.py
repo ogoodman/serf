@@ -13,7 +13,7 @@ from serf.rpc_handler import RPCHandler
 from serf.transport import Transport
 from serf.eventlet_thread import EventletThread
 from serf.proxy import Proxy
-from serf.util import timeCall, codeDir
+from serf.util import timeCall, codeDir, dataRoot
 from serf.po.printer import Printer
 from serf.po.group import Group
 from serf.storage import Storage, fcat, NoSuchName
@@ -49,7 +49,7 @@ SSL = {
     'keyfile': os.path.join(codeDir(), 'data/host.key')
 }
 
-store = FSDict(os.path.join(codeDir(), 'data/client'))
+store = FSDict(os.path.join(dataRoot(), 'client'))
 
 net = Transport(CLIENT, ssl=SSL)
 

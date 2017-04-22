@@ -120,6 +120,20 @@ def importSymbol(path):
 def codeDir():
     return os.path.dirname(__file__)
 
+def dataRoot():
+    """For demos, returns what should be a writable directory."""
+    who = os.popen('whoami').read().strip()
+    if who == 'root':
+        data_root = '/var/lib/serf'
+    else:
+        home = os.getenv('HOME')
+        if not home:
+            raise Exception('dataRoot: $HOME is not set')
+        data_root = os.path.join(home, '.serf-data')
+    if not os.path.exists(data_root):
+        os.makedirs(data_root)
+    return data_root
+
 class IndentingStream(object):
     """Wrapper for a file-like object which handles indentation."""
     def __init__(self, out):
