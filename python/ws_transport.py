@@ -174,8 +174,6 @@ class WebSocketHandler(Publisher):
         self.binaries = {}
 
     def handle(self):
-        if not self.handshake():
-            return
         while self.read_next_message():
             pass
         self.on_close()
@@ -223,7 +221,7 @@ class WebSocketHandler(Publisher):
             return True
 
         if frame == WS_FRAME_CLOSE:
-            print self.client_ip, 'CLOSE', repr(self._decoded)
+            #print self.client_ip, 'CLOSE', repr(self._decoded)
             if self.close_sent:
                 return False
             if len(self._decoded) >= 2:
@@ -232,7 +230,7 @@ class WebSocketHandler(Publisher):
                 close_buf = ''
             try:
                 self.send('browser', close_buf, code=0x88)
-                print self.client_ip, 'sent CLOSE'
+                #print self.client_ip, 'sent CLOSE'
             except:
                 pass
             return False
@@ -326,10 +324,14 @@ class WSTransport(Publisher):
         node_id = '%s:%s' % address
         if self.handler is None:
             conn = WebSocketHandler(socket, address, node_id, self)
+            if not conn.handshake():
+                return
             self.connections[node_id] = conn
             conn.handle()
         else:
             conn = WebSocketHandler(socket, address)
+            if not conn.handshake():
+                return
             self.connections[node_id] = conn
             self.handler(conn)
 

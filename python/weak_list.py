@@ -16,11 +16,21 @@ class WeakList(object):
         """Add ob to the set."""
         if type(ob) is types.MethodType:
             self._items[ob.im_self] = ob.im_func.__name__
+            return hash(ob.im_self)
         else:
             self._items[ob] = None
+            return hash(ob)
+    def _find(self, ob_hash):
+        for o in self._items:
+            if hash(o) == ob_hash:
+                return o
     def discard(self, ob):
         """Remove ob from the set if present."""
-        if type(ob) is types.MethodType:
+        if type(ob) in (int, long):
+            found = self._find(ob)
+            if found is not None:
+                del self._items[found]
+        elif type(ob) is types.MethodType:
             del self._items[ob.im_self]
         else:
             del self._items[ob]

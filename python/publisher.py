@@ -23,7 +23,7 @@ class Publisher(object):
         """Adds cb as a subscriber to the named event."""
         if event not in self._subs:
             self._subs[event] = WeakList()
-        self._subs[event].add(cb)
+        return self._subs[event].add(cb)
 
     def unsubscribe(self, event, cb):
         """Removes cb as a subscriber to the named event."""

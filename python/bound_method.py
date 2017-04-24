@@ -30,10 +30,13 @@ class BoundMethod(object):
             # Then false might be a legal value and we don't want to
             # get it just because the client has gone away.
             return False
-        if self.node == h.node_id:
-            h.localCall(self.oid, self.method, args)
-        else:
-            h.send(self.node, self.oid, {'m':self.method, 'a':list(args)})
+        try:
+            if self.node == h.node_id:
+                h.localCall(self.oid, self.method, args)
+            else:
+                h.send(self.node, self.oid, {'m':self.method, 'a':list(args)})
+        except:
+            pass
 
     def _ext_encoding(self):
         return 'BoundMethod', {'o':self.oid, 'm':self.method, 'n':self.node, 't': self.twoway}

@@ -280,9 +280,24 @@ var rpc = (function() {
     Ref.prototype.subscribe = function(event, cb) {
         if (!(event in this._subs)) {
             this._subs[event] = [cb];
-            this.server.callRemote(this.objId, 'subscribe', [event, new BoundMethod(this.objId, '_notify')]);
+            this._subs[event].sub_id = this.server.callRemote(this.objId, 'subscribe', [event, new BoundMethod(this.objId, '_notify')]);
         } else {
             this._subs[event].push(cb);
+        }
+    };
+
+    /**
+     * Unsubscribe all subscribers to the specified event.
+     *
+     * @param {string} event Event name
+     */
+    Ref.prototype.unsubscribeAll = function(event) {
+        var that = this;
+        if (event in this._subs) {
+            this._subs[event].sub_id.done(function(sub_id) {
+                that.server.callRemote(that.objId, 'unsubscribe', [event, sub_id]).done();
+            });
+            delete this._subs[event];
         }
     };
 

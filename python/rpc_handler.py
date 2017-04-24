@@ -160,7 +160,12 @@ DEFAULT_HOOKS = {
 class JSONCodecCtx(object):
     def __init__(self, rpc, hooks=None, safe=None, auto_proxy=False):
         self.rpc = weakref.ref(rpc)
-        self.auto_proxy = auto_proxy
+        if auto_proxy is False:
+            self.auto_proxy = None
+        elif auto_proxy is True:
+            self.auto_proxy = self._autoProxyPath
+        else:
+            self.auto_proxy = auto_proxy
         self.node_id = rpc.node_id
         self.hooks = dict(DEFAULT_HOOKS)
         self.hooks.update(hooks or {})
@@ -190,14 +195,16 @@ class JSONCodecCtx(object):
         else:
             return cls(*args)
 
-    def _autoProxy(self, obj):
-        """Store persistent objects in rpc.storage and return a Proxy."""
+    def _autoProxyPath(self, obj):
         ref = getattr(obj, 'ref', None)
         if type(ref) is not Ref:
             return None
         # FIXME: need to make prefix depend on the vat so as to avoid
         # ambiguous paths when objects come from multiple vats.
-        path = 'vat:' + ref._path
+        return 'vat:' + ref._path
+
+    def _autoProxy(self, path, obj):
+        """Store persistent objects in rpc.storage and return a Proxy."""
         store = self.rpc().storage
         if path in store:
             assert store[path] is obj, 'Ambiguous path issues'
@@ -210,10 +217,10 @@ class JSONCodecCtx(object):
     def record(self, data):
         cls = data.__class__
 
-        if self.auto_proxy:
-            result = self._autoProxy(data)
-            if result is not None:
-                return result
+        if self.auto_proxy is not None:
+            path = self.auto_proxy(data)
+            if path is not None:
+                return self._autoProxy(path, data)
 
         serialize = getattr(cls, 'serialize', None)
         if type(serialize) is tuple:
