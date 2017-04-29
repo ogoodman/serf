@@ -734,10 +734,10 @@ class TableTest(unittest.TestCase):
         obj_store = Storage(store)
         obj_store['table'] = self.table
 
-        self.sval = store['caps/table']
+        self.sval = store['table']
         def svalChanged():
-            self.assertNotEqual(self.sval, store['caps/table'])
-            self.sval = store['caps/table']
+            self.assertNotEqual(self.sval, store['table'])
+            self.sval = store['table']
 
         self.table.insert([encodes(dict(name='Albert', age=37))])
         svalChanged()

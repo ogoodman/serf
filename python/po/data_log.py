@@ -6,15 +6,15 @@ from serf.po.log_file import LogFile
 from serf.po.group import Group
 
 class DataLog(object):
-    serialize = ('_vat', 'fh', 'obs')
+    serialize = ('_env', 'fh', 'obs')
 
-    def __init__(self, vat, fh=None, obs=None, begin=0, bm_gap=None):
-        self.vat = vat
-        self.fh = vat.makeFile() if fh is None else fh
+    def __init__(self, env, fh=None, obs=None, begin=0, bm_gap=None):
+        self.env = env
+        self.fh = env.storage().makeFile() if fh is None else fh
         self.obs = Group() if obs is None else obs
         self.log = LogFile(self.fh, begin, bm_gap)
         self.ref = None
-        self.storage_ctx = StorageCtx(self.vat)
+        self.storage_ctx = StorageCtx(self.env.storage())
 
     def __getitem__(self, i):
         return decodes(self.log[i], self.storage_ctx)

@@ -101,7 +101,7 @@ class Storage(object):
 
     def _load(self, path):
         ctx = self.make_context(self, path)
-        self.cache[path] = decodes(self.store['caps/' + path], ctx)
+        self.cache[path] = decodes(self.store[path], ctx)
         self._addRef(path, self.cache[path])
 
     def __setitem__(self, path, svalue):
@@ -116,59 +116,17 @@ class Storage(object):
         if svalue is Unique:
             svalue = self.cache[path]
         ctx = self.make_context(self, path)
-        self.store['caps/' + path] = encodes(svalue, ctx)
+        self.store[path] = encodes(svalue, ctx)
 
     def __delitem__(self, path):
-        del self.store['caps/' + path]
+        del self.store[path]
         try:
             del self.cache[path]
         except KeyError:
             pass
 
     def __contains__(self, path):
-        return ('caps/' + path) in self.store
-
-    def clearCache(self):
-        self.cache = {}
-
-    def _autoMake(self, name):
-        # This should only really be allowed to happen in the default vat.
-        # Code in Node assumes that system names are in the default vat.
-        if name not in AUTO_MAKE:
-            return None
-        cls = importSymbol(AUTO_MAKE[name])
-        return self.makeRef(cls(self)) # Add default_vat_id here?
-
-    def getn(self, name):
-        ctx = self.make_context(self)
-        try:
-            return decodes(self.store['names/' + name], ctx)
-        except KeyError:
-            pass
-        ref = self._autoMake(name)
-        if ref is None:
-            raise NoSuchName(name)
-        self.setn(name, ref)
-        return ref
-
-    def _asRef(self, value):
-        if type(value) in (Ref, Proxy):
-            return value
-        if type(getattr(value, 'ref', None)) is Ref:
-            return value.ref
-        if type(getattr(value, 'serialize', None)) is tuple:
-            return self.makeRef(value)
-        assert False, 'Cannot turn %r into a ref' % value
-
-    def setn(self, name, ref_or_value):
-        ref = self._asRef(ref_or_value)
-        ctx = self.make_context(self)
-        self.store['names/' + name] = encodes(ref, ctx)
-
-    def deln(self, name, erase=False):
-        if erase:
-            self.getn(name)._erase()
-        del self.store['names/' + name]
+        return path in self.store
 
     def getRef(self, path):
         return Ref(self, path)
@@ -186,6 +144,53 @@ class Storage(object):
             r._set(file)
             return r
         return file
+
+    def clearCache(self):
+        self.cache = {}
+
+class NameStore(object):
+    def __init__(self, storage, name_store):
+        self.storage = storage
+        self.store = name_store
+
+    def _autoMake(self, name):
+        # This should only really be allowed to happen in the default vat.
+        # Code in Node assumes that system names are in the default vat.
+        if name not in AUTO_MAKE:
+            return None
+        cls = importSymbol(AUTO_MAKE[name])
+        return self.storage.makeRef(cls(self.storage)) # Add default_vat_id here?
+
+    def getn(self, name):
+        ctx = self.storage.make_context(self.storage)
+        try:
+            return decodes(self.store[name], ctx)
+        except KeyError:
+            pass
+        ref = self._autoMake(name)
+        if ref is None:
+            raise NoSuchName(name)
+        self.setn(name, ref)
+        return ref
+
+    def _asRef(self, value):
+        if type(value) in (Ref, Proxy):
+            return value
+        if type(getattr(value, 'ref', None)) is Ref:
+            return value.ref
+        if type(getattr(value, 'serialize', None)) is tuple:
+            return self.storage.makeRef(value)
+        assert False, 'Cannot turn %r into a ref' % value
+
+    def setn(self, name, ref_or_value):
+        ref = self._asRef(ref_or_value)
+        ctx = self.storage.make_context(self.storage)
+        self.store[name] = encodes(ref, ctx)
+
+    def deln(self, name, erase=False):
+        if erase:
+            self.getn(name)._erase()
+        del self.store[name]
 
 def getDict(inst):
     prefix = '_' if getattr(inst.__class__, '_private', False) else ''

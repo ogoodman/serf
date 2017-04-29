@@ -8,7 +8,7 @@ class CallLog(object):
 
     def __init__(self, env, data_log=None, readers=None):
         self.env = env
-        self.data_log = DataLog(env.storage()) if data_log is None else data_log
+        self.data_log = DataLog(env) if data_log is None else data_log
         self.readers = readers or {}
 
     def __getattr__(self, name):

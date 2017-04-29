@@ -3,7 +3,7 @@
 import socket
 import weakref
 from serf.rpc_handler import RPCHandler
-from serf.storage import Storage
+from serf.storage import Storage, NameStore
 from serf.publisher import Publisher
 from serf.synchronous import Synchronous
 
@@ -49,6 +49,7 @@ class MockNet(object):
 
         env = MockEnv()
         env.thread_model = t_model
+        env.ns = NameStore(storage, store)
         env.storage = weakref.ref(storage)
         storage.resources['_env'] = env
 

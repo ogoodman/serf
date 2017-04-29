@@ -15,7 +15,7 @@ class CallLogReader(object):
             self.pos = pos_ref
         else:
             self.pos = pos
-        self.node_obs = env.storage().getn('node_observer')
+        self.node_obs = env.ns.getn('node_observer')
         self.running = False
         self._pos = self.pos._get()
         self._subscribed_to_node = False

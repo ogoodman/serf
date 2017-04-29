@@ -478,8 +478,8 @@ class RPCHandler(object):
 
     def sendToName(self, name, msg):
         try:
-            getn = self.storage.getn
-        except AttributeError:
+            getn = self.storage.resources['_env'].ns.getn
+        except AttributeError, KeyError:
             return
         self.lput(getn(name)._path, msg)
 

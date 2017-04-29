@@ -3,6 +3,7 @@
 """Tests for a DataLog."""
 
 import unittest
+import weakref
 from serf.storage import Storage
 from serf.test_fs import TestFS
 from serf.po.file import File
@@ -17,11 +18,20 @@ class TestCallLog(object):
             self.calls.append((name, args))
         return _log_call
 
+class Env(object):
+    def __init__(self):
+        self._storage = Storage(TestFS())
+        self._storage.resources['_env'] = weakref.proxy(self)
+
+    def storage(self):
+        return self._storage
+
 class DataLogTest(unittest.TestCase):
     def test(self):
-        v = Storage(TestFS())
+        e = Env()
+        v = e.storage()
 
-        dl = DataLog(v, File(v, 'f'))
+        dl = DataLog(e, File(v, 'f'))
         v['dl'] = dl
 
         cl = TestCallLog()

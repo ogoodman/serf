@@ -8,7 +8,6 @@ from serf.test_fs import TestFS
 from serf.proxy import Proxy
 
 from serf.po.file import File
-from serf.po.data_log import DataLog
 from serf.po.call_log import CallLog
 from serf.po.printer import Printer
 from serf.po.node_observer import NodeObserver

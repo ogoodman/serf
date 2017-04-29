@@ -4,7 +4,7 @@
 
 import unittest
 from serf.util import EqualityMixin, Capture
-from serf.storage import Storage, fcat, _str, NoSuchName
+from serf.storage import Storage, NameStore, fcat, _str, NoSuchName
 from serf.po.data import Data
 from serf.ref import Ref
 from serf.test_person import Person
@@ -135,17 +135,19 @@ class StorageTest(unittest.TestCase):
         vat = Storage({})
         foo = vat.makeRef(Data({}))
 
-        foo['x'] = 'bar'
-        vat.setn('foo', foo)
+        ns = NameStore(vat, {})
 
-        foo1 = vat.getn('foo')
+        foo['x'] = 'bar'
+        ns.setn('foo', foo)
+
+        foo1 = ns.getn('foo')
         self.assertEqual(foo1['x'], 'bar')
 
         # Can do it all in one..
-        vat.setn('time', Time())
-        self.assertEqual(vat.getn('time').time(), 'Tea-time')
-        vat.getn('time')._erase()
-        vat.deln('time')
+        ns.setn('time', Time())
+        self.assertEqual(ns.getn('time').time(), 'Tea-time')
+        ns.getn('time')._erase()
+        ns.deln('time')
 
     def testRefEquality(self):
         v = Storage({})
@@ -161,7 +163,7 @@ class StorageTest(unittest.TestCase):
         proxy_enc = encodes(Record('ref', {'path':'p', 'node':'n'}))
         unk_enc = encodes(Record('unknown', 3))
         msg_enc = encodes(Record('@', 'xyz', 35))
-        s = Storage({'caps/foo': proxy_enc, 'caps/unk': unk_enc, 'caps/msg': msg_enc})
+        s = Storage({'foo': proxy_enc, 'unk': unk_enc, 'msg': msg_enc})
         #self.assertRaises(SerializationError, s.__getitem__, 'foo')
         self.assertRaises(SerializationError, s.__getitem__, 'unk')
 
@@ -171,7 +173,8 @@ class StorageTest(unittest.TestCase):
             pass
         self.assertRaises(SerializationError, s.__setitem__, 'nos', NoSer())
         
-        self.assertRaises(NoSuchName, s.getn, 'bimbo')
+        ns = NameStore(s, {})
+        self.assertRaises(NoSuchName, ns.getn, 'bimbo')
 
 if __name__ == '__main__':
     unittest.main()
