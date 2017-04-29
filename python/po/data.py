@@ -22,9 +22,9 @@ def copy(data):
     return data
 
 class Data(object):
-    serialize = ('value', 'obs', 'auto_save', '_vat')
+    serialize = ('value', 'obs', 'auto_save', '_env')
 
-    def __init__(self, value, obs=None, auto_save=True, vat=None, path=None, change_obs=None):
+    def __init__(self, value, obs=None, auto_save=True, env=None, path=None, change_obs=None):
         self.value = copy(value) if path is None else value
         self.obs = obs if obs is not None else Group()
         self.auto_save = auto_save
@@ -33,8 +33,8 @@ class Data(object):
 
         self.change_obs = Group() if change_obs is None else change_obs
         self.obs._obs = self.change_obs
-        if self.auto_save and vat is not None:
-            self.change_obs._add(AutoSave(self, vat.thread_model))
+        if self.auto_save and env is not None:
+            self.change_obs._add(AutoSave(self, env.thread_model))
 
     def __setitem__(self, key, value):
         if key is None:

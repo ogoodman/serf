@@ -4,11 +4,11 @@ from serf.po.call_log_reader import CallLogReader
 from serf.po.data_log import DataLog
 
 class CallLog(object):
-    serialize = ('_vat', 'data_log', 'readers')
+    serialize = ('_env', 'data_log', 'readers')
 
-    def __init__(self, vat, data_log=None, readers=None):
-        self.vat = vat
-        self.data_log = DataLog(vat) if data_log is None else data_log
+    def __init__(self, env, data_log=None, readers=None):
+        self.env = env
+        self.data_log = DataLog(env.storage()) if data_log is None else data_log
         self.readers = readers or {}
 
     def __getattr__(self, name):
@@ -28,8 +28,8 @@ class CallLog(object):
     def addReader(self, key, proxy, pos=None):
         if pos is None:
             pos = self.data_log.end()
-        reader = CallLogReader(self.vat, self.ref, proxy, pos)
-        self.readers[key] = self.vat.makeRef(reader)
+        reader = CallLogReader(self.env, self.ref, proxy, pos)
+        self.readers[key] = self.env.storage().makeRef(reader)
         self._save()
         return reader
 

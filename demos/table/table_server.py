@@ -19,7 +19,7 @@ SERF_NODE = '127.0.0.1:6506'
 thread = EventletThread()
 
 store = FSDict('/var/lib/serf/tables')
-storage = Storage(store, t_model=thread)
+storage = Storage(store)
 
 if 'table' not in storage:
     storage['table'] = Table()

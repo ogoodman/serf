@@ -54,7 +54,7 @@ store = FSDict(os.path.join(dataRoot(), 'client'))
 net = Transport(CLIENT, ssl=SSL)
 
 thread = EventletThread()
-s0 = Storage(store, t_model=thread)
+s0 = Storage(store)
 v0 = RPCHandler(net, s0, t_model=thread)
 
 def wrap(x):

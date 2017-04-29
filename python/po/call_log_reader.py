@@ -3,19 +3,19 @@
 import socket
 
 class CallLogReader(object):
-    serialize = ('_vat', 'data_log', 'proxy', 'pos')
+    serialize = ('_env', 'data_log', 'proxy', 'pos')
 
-    def __init__(self, vat, data_log, proxy, pos):
-        self.vat = vat
+    def __init__(self, env, data_log, proxy, pos):
+        self.env = env
         self.data_log = data_log
         self.proxy = proxy
         if type(pos) in (int, long):
-            pos_ref = vat.makeRef()
+            pos_ref = env.storage().makeRef()
             pos_ref._set(pos)
             self.pos = pos_ref
         else:
             self.pos = pos
-        self.node_obs = vat.getn('node_observer')
+        self.node_obs = env.storage().getn('node_observer')
         self.running = False
         self._pos = self.pos._get()
         self._subscribed_to_node = False
@@ -76,11 +76,11 @@ class CallLogReader(object):
             method, args = value
             self._doCall(method, args)
         else:
-            self.vat.thread_model.call(self.run)
+            self.env.thread_model.call(self.run)
 
     def online(self, node):
         # Called by node_obs.
-        self.vat.thread_model.call(self.run)
+        self.env.thread_model.call(self.run)
 
     def stop(self):
         self.running = False
@@ -89,11 +89,11 @@ class CallLogReader(object):
 
     def start(self):
         self.data_log.addObserver(self.ref)
-        self.vat.thread_model.call(self.run)
+        self.env.thread_model.call(self.run)
 
     @staticmethod
-    def create(vat, data_log, proxy, pos=None):
-        return vat.makeRef(CallLogReader(vat, data_log, proxy, pos))
+    def create(env, data_log, proxy, pos=None):
+        return env.storage().makeRef(CallLogReader(env, data_log, proxy, pos))
 
     def cleanup(self):
         self.stop()

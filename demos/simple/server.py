@@ -24,7 +24,7 @@ if __name__ == '__main__':
     net = Transport(NODE, ssl=SSL, verbose=('-v' in sys.argv))
 
     thread = EventletThread()
-    storage = Storage(store, t_model=thread)
+    storage = Storage(store)
     vat = RPCHandler(net, storage, t_model=thread)
 
     thread.start()

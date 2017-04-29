@@ -19,10 +19,12 @@ class CallLogTest(unittest.TestCase):
         va, ra = net.addRPCHandler('A', '', TestFS())
         vb, rb = net.addRPCHandler('B', '', TestFS())
 
-        cl = va.makeRef(CallLog(va))
+        ea, eb = va.resources['_env'], vb.resources['_env']
+
+        cl = va.makeRef(CallLog(ea))
 
         # We'll use a call log as the replication target.
-        clb = vb.makeRef(CallLog(vb))
+        clb = vb.makeRef(CallLog(eb))
 
         p = ra.makeProxy(clb._path, 'B')
 

@@ -42,6 +42,7 @@ class StorageCtx(object):
         if name == 'inst':
             cls = importSymbol(mapClass(data['CLS']))
             data['_vat'] = self.storage()
+            data.update(self.storage().resources)
             args = [data.get(key) for key in cls.serialize]
             inst = cls(*args)
             if hasattr(cls, '_save'):
@@ -77,10 +78,10 @@ class StorageCtx(object):
 
 
 class Storage(object):
-    def __init__(self, store, t_model=None, cx_factory=None):
+    def __init__(self, store, cx_factory=None):
         self.store = store # stuff on disk
         self.cache = {} # instantiated
-        self.thread_model = Synchronous() if t_model is None else t_model
+        self.resources = {}
         self.make_context = StorageCtx if cx_factory is None else cx_factory
 
     def __getitem__(self, path):

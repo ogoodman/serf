@@ -5,6 +5,10 @@ import weakref
 from serf.rpc_handler import RPCHandler
 from serf.storage import Storage
 from serf.publisher import Publisher
+from serf.synchronous import Synchronous
+
+class MockEnv(object):
+    pass
 
 class MockTransport(Publisher):
     """Implements Transport. For use in tests."""
@@ -38,8 +42,16 @@ class MockNet(object):
         return self.end[node]
 
     def addRPCHandler(self, node_id, vat_id, store, t_model=None):
+        if t_model is None:
+            t_model = Synchronous()
         transport = self.addNode(node_id)
-        storage = Storage(store, t_model=t_model)
+        storage = Storage(store)
+
+        env = MockEnv()
+        env.thread_model = t_model
+        env.storage = weakref.ref(storage)
+        storage.resources['_env'] = env
+
         vat = RPCHandler(transport, storage, t_model=t_model)
         return storage, vat
 
