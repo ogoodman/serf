@@ -38,11 +38,6 @@ class StorageCtx(object):
 
     def custom(self, name, data):
         if name == 'ref':
-            if 'node' in data:
-                rpc = self.storage().getRPC()
-                if rpc is None:
-                    raise SerializationError('Cannot create proxy: rpc not set')
-                return rpc.makeProxy(data['path'], data['node'])
             return Ref(self.storage(), data['path'], data.get('facet'))
         if name == 'inst':
             cls = importSymbol(mapClass(data['CLS']))
@@ -65,8 +60,6 @@ class StorageCtx(object):
             if inst._facet:
                 data['facet'] = inst._facet
             return 'ref', data
-        if t is Proxy:
-            return 'ref', {'path': inst._path, 'node': inst._node}
         if type(getattr(t, 'serialize', None)) is tuple:
             data = getDict(inst)
             cls = inst.__class__
@@ -84,11 +77,11 @@ class StorageCtx(object):
 
 
 class Storage(object):
-    def __init__(self, store, t_model=None):
+    def __init__(self, store, t_model=None, cx_factory=None):
         self.store = store # stuff on disk
-        self.rpc = None
         self.cache = {} # instantiated
         self.thread_model = Synchronous() if t_model is None else t_model
+        self.make_context = StorageCtx if cx_factory is None else cx_factory
 
     def __getitem__(self, path):
         # we get instantiated values
@@ -102,8 +95,11 @@ class Storage(object):
                 svalue.ref = Ref(self, path)
                 getattr(svalue, '_on_addref', lambda: None)()
 
+    def setContextFactory(self, cx_factory):
+        self.make_context = cx_factory
+
     def _load(self, path):
-        ctx = StorageCtx(self, path)
+        ctx = self.make_context(self, path)
         self.cache[path] = decodes(self.store['caps/' + path], ctx)
         self._addRef(path, self.cache[path])
 
@@ -118,7 +114,7 @@ class Storage(object):
     def save(self, path, svalue=Unique):
         if svalue is Unique:
             svalue = self.cache[path]
-        ctx = StorageCtx(self, path)
+        ctx = self.make_context(self, path)
         self.store['caps/' + path] = encodes(svalue, ctx)
 
     def __delitem__(self, path):
@@ -134,13 +130,6 @@ class Storage(object):
     def clearCache(self):
         self.cache = {}
 
-    def setRPC(self, rpc):
-        self.rpc = weakref.ref(rpc)
-
-    def getRPC(self):
-        if self.rpc is not None:
-            return self.rpc()
-
     def _autoMake(self, name):
         # This should only really be allowed to happen in the default vat.
         # Code in Node assumes that system names are in the default vat.
@@ -150,7 +139,7 @@ class Storage(object):
         return self.makeRef(cls(self)) # Add default_vat_id here?
 
     def getn(self, name):
-        ctx = StorageCtx(self)
+        ctx = self.make_context(self)
         try:
             return decodes(self.store['names/' + name], ctx)
         except KeyError:
@@ -172,7 +161,7 @@ class Storage(object):
 
     def setn(self, name, ref_or_value):
         ref = self._asRef(ref_or_value)
-        ctx = StorageCtx(self)
+        ctx = self.make_context(self)
         self.store['names/' + name] = encodes(ref, ctx)
 
     def deln(self, name, erase=False):

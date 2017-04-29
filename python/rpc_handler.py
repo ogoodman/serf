@@ -7,7 +7,7 @@ from serf.ref import Ref
 from serf.synchronous import Synchronous
 from serf.util import randomString, rmap, importSymbol
 from serf.proxy import Proxy
-from serf.storage import Storage
+from serf.storage import StorageCtx
 from serf.json_codec import JSON_CODEC
 from serf.bound_method import BoundMethod
 
@@ -134,6 +134,20 @@ class RemoteCtx(object):
     def namedCodec(self, type_name):
         return None, None
 
+class RPCStorageCtx(StorageCtx):
+    def __init__(self, rpc, storage, path=None):
+        StorageCtx.__init__(self, storage, path)
+        self.rpc = rpc
+
+    def custom(self, name, data):
+        if name == 'ref' and 'node' in data:
+            return self.rpc.makeProxy(data['path'], data['node'])
+        return StorageCtx.custom(self, name, data)
+
+    def record(self, inst):
+        if type(inst) is Proxy:
+            return 'ref', {'path': inst._path, 'node': inst._node}
+        return StorageCtx.record(self, inst)
 
 # JSONCodec context class for RPCHandler.
 
@@ -267,8 +281,13 @@ class RPCHandler(object):
         transport.subscribe('online', self._notifyNodeObserver)
         transport.subscribe('connected', self._notifyNodeObserver)
         self.refs = []
-        if hasattr(storage, 'setRPC'):
-            storage.setRPC(self)
+        if hasattr(storage, 'setContextFactory'):
+            rpc = weakref.proxy(self)
+            def makeStorageCtx(storage, path=None):
+                return RPCStorageCtx(rpc, storage, path)
+            storage.setContextFactory(makeStorageCtx)
+            # NOTE: this is for the node observer.
+            storage.getRPC = lambda: rpc
         self.remote_ctx = RemoteCtx(self)
         self.json_ctx = JSONCodecCtx(self, **(jc_opts or {}))
 
