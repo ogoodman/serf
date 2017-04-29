@@ -181,7 +181,7 @@ class WebSocketHandler(Publisher):
     def read_next_message(self):
         data = self.sock.read(2)
         if not data:
-            print self.client_ip, 'EOF', repr(data)
+            #print self.client_ip, 'EOF', repr(data)
             return False
 
         frame = ord(data[0]) & 0xF
@@ -257,7 +257,7 @@ class WebSocketHandler(Publisher):
         """
         self.binaries[key] = handler
 
-    def send(self, node, message, pcol='json', errh=None, code=0x81):
+    def send(self, node, message, errh=None, code=0x81):
         self.sock.send(chr(code))
         length = len(message)
         if length <= 125:
@@ -288,7 +288,7 @@ class WebSocketHandler(Publisher):
         return True
 
     def on_message(self, message):
-        self.transport.notify('message', {'from': self.client_id, 'pcol': 'json', 'message': message})
+        self.transport.notify('message', {'from': self.client_id, 'message': message})
 
     def on_close(self):
         self.transport.notify('close', None)
@@ -335,9 +335,9 @@ class WSTransport(Publisher):
             self.connections[node_id] = conn
             self.handler(conn)
 
-    def send(self, node_id, msg, pcol='json', errh=None):
+    def send(self, node_id, msg, errh=None):
         handler = self.connections.get(node_id)
         if handler is None:
             print 'Send failed, node:', node_id, 'disconnected'
         else:
-            handler.send(node_id, msg, pcol, errh)
+            handler.send(node_id, msg, errh)

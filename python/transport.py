@@ -142,7 +142,7 @@ class Transport(Publisher):
                 self.nodes[node] = sock
                 self.notify('connected', node)
             elif what == MSG:
-                self.notify('message', {'from': node, 'pcol': 'serf', 'message': msg})
+                self.notify('message', {'from': node, 'message': msg})
             elif what == CLOSE:
                 if self.verbose:
                     print self.node_id, '%s %s requested close' % (node, address)
@@ -184,10 +184,10 @@ class Transport(Publisher):
     def doStop(self):
         raise eventlet.StopServe()
 
-    def send(self, node, msg, pcol='serf', errh=None):
+    def send(self, node, msg, errh=None):
         """Send a message to a node."""
         if threading.currentThread() != self.thread:
-            return self.callFromThread(self.send, node, msg, pcol, errh)
+            return self.callFromThread(self.send, node, msg, errh)
         try:
             if node not in self.nodes:
                 sock = self.connect(node)

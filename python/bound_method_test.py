@@ -10,12 +10,12 @@ from serf.mock_net import MockNet
 class BoundMethodTest(unittest.TestCase):
     def test(self):
         net = MockNet()
-        ls, lrpc = net.addRPCHandler('local', '', {})
+        ls, lrpc = net.addRPCHandler('server', '', {})
         bs, brpc = net.addRPCHandler('browser', '', {})
 
-        # Local one-way call.
+        # Server one-way call.
         ls['obj'] = {'key': 'value'}
-        set = BoundMethod(lrpc, 'obj', '__setitem__', 'local')
+        set = BoundMethod(lrpc, 'obj', '__setitem__', 'server')
         set('key', 'new')
         self.assertEquals(ls['obj']['key'], 'new')
 

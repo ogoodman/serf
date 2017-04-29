@@ -4,6 +4,9 @@ import json
 from serf.serializer import decodes
 from serf.publisher import Publisher
 
+# NOTE: we have removed pcol from the Transport interface
+# so this is probably all irrelevant now.
+
 class Endpoint(Publisher):
     """Implements Transport. Endpoint for messages handled by a Dispatcher."""
     def __init__(self, dispatcher, node_id, path):

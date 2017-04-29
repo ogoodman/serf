@@ -301,9 +301,16 @@ class RPCHandler(object):
         msg = rmap(self.localize, msg)
         self._handle(addr, msg, self.node_id)
 
+    def _peer_protocol(self, node):
+        if node in ('server', 'browser'):
+            return 'json'
+        if node == self.node_id:
+            return 'local'
+        return 'serf'
+
     def _rhandle(self, msg_data):
-        pcol = msg_data['pcol']
         from_ = msg_data['from']
+        pcol = self._peer_protocol(from_)
         if pcol == 'json':
             msg = JSON_CODEC.decode(msg_data['message'], self.json_ctx)
             if self.verbose:
@@ -375,18 +382,16 @@ class RPCHandler(object):
 
     def send(self, node, addr, msg, errh=None):
         msg['o'] = addr
-        if node == 'browser':
+        pcol = self._peer_protocol(node)
+        if pcol == 'json':
             if self.verbose:
                 print getattr(self.node, 'client_ip', ''), 'Out', msg
             enc = JSON_CODEC.encode(msg, self.json_ctx)
-            pcol = 'json'
-        elif node == self.node_id:
+        elif pcol == 'local':
             enc = rmap(self.delocalize, msg)
-            pcol = 'local'
         else:
             enc = encodes(msg, self.remote_ctx)
-            pcol = 'serf'
-        self.node.send(node, enc, pcol, errh=errh)
+        self.node.send(node, enc, errh=errh)
 
     def provide(self, addr, obj):
         self.storage[addr] = obj

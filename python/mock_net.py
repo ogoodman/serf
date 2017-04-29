@@ -14,20 +14,20 @@ class MockTransport(Publisher):
         self.node_id = node_id
         self.path = ''
 
-    def send(self, node, msg, pcol='serf', errh=None):
-        self.net().send(node, msg, self.node_id, pcol=pcol, errh=errh)
+    def send(self, node, msg, errh=None):
+        self.net().send(node, msg, self.node_id, errh=errh)
 
 class MockNet(object):
     def __init__(self):
         self.end = {}
         self.offline = set()
 
-    def send(self, node, msg, from_, pcol='serf', errh=None):
+    def send(self, node, msg, from_, errh=None):
         if node in self.offline:
             errh(socket.error())
             return
         try:
-            self.end[node].notify('message', {'from':from_, 'pcol': pcol, 'message': msg})
+            self.end[node].notify('message', {'from':from_, 'message': msg})
         except Exception, e:
             if errh is not None:
                 errh(e)

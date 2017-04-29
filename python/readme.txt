@@ -34,7 +34,6 @@ ws_server.py
 transport
 transport.py
 ws_transport.py
-dispatcher.py
 
 thread model
 eventlet_thread.py
@@ -99,6 +98,7 @@ unused/cap.py (random example)
 unused/cell.py (random example)
 unused/container.py
 unused/dict_store.py
+unused/dispatcher.py
 unused/mock_proxy.py
 unused/person.py (random example)
 unused/segmented_log.py (work in progress?)
