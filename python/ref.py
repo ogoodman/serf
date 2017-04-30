@@ -54,6 +54,9 @@ class Ref(object):
     def __str__(self):
         return '/' + self._path + ('/' + self._facet if self._facet else '')
 
+    def __repr__(self):
+        return '~' + repr(self._vat[self._path]) + ' @ ' + self._path
+
     def __eq__(self, other):
         return type(other) is Ref and other._path == self._path and other._facet == self._facet
 
