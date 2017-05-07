@@ -9,7 +9,7 @@ from serf.util import randomString, rmap, importSymbol
 from serf.proxy import Proxy
 from serf.storage import StorageCtx
 from serf.json_codec import JSON_CODEC
-from serf.bound_method import BoundMethod
+from serf.bound_method import JCBoundMethod
 
 
 # Most of what happens here is converting stuff, either for
@@ -153,16 +153,16 @@ class RPCStorageCtx(StorageCtx):
 
 def makeProxy(vat, data):
     """Rehydrates an incoming Proxy."""
-    node, path = data['n'], data['o']
+    node, path = data.get('n', 'browser'), data['o']
     if node == vat.node_id and path in vat.storage:
         return vat.storage[path]
-    proxy = Proxy(data['n'], data['o'], vat)
+    proxy = Proxy(node, path, vat)
     vat.refs.append(proxy)
     return proxy
 
 def makeBoundMethod(vat, data):
-    """Rehydrates an incoming BoundMethod."""
-    method = BoundMethod(vat, data['o'], data['m'], data.get('n', 'browser'))
+    """Rehydrates an incoming JCBoundMethod."""
+    method = JCBoundMethod(vat, data['o'], data['m'], data.get('n', 'browser'))
     vat.refs.append(method)
     return method
 

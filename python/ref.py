@@ -1,6 +1,6 @@
 """Local reference to a vat slot."""
 
-class ReferenceError(Exception):
+class RefError(Exception):
     pass
 
 class Ref(object):
@@ -9,15 +9,18 @@ class Ref(object):
         self._path = path
         self._facet = facet
         if facet and facet.startswith('_'):
-            raise ReferenceError('Cannot make facet to private property')
+            raise RefError('Cannot make facet to private property')
 
     def _get(self):
-        main = self._vat[self._path]
+        try:
+            main = self._vat[self._path]
+        except KeyError:
+            raise RefError('No object in slot: ' + self._path)
         return getattr(main, self._facet) if self._facet else main
 
     def _set(self, value):
         if self._facet:
-            raise ReferenceError('Cannot set slot via a facet reference')
+            raise RefError('Cannot set slot via a facet reference')
         self._vat[self._path] = value
 
     def _close(self):
@@ -30,7 +33,7 @@ class Ref(object):
 
     def _erase(self):
         if self._facet:
-            raise ReferenceError('Cannot erase slot via a facet reference')
+            raise RefError('Cannot erase slot via a facet reference')
         self._close()
         try:
             del self._vat[self._path]
@@ -65,10 +68,10 @@ class Ref(object):
 
     def _save(self, *_):
         if self._facet:
-            raise ReferenceError('Cannot save via a facet reference')
+            raise RefError('Cannot save via a facet reference')
         self._vat.save(self._path)
 
     def _getFacet(self, facet):
         if self._facet:
-            raise ReferenceError('Cannot take facet of a facet')
+            raise RefError('Cannot take facet of a facet')
         return Ref(self._vat, self._path, facet)

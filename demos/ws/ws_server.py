@@ -5,7 +5,7 @@
 import sys
 from serf.ws_server import serve_ws
 from serf.model import Model
-from serf.bound_method import BoundMethod
+from serf.bound_method import JCBoundMethod
 
 SINGLETON_MODEL = Model()
 
@@ -25,7 +25,7 @@ class SquareCaller(object):
             print 'square of %s is %s' % (n, r)
         return r
     def subscribeToClient(self, prx):
-        method = BoundMethod(self.vat(), self.oid, 'onClientEvent', 'server')
+        method = JCBoundMethod(self.vat(), self.oid, 'onClientEvent', 'server')
         prx.subscribe('event', method)
     def onClientEvent(self, ev, info):
         if self.verbose:

@@ -4,7 +4,7 @@
 
 import unittest
 from serf.serializer import SerializationError
-from serf.ref import Ref, ReferenceError
+from serf.ref import Ref, RefError
 from serf.mock_net import MockNet
 from serf.obj import obj
 from serf.proxy import Proxy
@@ -25,11 +25,11 @@ class RefTest(unittest.TestCase):
         ref.set(42)
         self.assertEqual(ref.get(), 42)
 
-        self.assertRaises(ReferenceError, ref._save)
-        self.assertRaises(ReferenceError, ref._erase)
-        self.assertRaises(ReferenceError, ref._set, 'Anything')
-        self.assertRaises(ReferenceError, ref._getFacet, 'nested')
-        self.assertRaises(ReferenceError, Ref, vat, 'data', '_private')
+        self.assertRaises(RefError, ref._save)
+        self.assertRaises(RefError, ref._erase)
+        self.assertRaises(RefError, ref._set, 'Anything')
+        self.assertRaises(RefError, ref._getFacet, 'nested')
+        self.assertRaises(RefError, Ref, vat, 'data', '_private')
 
     def testFacetRef(self):
         vat = Storage({})

@@ -6,13 +6,12 @@ import weakref
 # case if anything. One possible issue with this version is that
 # it does not hide the object id from anyone it is passed to.
 
-class BoundMethod(object):
-    def __init__(self, handler, oid, method, node, twoway=False):
+class JCBoundMethod(object):
+    def __init__(self, handler, oid, method, node):
         self.handler = weakref.ref(handler)
         self.oid = oid
         self.method = method
         self.node = node
-        self.twoway = twoway
 
     def __call__(self, *args):
         """Make a one-way call to the referenced object's method.
@@ -39,4 +38,20 @@ class BoundMethod(object):
             pass
 
     def _ext_encoding(self):
-        return 'BoundMethod', {'o':self.oid, 'm':self.method, 'n':self.node, 't': self.twoway}
+        return 'BoundMethod', {'o':self.oid, 'm':self.method, 'n':self.node, 't': False}
+
+class BoundMethod(object):
+    serialize = ('target', 'method')
+
+    def __init__(self, target, method):
+        self.target = target
+        self.method = method
+
+    def __call__(self, *args):
+        if type(self.target).__name__ == 'Proxy':
+            # This is needed because we are calling _notify on the client.
+            # We need to bypass the normal restriction on calling _ methods.
+            # Actually the client side shouldn't care, right?
+            self.target._getattr_f(self.method)(*args)
+        else:
+            return getattr(self.target, self.method)(*args)

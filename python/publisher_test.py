@@ -7,6 +7,8 @@ import weakref
 import types
 from publisher import Publisher
 from weak_list import getAdapter
+from storage import Storage
+from bound_method import BoundMethod
 
 class Parent(object):
     def __init__(self, child):
@@ -18,6 +20,8 @@ class Parent(object):
         self.from_child = info
 
 class Subscriber(object):
+    serialize = ('events',)
+
     def __init__(self, events):
         self.events = events
 
@@ -94,6 +98,36 @@ class PublisherTest(unittest.TestCase):
         pub.notify('info', 2)
         # Only adapted event 1 arrives before asub dies with sub.
         self.assertEqual(events, [1, 11, 21, 31])
+
+    def testPersistence(self):
+        store = {}
+        storage = Storage(store)
+
+        storage['pub'] = p = Publisher()
+        storage['sub'] = s = Subscriber([])
+
+        p.subscribe('snap', s.onEvent, persist=True)
+        p.notify('snap', 1)
+
+        self.assertEqual(s.events, [21])
+
+        storage['sub'] = s
+
+        # Reboot.
+        storage = Storage(store)
+        p = storage['pub']
+
+        p.notify('snap', 2)
+
+        s = storage['sub']
+        self.assertEqual(s.events, [21,22])
+
+        del storage['sub']
+        del s
+
+        # When delivery fails, subscriber is removed.
+        p.notify('snap', 3)
+        self.assertEqual(len(p.subscribers('snap')), 0)
 
 
 if __name__ == '__main__':
