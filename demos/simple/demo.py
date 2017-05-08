@@ -17,13 +17,6 @@ class Person(object):
         self.age = age
         self.friends = friends or []
 
-    def getName(self):
-        return self.name
-    def getAge(self):
-        return self.age
-    def getFriends(self):
-        return self.friends
-
     def addFriend(self, friend):
         self.friends.append(friend)
     def haveBirthday(self):

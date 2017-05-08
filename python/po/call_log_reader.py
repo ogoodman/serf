@@ -3,7 +3,7 @@
 import socket
 
 class CallLogReader(object):
-    serialize = ('_env', 'data_log', 'proxy', 'pos')
+    serialize = ('#env', 'data_log', 'proxy', 'pos')
 
     def __init__(self, env, data_log, proxy, pos):
         self.env = env

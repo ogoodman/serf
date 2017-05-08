@@ -12,7 +12,7 @@ def _seek(fh, pos, rel_end):
 # there are no seek or tell methods.
 
 class File(object):
-    serialize = ('_vat', 'path',)
+    serialize = ('#vat', 'path',)
 
     def __init__(self, vat, path):
         self.vat = vat

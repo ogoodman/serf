@@ -3,7 +3,7 @@
 from serf.po.printer import Printer
 
 class RPCHandlerCap(object):
-    serialize = ('_vat',)
+    serialize = ('#vat',)
 
     def __init__(self, vat):
         self.vat = vat

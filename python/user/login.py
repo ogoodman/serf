@@ -4,7 +4,7 @@ from serf.tables.table_handle import TableHandle
 class Login(object):
     """The Login capability requires/creates a 'users' table in storage."""
 
-    serialize = ('_vat',)
+    serialize = ('#vat',)
 
     def __init__(self, vat):
         self._vat = vat

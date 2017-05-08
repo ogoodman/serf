@@ -51,7 +51,7 @@ class MockNet(object):
         env.thread_model = t_model
         env.ns = NameStore(storage, store)
         env.storage = weakref.ref(storage)
-        storage.resources['_env'] = env
+        storage.resources['#env'] = env
 
         vat = RPCHandler(transport, storage, t_model=t_model)
         return storage, vat

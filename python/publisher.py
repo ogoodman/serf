@@ -42,8 +42,7 @@ class KeyList(object):
 
 
 class Publisher(object):
-    serialize = ('subs',)
-    _private = True
+    serialize = ('_subs',)
 
     def __init__(self, subs=None):
         self._s = {}

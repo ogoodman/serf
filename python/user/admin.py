@@ -9,7 +9,7 @@ from user_caps import UserCaps
 class Admin(object):
     """Admin cap which can add users."""
 
-    serialize = ('_vat',)
+    serialize = ('#vat',)
 
     def __init__(self, vat):
         self._vat = vat

@@ -356,8 +356,7 @@ def genFilters(filter):
     return All(), filter
 
 class Table(Publisher):
-    serialize = ('primary', 'indices', 'pkey')
-    _private = True
+    serialize = ('_primary', '_indices', '_pkey')
 
     def __init__(self, primary=None, indices=None, pkey=None):
         Publisher.__init__(self)

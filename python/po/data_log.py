@@ -6,7 +6,7 @@ from serf.po.log_file import LogFile
 from serf.po.group import Group
 
 class DataLog(object):
-    serialize = ('_env', 'fh', 'obs')
+    serialize = ('#env', 'fh', 'obs')
 
     def __init__(self, env, fh=None, obs=None, begin=0, bm_gap=None):
         self.env = env

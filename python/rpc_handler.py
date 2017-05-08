@@ -96,7 +96,7 @@ class RemoteCtx(object):
         if name == 'inst' and self._safe_cls(data['CLS']):
             cls = importSymbol(data['CLS'])
             try:
-                args = [data[key] for key in cls.serialize]
+                args = [data[key.lstrip('_')] for key in cls.serialize]
             except KeyError:
                 raise SerializationError(name + ': ' + repr(data))
             else:
@@ -119,9 +119,8 @@ class RemoteCtx(object):
 
         # Serialize instances without any capability members.
         s_attrs = getattr(t, 'serialize', None)
-        private = getattr(t, '_private', False)
         if type(s_attrs) is tuple and not [a for a in s_attrs if a.startswith('_')]:
-            data = dict([(key, getattr(inst, '_' + key if private else key)) for key in s_attrs])
+            data = dict([(key.lstrip('_'), getattr(inst, key)) for key in s_attrs])
             cls = inst.__class__
             data['CLS'] = '%s.%s' % (cls.__module__, cls.__name__)
             return 'inst', data
@@ -478,7 +477,7 @@ class RPCHandler(object):
 
     def sendToName(self, name, msg):
         try:
-            getn = self.storage.resources['_env'].ns.getn
+            getn = self.storage.resources['#env'].ns.getn
         except AttributeError, KeyError:
             return
         self.lput(getn(name)._path, msg)

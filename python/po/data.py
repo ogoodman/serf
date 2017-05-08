@@ -22,7 +22,7 @@ def copy(data):
     return data
 
 class Data(object):
-    serialize = ('value', 'obs', 'auto_save', '_env')
+    serialize = ('value', 'obs', 'auto_save', '#env')
 
     def __init__(self, value, obs=None, auto_save=True, env=None, path=None, change_obs=None):
         self.value = copy(value) if path is None else value

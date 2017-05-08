@@ -148,12 +148,12 @@ logging can only be accessed by via global variables, don't be.
 References to such things can be added to the `Storage` instance as
 resources:
 
-    storage.resources['_log'] = the_logger
+    storage.resources['#log'] = the_logger
 
 then:
 
     class Person(object):
-        serialize = ('_log', 'name', 'age', 'friends')
+        serialize = ('#log', 'name', 'age', 'friends')
     
         def __init__(self, log, name, age, friends=None):
             self.log = log
@@ -173,6 +173,13 @@ instances which were saved before the addition will receive the value
 member it will simply be ignored when loading previously stored
 instances. More complex versioning is also supported and will be
 discussed later.
+
+**NOTE:** you can change serialized member names by adding or removing
+a leading underscore without changing the serialization: the
+dictionary of values to be serialized uses member names with leading
+underscores stripped. The names in the serializer list must still
+match the member variable names however. A serializer list must not
+include two names which differ only by leading underscores.
 
 Let's store a `Person`:
 

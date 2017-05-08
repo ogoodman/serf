@@ -18,7 +18,7 @@ class CallLogTest(unittest.TestCase):
         va, ra = net.addRPCHandler('A', '', TestFS())
         vb, rb = net.addRPCHandler('B', '', TestFS())
 
-        ea, eb = va.resources['_env'], vb.resources['_env']
+        ea, eb = va.resources['#env'], vb.resources['#env']
 
         cl = va.makeRef(CallLog(ea))
 

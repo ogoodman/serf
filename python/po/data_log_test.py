@@ -21,7 +21,7 @@ class TestCallLog(object):
 class Env(object):
     def __init__(self):
         self._storage = Storage(TestFS())
-        self._storage.resources['_env'] = weakref.proxy(self)
+        self._storage.resources['#env'] = weakref.proxy(self)
 
     def storage(self):
         return self._storage

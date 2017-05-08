@@ -13,7 +13,7 @@ from serf.po.group import Group
 import socket
 
 class NodeObserver(object):
-    serialize = ('_vat', 'peers', 'observers')
+    serialize = ('#vat', 'peers', 'observers')
 
     def __init__(self, vat, peers=None, observers=None):
         self.vat = vat

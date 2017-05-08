@@ -41,9 +41,9 @@ class StorageCtx(object):
             return Ref(self.storage(), data['path'], data.get('facet'))
         if name == 'inst':
             cls = importSymbol(mapClass(data['CLS']))
-            data['_vat'] = self.storage()
+            data['#vat'] = self.storage()
             data.update(self.storage().resources)
-            args = [data.get(key) for key in cls.serialize]
+            args = [data.get(key.lstrip('_')) for key in cls.serialize]
             inst = cls(*args)
             if hasattr(cls, '_save'):
                 inst._save = self.save
@@ -193,9 +193,8 @@ class NameStore(object):
         del self.store[name]
 
 def getDict(inst):
-    prefix = '_' if getattr(inst.__class__, '_private', False) else ''
-    return dict([(key, getattr(inst, prefix + key)) for key in inst.serialize
-                 if not key.startswith('_')])
+    return dict([(key.lstrip('_'), getattr(inst, key)) for key in inst.serialize
+                 if not key.startswith('#')])
 
 def _str(inst, lev=0):
     ind = '  ' * lev

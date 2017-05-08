@@ -1,8 +1,7 @@
 """A simple dictionary of caps."""
 
 class UserCaps(object):
-    serialize = ('caps',)
-    _private = True
+    serialize = ('_caps',)
 
     def __init__(self, caps):
         self._caps = caps

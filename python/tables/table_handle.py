@@ -7,8 +7,7 @@ from table import TableCodec
 from serf.weak_list import getAdapter
 
 class TableHandle(object):
-    serialize = ('table',)
-    _private = True
+    serialize = ('_table',)
 
     def __init__(self, table):
         self._table = table

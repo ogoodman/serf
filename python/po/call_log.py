@@ -4,7 +4,7 @@ from serf.po.call_log_reader import CallLogReader
 from serf.po.data_log import DataLog
 
 class CallLog(object):
-    serialize = ('_env', 'data_log', 'readers')
+    serialize = ('#env', 'data_log', 'readers')
 
     def __init__(self, env, data_log=None, readers=None):
         self.env = env
