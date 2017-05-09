@@ -19,18 +19,18 @@ class WeakListTest(unittest.TestCase):
         a = A()
         l.add(a)
         self.assertEqual(len(l), 1)
-        self.assertTrue(a in l.items())
+        self.assertTrue(a in l.keys())
         del a
         self.assertEqual(len(l), 0)
-        self.assertEqual(l.items(), [])
+        self.assertEqual(l.keys(), [])
 
         a1 = A()
         l.add(a1.foo)
         self.assertEqual(len(l), 1)
-        self.assertEqual(l.items()[0](), None)
+        self.assertEqual(l.keys()[0](), None)
         del a1
         self.assertEqual(len(l), 0)
-        self.assertEqual(l.items(), [])
+        self.assertEqual(l.keys(), [])
 
         a2 = A()
         l.add(a2.foo)
@@ -43,10 +43,10 @@ class WeakListTest(unittest.TestCase):
         c = lambda: None
         l.add(c)
         self.assertEqual(len(l), 1)
-        self.assertEqual(l.items()[0](), None)
+        self.assertEqual(l.keys()[0](), None)
         del c
         self.assertEqual(len(l), 0)
-        self.assertEqual(l.items(), [])
+        self.assertEqual(l.keys(), [])
 
         d = lambda: None
         l.add(d)
@@ -63,20 +63,20 @@ class WeakListTest(unittest.TestCase):
         l = WeakList()
         l.add(c)
         self.assertEqual(len(l), 1)
-        self.assertEqual(l.items()[0](), None)
+        self.assertEqual(l.keys()[0](), None)
         del c
         self.assertEqual(len(l), 0)
-        self.assertEqual(l.items(), [])
+        self.assertEqual(l.keys(), [])
 
     def testCallable(self):
         c = CB()
         l = WeakList()
         l.add(c)
         self.assertEqual(len(l), 1)
-        self.assertEqual(l.items()[0](), None)
+        self.assertEqual(l.keys()[0](), None)
         del c
         self.assertEqual(len(l), 0)
-        self.assertEqual(l.items(), [])
+        self.assertEqual(l.keys(), [])
 
 if __name__ == '__main__':
     unittest.main()

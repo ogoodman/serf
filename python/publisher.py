@@ -18,10 +18,16 @@ class KeyList(object):
 
         Returns a random integer key if cb was added, else None.
         """
-        if cb not in self.objs.values():
-            k = random.getrandbits(32)
-            self.objs[k] = cb
-            return k
+        return self.set(cb, None)
+
+    def set(self, cb, value):
+        for k, v in self.objs.items():
+            if cb == v[0]:
+                self.objs[k] = (cb, value)
+                return k
+        k = random.getrandbits(32)
+        self.objs[k] = (cb, value)
+        return k
 
     def discard(self, cb):
         """Removes any object comparing equal to cb.
@@ -32,7 +38,7 @@ class KeyList(object):
             self.objs.pop(cb, None)
         else:
             for k, v in self.objs.items():
-                if v == cb:
+                if v[0] == cb:
                     del self.objs[k]
                     break
 
@@ -54,9 +60,9 @@ class Publisher(object):
         If any subscriber throws an exception or returns False
         it will be unsubscribed from future notifications.
         """
-        for sub in self.subscribers(event):
+        for sub, args in self.subscribers(event):
             try:
-                if sub(event, info) is False:
+                if sub(event, info, *args) is False:
                     self.unsubscribe(event, sub)
             except RefError, e:
                 self.unsubscribe(event, sub, True)
@@ -64,20 +70,27 @@ class Publisher(object):
                 traceback.print_exc()
                 print >>sys.stderr, 'delivering event:', event
 
-    def subscribe(self, event, cb, persist=False):
-        """Adds cb as a subscriber to the named event."""
+    def subscribe(self, event, cb, args=(), persist=False):
+        """Adds cb as a subscriber to the named event.
+
+        If persist is True, cb must be a persistent object or
+        method thereof.
+
+        Any args will be added to the call when cb is called:
+        cb(event, info, *args).
+        """
         if persist:
             if type(cb) is types.MethodType:
                 cb = BoundMethod(cb.im_self, cb.im_func.__name__)
             if event not in self._subs:
                 self._subs[event] = KeyList()
-            subid = self._subs[event].add(cb)
+            subid = self._subs[event].set(cb, args)
             self._save()
             return subid
         else:
             if event not in self._s:
                 self._s[event] = WeakList()
-            return self._s[event].add(cb)
+            return self._s[event].set(cb, args)
 
     def unsubscribe(self, event, cb, persist=False):
         """Removes cb as a subscriber to the named event."""

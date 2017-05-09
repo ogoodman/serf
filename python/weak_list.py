@@ -12,18 +12,25 @@ class WeakList(object):
     """
     def __init__(self):
         self._items = weakref.WeakKeyDictionary()
+
     def add(self, ob):
+        """Add ob with a value of None."""
+        self.set(ob, None)
+
+    def set(self, ob, value):
         """Add ob to the set."""
         if type(ob) is types.MethodType:
-            self._items[ob.im_self] = ob.im_func.__name__
+            self._items[ob.im_self] = [ob.im_func.__name__, value]
             return hash(ob.im_self)
         else:
-            self._items[ob] = None
+            self._items[ob] = [None, value]
             return hash(ob)
+
     def _find(self, ob_hash):
         for o in self._items:
             if hash(o) == ob_hash:
                 return o
+
     def discard(self, ob):
         """Remove ob from the set if present."""
         if type(ob) in (int, long):
@@ -34,9 +41,15 @@ class WeakList(object):
             del self._items[ob.im_self]
         else:
             del self._items[ob]
-    def items(self):
+
+    def keys(self):
         """Returns list of (strong refs to) the members."""
-        return [k if v is None else getattr(k, v) for k, v in self._items.items()]
+        return [k if v[0] is None else getattr(k, v[0]) for k, v in self._items.items()]
+
+    def items(self):
+        """Returns list of (key, value) pairs."""
+        return [(k, v[1]) if v[0] is None else (getattr(k, v[0]), v[1]) for k, v in self._items.items()]
+
     def __len__(self):
         """Number of items in the set."""
         return len(self._items)

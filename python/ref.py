@@ -41,8 +41,6 @@ class Ref(object):
             pass
 
     def __getattr__(self, name):
-        if name.startswith('_'):
-            raise AttributeError(name)
         return getattr(self._get(), name)
 
     def __getitem__(self, key):

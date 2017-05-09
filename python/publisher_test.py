@@ -31,6 +31,9 @@ class Subscriber(object):
     def onEvent(self, event, info):
         self.events.append(info + 20)
 
+    def on(self, *args):
+        self.events.append(args)
+
 class PublisherTest(unittest.TestCase):
     def testNonCyclic(self):
         # Publishers are supposed to break cyclic dependencies; we have
@@ -129,6 +132,35 @@ class PublisherTest(unittest.TestCase):
         p.notify('snap', 3)
         self.assertEqual(len(p.subscribers('snap')), 0)
 
+    def testArgs(self):
+        # Non-persistent.
+        events = []
+        def cb(*args):
+            events.append(args)
+
+        p = Publisher()
+        p.subscribe('done', cb, args=('x', 42))
+        p.notify('done', True)
+
+        self.assertEqual(events, [('done', True, 'x', 42)])
+
+        # Persistent.
+        store = {}
+        storage = Storage(store)
+
+        storage['sub'] = s = Subscriber([])
+        sid = p.subscribe('dusted', s.on, args=('hello',), persist=True)
+        storage['pub'] = p
+
+        storage.clearCache()
+
+        p = storage['pub']
+        p.notify('dusted', 14)
+        self.assertEqual(storage['sub'].events, [('dusted', 14, 'hello')])
+
+        p.unsubscribe('dusted', sid, persist=True)
+        p.notify('dusted', 15)
+        self.assertEqual(len(storage['sub'].events), 1)
 
 if __name__ == '__main__':
     unittest.main()
