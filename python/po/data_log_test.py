@@ -52,7 +52,9 @@ class DataLogTest(unittest.TestCase):
         self.assertEqual(dl.end(), 3)
         self.assertEqual(dl[1:3], ['two', {'three': 3}])
 
-        v.clearCache()
+        del dl
+        self.assertEqual(v.cache.values(), [])
+
         dl = v['dl']
 
         self.assertEqual(dl.end(), 3)

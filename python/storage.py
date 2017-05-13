@@ -88,38 +88,40 @@ class StorageCtx(object):
 class Storage(object):
     def __init__(self, store, cx_factory=None):
         self.store = store # stuff on disk
-        self.cache = {} # instantiated
+        self.cache = weakref.WeakValueDictionary()
         self.resources = {}
         self.make_context = StorageCtx if cx_factory is None else cx_factory
         self.node_id = None
 
     def __getitem__(self, path):
         # we get instantiated values
-        if path not in self.cache:
-            self._load(path)
-        return self.cache[path]
+        if path in self.cache:
+            return self.cache[path]
+        ctx = self.make_context(self, path)
+        obj = decodes(self.store[path], ctx)
+        self._addRef(path, obj)
+        if type(getattr(obj, 'ref', None)) is Ref:
+            self.cache[path] = obj
+        return obj
 
     def _addRef(self, path, svalue):
         if type(getattr(svalue, 'serialize', None)) is tuple:
             if type(getattr(svalue, 'ref', None)) is not Ref:
                 svalue.ref = Ref(self, path)
                 getattr(svalue, '_on_addref', lambda: None)()
+                return True
 
     def setContextFactory(self, cx_factory):
         self.make_context = cx_factory
-
-    def _load(self, path):
-        ctx = self.make_context(self, path)
-        self.cache[path] = decodes(self.store[path], ctx)
-        self._addRef(path, self.cache[path])
 
     def __setitem__(self, path, svalue):
         self.save(path, svalue)
         self._addRef(path, svalue)
         ref = getattr(svalue, 'ref', None)
-        if type(ref) is Ref and ref._path != path:
-            svalue = ref
-        self.cache[path] = svalue
+        if type(ref) is Ref:
+            if ref._path != path:
+                svalue = ref
+            self.cache[path] = svalue
 
     def save(self, path, svalue=Unique):
         if svalue is Unique:
@@ -153,9 +155,6 @@ class Storage(object):
             r._set(file)
             return r
         return file
-
-    def clearCache(self):
-        self.cache = {}
 
 class NameStore(object):
     def __init__(self, storage, name_store):

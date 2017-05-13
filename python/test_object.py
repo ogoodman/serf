@@ -1,17 +1,18 @@
 """Object for running tests with."""
 
 class TestObject(object):
-    serialize = ()
+    serialize = ('received', 'proxy')
 
-    def __init__(self):
-        self.received = []
-        self.proxy = None
+    def __init__(self, received=None, proxy=None):
+        self.received = received or []
+        self.proxy = proxy
 
     def incr(self, n):
         return n + 1
 
     def setProxy(self, proxy):
         self.proxy = proxy
+        self._save()
 
     def callIncr(self, n):
         return self.proxy.incr(n)
@@ -21,3 +22,6 @@ class TestObject(object):
 
     def setName(self, name):
         self.proxy['name'] = name
+
+    def _save(self):
+        pass

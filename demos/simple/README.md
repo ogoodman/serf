@@ -202,7 +202,7 @@ storage. We have to do it explicitly:
 **NOTE:** if you examine `storage['fred']` rather than `f` before saving, you
 will see that they look identical and both have an age of 20 now. They
 are both references to the same object in memory. `Storage` instances
-cache what they return so as not to have to keep recreating them. But
+cache what they return so as not to create multiple instances. But
 the object won't be written to the backing store until it is assigned
 back to the `Storage` slot.
 
@@ -272,7 +272,9 @@ everything, and reload from backing store. Save *fred* first, then
 
     storage['fred'] = f
     storage['george'] = g
-    store.clearCache()
+
+    del f, g  # See discussion of caching below.
+
     f = storage['fred']
     g = storage['george']
 
@@ -307,7 +309,7 @@ save *fred*, instead of storing a copy of the entire referenced
     f.addFriend(g)
     storage['fred'] = f
     
-    storage.clearCache()
+    del f, g
     storage['fred']  # --> Person('fred',20,[~Person('george',20,[]) @ george])
     
     g = storage['george']
@@ -324,13 +326,12 @@ If we store an object and its referenced sub-objects are themselves
 persistent objects (they have been stored and have a `ref` member) they
 will be saved and recreated as `Refs`.
 
-**NOTE:** why are they not recreated as instances with `ref` members, as
-they were before they were saved? In fact, we consider it to be a
-defect that this does not happen. It's not hard to make a change
-so that this does happen, but then we run into trouble with reference
-cycles. `Refs` should be usable in almost every way just like the objects
-they refer to, so in practice this should not present much of a
-problem.
+**NOTE:** why are they not recreated as instances with `ref` members,
+as they were before they were saved? Although this would be possible,
+it would create a situation where entire object networks are
+instantiated eagerly: with large networks of persistent objects, this
+is very undesirable. `Refs` should be usable in almost every way just
+like the objects they refer to and they give us lazy instantiation.
 
 **NOTE:** if two objects both link to a child object which has not been
 made persistent, then saving and restoring the two parent objects will
@@ -370,6 +371,35 @@ is highly confusing, we recommend instead importing `save_fn` from
 
 in the class. Then if the reader wonders what this method does, they
 will at least see an explanation as to why it does nothing.
+
+#### Caching
+
+When objects own resources, we try to avoid instantiating multiple
+owners for the same resource. Persistent objects own their storage so
+we should not make multiple instances of one. If `Storage` simply
+created a new instance each time we called `storage[]` we could easily
+run into problems:
+
+    f1 = storage['fred']
+    f2 = storage['fred']
+
+    f1.name = 'Frederick'
+    f1._save()
+    f2.age = 21
+    f2._save()
+
+In fact, `Storage` caches any values it instantiates in a
+`WeakValueDictionary` so that both `f1` and `f2` above will in fact be
+references to the same object. A `WeakValueDictionary` forgets a value
+as soon as the last normal reference goes away. So once both `f1` and
+`f2` go out of scope, or are deleted or assigned new values, the cache
+entry will go too.
+
+This kind of caching has nothing to do with performance. If we want to
+avoid repeatedly reinstantiating objects we should save normal
+references to them for as long as is appropriate. Its purpose is to
+ensure that we don't inadvertently end up with multiple instances
+saving to the one storage slot.
 
 Events and Subscriptions
 ------------------------
@@ -488,7 +518,7 @@ subscriptions will be gone.
 
     tom.haveBirthday()  # prints something.
 
-    storage.clearCache()
+    del s, tom
     tom = storage['t']
 
     tom.haveBirthday()  # prints nothing.
@@ -496,13 +526,13 @@ subscriptions will be gone.
 When both publisher and subscriber are persistent, we can make
 persistent subscriptions:
 
-    storage['s'] = s
+    storage['s'] = s = Subscriber()
 
     tom.subscribe('update', s.onEvent, persist=True)
 
     tom.haveBirthday()  # prints something
 
-    storage.clearCache()
+    del s, tom
     tom = storage['t']
 
     tom.haveBirthday()  # prints something!
@@ -513,4 +543,3 @@ once again the message will be printed.
     from model import *
 
     storage['t'].haveBirthday()  # prints something.
-

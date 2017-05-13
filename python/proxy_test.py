@@ -15,8 +15,8 @@ class ProxyTest(unittest.TestCase):
         na, va = net.addRPCHandler('A', '', {})
         nb, vb = net.addRPCHandler('B', '', {})
 
-        pr = va.provide('addr', TestObject())
-        ob = na.cache['addr']
+        ob = TestObject()
+        pr = va.provide('addr', ob)
 
         f = pr.incr_f(1) # remote call increment
         self.assertEqual(f.wait(), 2)
@@ -40,8 +40,8 @@ class ProxyTest(unittest.TestCase):
         na, va = net.addRPCHandler('A', '', {})
         nb, vb = net.addRPCHandler('B', '', {})
 
-        pr = va.provide('addr', TestObject())
-        ob = na.cache['addr']
+        ob = TestObject()
+        pr = va.provide('addr', ob)
 
         self.assertEqual(pr.incr(1), 2) # remote call increment
 

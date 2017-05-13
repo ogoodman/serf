@@ -59,8 +59,9 @@ class CallLogTest(unittest.TestCase):
         self.assertEqual(clb[3], ['say', ['bar']])
 
         # Check everything is persistent.
-        va.clearCache()
-        vb.clearCache()
+        del r
+        self.assertEqual(va.cache.values(), [])
+        self.assertEqual(vb.cache.values(), [])
 
         cl.say('baz')
 

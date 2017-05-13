@@ -10,8 +10,8 @@ from serf.mock_net import MockNet
 class BoundMethodTest(unittest.TestCase):
     def test(self):
         net = MockNet()
-        ls, lrpc = net.addRPCHandler('server', '', {})
-        bs, brpc = net.addRPCHandler('browser', '', {})
+        ls, lrpc = net.dictRPCHandler('server')
+        bs, brpc = net.dictRPCHandler('browser')
 
         # Server one-way call.
         ls['obj'] = {'key': 'value'}

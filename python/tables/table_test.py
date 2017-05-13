@@ -772,7 +772,13 @@ class TableTest(unittest.TestCase):
         p_dump = map(toTup, self.table.select())
         s_dump = map(toTup, self.table.select(KeyRange(':age int')))
 
-        obj_store.clearCache()
+        # NOTE: Table could have a reference cycle: for some reason
+        # self.table = None is insufficient to cause it to be ejected
+        # from the obj_store.cache which is a WeakValueDictionary.
+
+        self.table = None
+        obj_store.cache.clear()
+
         table = obj_store['table']
 
         self.assertEqual(p_dump, map(toTup, table.select()))

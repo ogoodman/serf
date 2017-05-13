@@ -41,6 +41,12 @@ class MockNet(object):
             self.end[node] = MockTransport(node, self)
         return self.end[node]
 
+    def dictRPCHandler(self, node_id):
+        transport = self.addNode(node_id)
+        storage = {}
+        rpc = RPCHandler(transport, storage, t_model=Synchronous())
+        return storage, rpc
+
     def addRPCHandler(self, node_id, vat_id, store, t_model=None):
         if t_model is None:
             t_model = Synchronous()

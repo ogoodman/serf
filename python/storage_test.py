@@ -4,7 +4,7 @@
 
 import unittest
 from serf.util import EqualityMixin, Capture
-from serf.storage import Storage, NameStore, fcat, _str, NoSuchName
+from serf.storage import Storage, NameStore, fcat, _str, NoSuchName, save_fn
 from serf.po.data import Data
 from serf.ref import Ref
 from serf.test_person import Person
@@ -18,6 +18,17 @@ class TestObject(EqualityMixin):
         self.data = data
         self.obs = obs
 
+class Obj(object):
+    serialize = ('data',)
+    _save = save_fn
+
+    def __init__(self, data=None):
+        self.data = data or {}
+    def __getitem__(self, key):
+        return self.data[key]
+    def __setitem__(self, key, value):
+        self.data[key] = value
+        self._save()
 
 class StorageTest(unittest.TestCase):
     def test(self):
@@ -25,7 +36,6 @@ class StorageTest(unittest.TestCase):
 
         s['a'] = TestObject({'name': 'Fred'}, [TestObject('sub', [])])
 
-        s.clearCache()
         o = s['a']
 
         del o.ref # breaks equality so have to remove first.
@@ -87,7 +97,9 @@ class StorageTest(unittest.TestCase):
         t_data.save()
         g_data.save()
 
-        store.clearCache()
+        del t_data, g_data, tom
+
+        self.assertEqual(store.cache.values(), [])
 
         t_data = store['people/data/tom']
         g_data = store['people/data/gary']
@@ -115,7 +127,9 @@ class StorageTest(unittest.TestCase):
         self.assertEqual(store['aref']['foo'], 42)
         a.save()
 
-        store.clearCache()
+        del a, data
+        self.assertEqual(store.cache.values(), [])
+
         self.assertEqual(type(store['a']), Data)
         self.assertEqual(type(store['aref']), Ref)
         self.assertEqual(store['a']['foo'], 42)
@@ -133,7 +147,7 @@ class StorageTest(unittest.TestCase):
 
     def testNames(self):
         vat = Storage({})
-        foo = vat.makeRef(Data({}))
+        foo = vat.makeRef(Obj({}))
 
         ns = NameStore(vat, {})
 

@@ -40,14 +40,18 @@ class RPCHandlerTest(unittest.TestCase):
 
         # call it from node b
         c1 = vb.call('A', 'TOB', '__setitem__', ['foo', 1])
-        c2 = vb.call('A', 'TOB', 'save', [])
+
+        # NOTE: the caches are now WeakValueDictionaries so they
+        # should really be empty and clearing the cache should be
+        # a no-op. In fact it isn't empty, perhaps because the
+        # rather complex Data object has a reference cycle.
 
         # simulate restart of node a
-        na.clearCache()
+        na.cache.clear()
 
         # retrieve saved value from node a
-        c3 = vb.call('A', 'TOB', '__getitem__', ['foo'])
-        self.assertEqual([c1.wait(), c2.wait(), c3.wait()], [None, None, 1])
+        c2 = vb.call('A', 'TOB', '__getitem__', ['foo'])
+        self.assertEqual([c1.wait(), c2.wait()], [None, 1])
 
     def testNonexistentNode(self):
         net = MockNet()
@@ -63,7 +67,7 @@ class RPCHandlerTest(unittest.TestCase):
         na['a'] = Time()
         na['o'] = TestObject()
 
-        na.clearCache()
+        self.assertEqual(na.cache.values(), [])
 
         nb['ap'] = vb.makeProxy('a', 'A')
         nb['op'] = vb.makeProxy('o', 'A')
