@@ -235,20 +235,24 @@ class JSONCodecCtx(object):
             if path is not None:
                 return self._autoProxy(path, data)
 
+        ref = getattr(data, 'ref', None)
+        if type(ref) is Ref:
+            data = ref
+
+        if hasattr(data, '_ext_encoding'):
+            return data._ext_encoding()
+
         serialize = getattr(cls, 'serialize', None)
         if type(serialize) is tuple:
             name = cls.__name__
             value = []
             for key in serialize:
-                if key.startswith('_'):
-                    return None # requires local capabilities
+                if key.startswith('#'):
+                    raise SerializationError('local resources used: ' + cls.__name__)
                 value.append(getattr(data, key, None))
             return name, value
 
-        try:
-            return data._ext_encoding()
-        except AttributeError:
-            raise SerializationError('cannot serialize: ' + cls.__name__)
+        raise SerializationError('cannot serialize: ' + cls.__name__)
 
 
 class RPCHandler(object):

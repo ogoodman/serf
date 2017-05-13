@@ -73,3 +73,6 @@ class Ref(object):
         if self._facet:
             raise RefError('Cannot take facet of a facet')
         return Ref(self._vat, self._path, facet)
+
+    def _ext_encoding(self):
+        return 'Proxy', {'n': self._vat.node_id, 'o': self._path}

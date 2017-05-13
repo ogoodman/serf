@@ -83,6 +83,7 @@ class Storage(object):
         self.cache = {} # instantiated
         self.resources = {}
         self.make_context = StorageCtx if cx_factory is None else cx_factory
+        self.node_id = None
 
     def __getitem__(self, path):
         # we get instantiated values
