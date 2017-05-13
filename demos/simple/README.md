@@ -232,7 +232,7 @@ Because it is attached to the `Person` instance,
 the backing store.
 
 **NOTE:** we have to be careful to check that `self.ref` exists before using
-it to save. Some kind of `NullRef` object would simplify matters here.
+it to save. See 'the `_save` trick' below for a better solution.
 
 You can think of a `Ref` as a single slot, detached from the storage. The
 `Ref` doesn't directly reference any *fred* instance. We can create a
@@ -337,6 +337,39 @@ made persistent, then saving and restoring the two parent objects will
 result in duplication of the child. This may or may not be a problem,
 but if sharing is what is wanted, the child object should be saved
 first.
+
+#### The `_save` trick
+
+As we have noted, persistent objects can call `self.ref._save()` to
+ensure that their persistent state is saved whenever it changes.
+
+Unfortunately this approach has the drawback that it won't work until the
+object gets its `ref` member. Since we might want to do various things
+with a new persistent object before we first save it, it seems we
+should write a `_save` method which checks for the `ref` member first.
+
+In fact, we can simply write a do-nothing `_save` method and `Storage`
+will automatically replace it with a working one whenever the object
+is saved or instantiated.
+
+A `_save` method will also be added to any nested persisted instances
+that have a `_save` method place-holder, even though they won't get
+their own `ref`. The added method will save the persistent object (the
+one with the `ref`) in which it is contained. This enables it to ensure
+that changes to its own persistent state do not go unsaved.
+
+Because writing
+
+    def _save(self):
+        pass
+
+is highly confusing, we recommend instead importing `save_fn` from
+`serf.storage` and doing
+
+    _save = save_fn
+
+in the class. Then if the reader wonders what this method does, they
+will at least see an explanation as to why it does nothing.
 
 Events and Subscriptions
 ------------------------

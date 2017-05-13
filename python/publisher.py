@@ -1,6 +1,7 @@
 import sys, traceback
 import random
 import types
+from serf.storage import save_fn
 from serf.weak_list import WeakList
 from serf.bound_method import BoundMethod
 from serf.ref import RefError
@@ -109,7 +110,4 @@ class Publisher(object):
         """Returns a list of subscribers to the named event."""
         return self._s.get(event, {}).items() + self._subs.get(event, {}).items()
 
-    def _save(self):
-        """Save only if we are persistent."""
-        if hasattr(self, 'ref'):
-            self.ref._save()
+    _save = save_fn

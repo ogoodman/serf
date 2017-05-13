@@ -19,7 +19,6 @@ class NodeObserver(object):
         self.vat = vat
         self.peers = peers or []
         self.observers = observers or {}
-        self.ref = None
 
     def ping(self, node):
         try:

@@ -13,7 +13,6 @@ class DataLog(object):
         self.fh = env.storage().makeFile() if fh is None else fh
         self.obs = Group() if obs is None else obs
         self.log = LogFile(self.fh, begin, bm_gap)
-        self.ref = None
         self.storage_ctx = StorageCtx(self.env.storage())
 
     def __getitem__(self, i):

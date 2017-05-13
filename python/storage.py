@@ -22,6 +22,14 @@ AUTO_MAKE = {
 
 Unique = []
 
+def save_fn(that):
+    """Place-holder for a _save method on a yet-to-be persisted object.
+
+    When an object is stored or instantiated, this _save method will
+    be replaced with a working save function.
+    """
+    pass
+
 class NoSuchName(Exception):
     pass
 
