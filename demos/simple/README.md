@@ -338,3 +338,146 @@ result in duplication of the child. This may or may not be a problem,
 but if sharing is what is wanted, the child object should be saved
 first.
 
+Events and Subscriptions
+------------------------
+
+Events and subscriptions are very good for reducing coupling. If
+object A knows about object B, i.e. it holds a reference to it, A can
+call methods of B when A wants to. But suppose A wants to know when
+something happens to B. If we give B a reference to A we have started
+putting knowledge of A into B and reusability of B suffers. The
+solution is to make B a *publisher*, an object which exposes a uniform
+interface allowing any object that has a reference to it to be called
+when *conditions of interest* arise in B.
+
+A good example is the Model-View-Controller pattern.
+
+* Models model something and publish events whenever
+  something changes.
+
+* Views reference models in order to read initial values and subscribe
+  for changes. They produce events in response to user actions.
+
+* Controllers reference views in order to respond to user actions and
+  update models and views accordingly.
+
+The flow of data is *cyclic*, e.g. a click on some part of a view
+component results in an event to the controller, a call to the model,
+and finally an event back to the view reflecting the change in the
+model. But importantly, references are *acyclic*, flowing from
+controllers to views to models, with the result that models and views tend to be
+quite reusable.
+
+### Subscribing to a model
+
+Start a python shell in this directory and enter:
+
+    from model import *
+
+This brings in a slightly different `Person` class from
+before. `Person` is now derived from `Publisher`, giving it
+`subscribe`, `unsubscribe` and `notify` methods.
+
+To send an event the `Person` calls `self.notify`:
+
+    def haveBirthday(self):
+        """Adds one to the age."""
+        self.age += 1
+        self.notify('update', {'age': self.age})
+
+Make a person and a subscriber:
+
+    tom = Person('Tom', 3)
+    s = Subscriber()
+
+    tom.subscribe('update', s.onEvent)  # --> a subscription id
+
+We can ignore the subscription id for now. It provides one of several
+different ways to unsubscribe should the need arise.
+
+    tom.haveBirthday()
+
+    # prints:
+    # onEvent('update', {'age': 4})
+
+The source of the subscription is not provided to the subscriber but
+we can add any extra information we want at the time we make the
+subscription:
+
+    tom.subscribe('update', s.onEvent, args=('tom',))
+    tom.haveBirthday()
+
+    # prints:
+    # onEvent('update', {'age': 5}, 'tom')
+
+Subscriptions are keyed on the event name and the receiver
+instance.
+
+`Publishers` only hold weak references to their subscribers. When the
+last normal reference to a subscriber goes away it is garbage
+collected in the usual way and any subscriptions will be discarded.
+Python uses reference counting so that, in the absence of reference
+cycles, subscribers and their subscriptions will go away as soon
+as the last normal reference is dropped.
+
+    del s
+    tom.haveBirthay()
+
+    # prints nothing.
+
+**NOTE:** this can occasionally cause unexpected behaviour. If you
+create some kind of subscriber adapter, such as a lambda, for the sole
+purpose of passing as the event callback, it will be immediately
+discarded unless you keep a normal reference to it somewhere that will
+last as long as you need it to.
+
+In cases where an explicit unsubscribe is required, we can pass the
+identical callback or the numeric subscription id that was returned from
+the subscribe call.
+
+### Persistent subscriptions
+
+Our `Person` model is all ready to be made persistent.
+
+    storage['t'] = tom
+
+This does not change anything with regard to subscriptions made by
+non-persistent objects. Bound methods to non-persistent objects cannot
+be serialized and reinstantiated, so the subscription will last as
+long as both publisher and subscriber remain in memory. If the
+persistent publisher is discarded an re-instantiated, any normal
+subscriptions will be gone.
+
+    s = Subscriber()
+    tom.subscribe('update', s.onEvent)
+
+    storage['t'] = tom
+
+    tom.haveBirthday()  # prints something.
+
+    storage.clearCache()
+    tom = storage['t']
+
+    tom.haveBirthday()  # prints nothing.
+
+When both publisher and subscriber are persistent, we can make
+persistent subscriptions:
+
+    storage['s'] = s
+
+    tom.subscribe('update', s.onEvent, persist=True)
+
+    tom.haveBirthday()  # prints something
+
+    storage.clearCache()
+    tom = storage['t']
+
+    tom.haveBirthday()  # prints something!
+
+We can quit the python shell, restart, give *tom* another birthday and
+once again the message will be printed.
+
+    from model import *
+
+    storage['t'].haveBirthday()  # prints something.
+
