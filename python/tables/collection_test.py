@@ -1,9 +1,10 @@
 """Tests for Collection of persistent objects."""
 
 import unittest
-from serf.tables.collection import Collection, NewCollection
+from serf.tables.collection import CollectionV0, Collection
 from serf.tables.query import QTerm
 from serf.publisher import Publisher
+from serf.publisher_test import Subscriber
 from serf.storage import Storage, save_fn
 
 
@@ -74,23 +75,30 @@ class CollectionTest(unittest.TestCase):
         storage = Storage({})
 
         t = storage.makeRef(Person('Tom', 3))
-        storage['c'] = c = Collection(storage)
+        storage['c'] = c = CollectionV0(storage)
         c.add(t)
 
-        del c
-        storage.map_class = lambda c: c.replace('.Collection', '.NewCollection')
+        storage['s'] = s = Subscriber([])
+        c.subscribe('change', s.on, persist=True)
+
+        del c, s
+        storage.map_class = lambda c: c.replace('.CollectionV0', '.Collection')
 
         c = storage['c']
-        self.assertEqual(type(c), NewCollection)
+        self.assertEqual(type(c), Collection)
 
         t = c.get(QTerm(':name', 'eq', 'Tom'))
 
         self.assertEqual(type(t), Person)
 
-        # Subscription should survive the upgrade.
+        # Subscriptions to objects must survive the upgrade.
         t.setAge(4)
         self.assertEqual(c.values()[0]['age'], 4)
         self.assertEqual(len(t.subscribers('*')), 1)
+
+        # Persistent subscriptions to the Collection must survive.
+        s = storage['s']
+        self.assertEqual(len(s.events), 1)
 
         c.discard(t)
         self.assertEqual(c.values(), [])
@@ -109,13 +117,26 @@ class CollectionTest(unittest.TestCase):
         self.assertEqual(c.count(QTerm(':name', 'eq', 'Harry')), 0)
         self.assertEqual(c.pkeys(), [8])
 
-        c.ref._save()
-
         del c
 
         d.setAge(7)
         c = storage['c']
         self.assertEqual(c.values()[0]['age'], 7)
+
+    def testSubscribe(self):
+        storage = Storage({})
+
+        t = storage.makeRef(Person('Tom', 3))
+        storage['c'] = c = Collection(storage)
+        c.add(t)
+
+        storage['s'] = s = Subscriber([])
+
+        c.subscribe('change', s.on)
+        t.setAge(4)
+
+        self.assertEqual(len(s.events), 1)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -2,7 +2,7 @@ from serf.publisher import Publisher
 from serf.storage import save_fn
 from serf.tables.table import Table, Key, FieldValue
 
-class Collection(Table):
+class CollectionV0(Table):
     """Table of brief info for a set of persistent objects.
 
     Objects must implement getId() returning a unique identifier, and
@@ -49,7 +49,7 @@ class Collection(Table):
             self.update(Key(':id str', id), update)
 
 
-class NewCollection(Publisher):
+class Collection(object):
     """Table of brief info for a set of persistent objects.
 
     Objects must implement getId() returning a unique identifier, and
@@ -64,11 +64,10 @@ class NewCollection(Publisher):
     properties, but don't want to have to instantiate all the objects
     in order to do so.
     """
-    serialize = ('#vat', '_table', '_subs')
+    serialize = ('#vat', '_table')
     _version = 1
 
-    def __init__(self, storage, table=None, subs=None):
-        Publisher.__init__(self, subs)
+    def __init__(self, storage, table=None):
         self._table = Table() if table is None else table
         self._storage = storage
 
@@ -92,9 +91,11 @@ class NewCollection(Publisher):
         if found:
             return self._storage[found[0]['id']]
 
-    # TODO: get (rename?), join
-    # CAUTION: update, updateIter
-    # MODIFIED: remove
+    def subscribe(self, event, cb, args=(), persist=False):
+        return self._table.subscribe(event, cb, args, persist)
+
+    def unsubscribe(self, event, cb, persist=False):
+        self._table.unsubscribe(event, cb, persist)
 
     def select(self, filter=None):
         return self._table.select(filter)
@@ -111,6 +112,12 @@ class NewCollection(Publisher):
     def maxPK(self):
         return self._table.maxPK()
 
+    def update(self, filter, values, model=None):
+        return self._table.update(filter, values, model)
+
+    # TODO: get (rename?), join, updateIter, remove
+    # NOTE: remove will have to unsubscribe like discard.
+
     def _onUpdate(self, ev, info, id):
         if ev == 'info':
             update = [FieldValue(':' + k, v) for k, v in info.iteritems()]
@@ -118,5 +125,5 @@ class NewCollection(Publisher):
 
     @staticmethod
     def _upgrade(data, version):
-        table = Table(*[data.get(k) for k in ('primary', 'indices', 'pkey')])
+        table = Table(*[data.get(k) for k in ('primary', 'indices', 'pkey', 'subs')])
         data['table'] = table
