@@ -10,6 +10,10 @@ from serf.serializer import decodes, encodes
 
 from query import getMember, setMember, checkField, QTerm
 
+#def encodes(r):
+#    return dict(r)
+#def decodes(r):
+#    return dict(r)
 
 class TableCodec(object):
     def encodes(self, obj):
@@ -201,8 +205,11 @@ class Indexer(object):
             raise Exception('Unsupported type: %r' % self.type)
         self.fold_case = self.type.endswith('-i')
 
-    def __call__(self, rec):
-        field = getMember(decodes(rec), self.col)
+    def index_r(self, rec):
+        return self.index(decodes(rec))
+
+    def index(self, rec):
+        field = getMember(rec, self.col)
         if self.type == 'int':
             if type(field) not in (int, long):
                 return None
@@ -222,11 +229,13 @@ class ColsIndexer(object):
         self.indexers = map(Indexer, spec.split(','))
         self.template = '::'.join(['%s'] * len(self.indexers))
 
-    def __call__(self, raw_rec):
+    def index_r(self, raw_rec):
         try:
-            rec = decodes(raw_rec)
+            return self.index(decodes(raw_rec))
         except:
             return '\0'
+
+    def index(self, rec):
         values = [i._getSKey(rec) for i in self.indexers]
         return self.template % tuple(values)
 
@@ -316,19 +325,6 @@ class Query(object):
             if self.query.match(rec):
                 yield kv
 
-class Text(object):
-    serialize = ('text',)
-
-    def __init__(self, text):
-        if type(text) is unicode:
-            text = text.encode('utf8')
-        self.text = text
-
-    def filter(self, iter):
-        for kv in iter:
-            if self.text in kv.value:
-                yield kv
-
 class PKeyRange(object):
     serialize = ('lo', 'hi')
 
@@ -365,15 +361,21 @@ class Table(Publisher):
         self._pkey = pkey or 0
         self._indexers = {}
 
-    def select(self, filter=None):
+    def select_r(self, filter=None):
         gen, filters = genFilters(filter)
         result = gen.generate(self)
         for f in filters:
             if not hasattr(f, 'filter'):
                 f = Query(f) # assume it's a query
             result = f.filter(result)
-        # Should we return an interator?
+        # Should we return an iterator?
         return list(result)
+
+    def select(self, filter=None):
+        kvl = self.select_r(filter)
+        for kv in kvl:
+            kv.value = decodes(kv.value)
+        return kvl
 
     def _selectAll(self):
         return [KeyValue(pkey, data)
@@ -430,18 +432,22 @@ class Table(Publisher):
         if filter is None:
             return len(self._primary)
         gen, filters = genFilters(filter)
-        return len(self.select(filter))
+        return len(self.select_r(filter))
 
-    def setBatch(self, records, notify=True): 
+    def setBatch(self, records, notify=True):
         for r in records:
             self.set(r.key, r.value, notify)
 
+    def setBatch_r(self, records, notify=True): 
+        for r in records:
+            self.set_r(r.key, r.value, notify)
+
     def pkeys(self, filter=None):
-        return [kv.key for kv in self.select(filter)]
+        return [kv.key for kv in self.select_r(filter)]
     
     def _index(self, pkey, data):
         for col, index in self._indices.iteritems():
-            key = self._getIndexer(col)(data)
+            key = self._getIndexer(col).index_r(data)
             if key is None:
                 continue
             if key not in index:
@@ -451,7 +457,7 @@ class Table(Publisher):
 
     def _unindex(self, pkey, data):
         for col, index in self._indices.iteritems():
-            key = self._getIndexer(col)(data)
+            key = self._getIndexer(col).index_r(data)
             if key in index and pkey in index[key]:
                 index[key].remove(pkey)
                 if len(index[key]) == 0:
@@ -469,7 +475,7 @@ class Table(Publisher):
             self._indices[spec] = index = {}
             indexer = self._getIndexer(spec)
             for pkey, data in self._primary.iteritems():
-                key = indexer(data)
+                key = indexer.index_r(data)
                 if key is None:
                     continue
                 if key not in index:
@@ -492,11 +498,17 @@ class Table(Publisher):
         self._primary[self._pkey] = data
         self._index(self._pkey, data)
         if notify:
-            info = KeyValueChange(self._pkey, data, None)
+            info_r = KeyValueChange(self._pkey, data, None)
+            self.notify('change_r', info_r)
+            self.notify('key_r:%s' % self._pkey, info_r)
+            info = lambda: KeyValueChange(self._pkey, decodes(data), None)
             self.notify('change', info)
             self.notify('key:%s' % self._pkey, info)
-        
+
     def insert(self, records, notify=True):
+        return self.insert_r(map(encodes, records), notify)
+
+    def insert_r(self, records, notify=True):
         if type(records) is not list:
             records = [records]
         keys = []
@@ -504,8 +516,11 @@ class Table(Publisher):
             self._put(r, notify)
             keys.append(self._pkey)
         return keys
-            
+
     def set(self, pkey, data, notify=True):
+        self.set_r(pkey, encodes(data), notify)
+            
+    def set_r(self, pkey, data, notify=True):
         old = self._primary.get(pkey)
         if old is not None:
             self._unindex(pkey, old)
@@ -514,24 +529,30 @@ class Table(Publisher):
         if pkey > self._pkey:
             self._pkey = pkey
         if notify:
-            info = KeyValueChange(pkey, data, old)
+            info_r = KeyValueChange(pkey, data, old)
+            self.notify('change_r', info_r)
+            self.notify('key_r:%s' % pkey, info_r)
+            info = lambda: KeyValueChange(pkey, decodes(data), old and decodes(old))
             self.notify('change', info)
             self.notify('key:%s' % pkey, info)
 
     def _update(self, pkey, values, vrec):
-        rec = decodes(self.get(pkey))
+        rec = self.get(pkey)
         if updateFields(rec, values, vrec):
-            self.set(pkey, encodes(rec))
+            self.set_r(pkey, encodes(rec))
+
+    def update_r(self, filter, values, model=None):
+        if model is not None:
+            model = decodes(model)
+        return self.update(filter, values, model)
 
     def update(self, filter, values, model=None):
         pkeys = []
-        if model is not None:
-            model = decodes(model)
-        for kv in self.select(filter):
+        for kv in self.select_r(filter):
             rec = decodes(kv.value)
             if updateFields(rec, values, model):
                 pkeys.append(kv.key)
-                self.set(kv.key, encodes(rec))
+                self.set_r(kv.key, encodes(rec))
         return pkeys
 
     def _pop(self, pkey, notify=True):
@@ -542,10 +563,19 @@ class Table(Publisher):
         self._unindex(pkey, data)
         del self._primary[pkey]
         if notify:
-            info = KeyValueChange(pkey, None, data)
+            info_r = KeyValueChange(pkey, None, data)
+            self.notify('change_r', info_r)
+            self.notify('key_r:%s' % pkey, info_r)
+            info = lambda: KeyValueChange(pkey, None, decodes(data))
             self.notify('change', info)
             self.notify('key:%s' % pkey, info)
         return data
+
+    def pop_r(self, filter=None, notify=True):
+        kvs = self.select_r(filter)
+        for kv in kvs:
+            self._pop(kv.key, notify)
+        return kvs
 
     def pop(self, filter=None, notify=True):
         kvs = self.select(filter)
@@ -558,8 +588,10 @@ class Table(Publisher):
         info = KeyValueChange(-1, None, None)
         for pkey in list(self._primary):
             self._pop(pkey, notify=False)
+            self.notify('key_r:%s' % pkey, info)
             self.notify('key:%s' % pkey, info)
         if count > 0:
+            self.notify('change_r', KeyValueChange(-count, None, None))
             self.notify('change', KeyValueChange(-count, None, None))
         self._pkey = 0
         return count
@@ -567,7 +599,7 @@ class Table(Publisher):
     def remove(self, filter=None):
         if filter is None:
             return self._removeAll()
-        to_remove = [item.key for item in self.select(filter)]
+        to_remove = [item.key for item in self.select_r(filter)]
         for pkey in to_remove:
             self._pop(pkey)
         return len(to_remove)
@@ -578,63 +610,82 @@ class Table(Publisher):
             raise KeyError(pkey)
         return [] if value is None else [KeyValue(pkey, value)]
 
-    def get(self, pkey):
+    def get_r(self, pkey):
         if int(pkey) not in self._primary:
             raise KeyError(pkey)
         return self._primary[pkey]
+
+    def get(self, pkey):
+        return decodes(self.get_r(pkey))
+
+    def values_r(self, filter=None):
+        return [pk.value for pk in self.select_r(filter)]
 
     def values(self, filter=None):
         return [pk.value for pk in self.select(filter)]
 
     def setKey(self, spec, message, replace=True):
+        return self.setKey_r(spec, encodes(message), replace)
+
+    def setKey_r(self, spec, message, replace=True):
         """Inserts or updates a record indexed by spec.
 
         If replace is False and a matching record already
         exists, the update is rejected and a key of -1 is returned.
         """
         indexer = self._getIndexer(spec)
-        key = indexer(message)
+        key = indexer.index_r(message)
         to_remove = [item.key for item in self._selectKey(spec, key)]
         if len(to_remove) > 0:
             if not replace:
                 return -1
             for pkey in to_remove[1:]:
                 self._pop(pkey)
-            self.set(to_remove[0], message)
+            self.set_r(to_remove[0], message)
             return to_remove[0]
         else:
-            return self.insert([message])[0]
+            return self.insert_r([message])[0]
 
     def _join(self, left, join, query, func):
         for lkv in left:
-            self._join1(lkv, join, query, func)
+            self._join1(lkv.key, lkv.value, join, query, func)
 
-    def _join1(self, lkv, join, query, func):
+    def _join_r(self, left, join, query, func):
+        for lkv in left:
+            self._join1(lkv.key, decodes(lkv.value), join, query, func)
+
+    def _join1(self, l_pk, left, join, query, func):
         l_col, r_col, type = join.leftCol, join.rightCol, join.type
         if r_col != '#':
             r_col = ':' + r_col
         spec = '%s %s' % (r_col, type)
         limit = join.limit or sys.maxint
-        l_pk = lkv.key
-        left = decodes(lkv.value)
         try:
             key = l_pk if l_col == '#' else left[l_col]
         except (KeyError, AttributeError):
             to_join = []
         else:
             filters = [query, Range(0, limit)] if query is not None else [Range(0, limit)]
-            to_join = self.select([Key(spec, key)] + filters)
+            to_join = self.select_r([Key(spec, key)] + filters)
         if not to_join and join.nulls:
             to_join.append(KeyValue(0, encodes({})))
         for kv in to_join:
             right = decodes(kv.value)
             func(l_pk, left, kv.key, right)
 
-    def join(self, left, join, query, merge):
+    def join_r(self, left, join, query, merge):
         results = []
         def buildJoin(s_pk, s_rec, r_pk, r_rec):
             out = mergeRecords(s_pk, s_rec, r_pk, r_rec, merge, {})
             results.append(KeyValue(s_pk, encodes(out)))
+        self._join_r(left, join, query, buildJoin)
+        return results
+
+    def join(self, left, join, query, merge):
+        results = []
+        def buildJoin(s_pk, s_rec, r_pk, r_rec):
+            out = mergeRecords(s_pk, s_rec, r_pk, r_rec, merge, {})
+            results.append(KeyValue(s_pk, out))
         self._join(left, join, query, buildJoin)
         return results
 
@@ -645,6 +696,15 @@ class Table(Publisher):
             self._update(r_pk, values, s_rec)
             count[0] += 1
         self._join(stream, join, query, doUpdate)
+        return count[0]
+
+    def updateIter_r(self, stream, join, query, values):
+        count = [0]
+        join.nulls = 0 # don't want any cases of r_pk not in the table.
+        def doUpdate(s_pk, s_rec, r_pk, r_rec):
+            self._update(r_pk, values, s_rec)
+            count[0] += 1
+        self._join_r(stream, join, query, doUpdate)
         return count[0]
 
     def maxPK(self):
