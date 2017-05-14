@@ -494,6 +494,7 @@ class Table(Publisher):
         self._primary[self._pkey] = data
         self._index(self._pkey, data)
         if notify:
+            self._save()
             info_r = KeyValueChange(self._pkey, data, None)
             self.notify('change_r', info_r)
             self.notify('key_r:%s' % self._pkey, info_r)
@@ -525,6 +526,7 @@ class Table(Publisher):
         if pkey > self._pkey:
             self._pkey = pkey
         if notify:
+            self._save()
             info_r = KeyValueChange(pkey, data, old)
             self.notify('change_r', info_r)
             self.notify('key_r:%s' % pkey, info_r)
@@ -559,6 +561,7 @@ class Table(Publisher):
         self._unindex(pkey, data)
         del self._primary[pkey]
         if notify:
+            self._save()
             info_r = KeyValueChange(pkey, None, data)
             self.notify('change_r', info_r)
             self.notify('key_r:%s' % pkey, info_r)
@@ -586,10 +589,11 @@ class Table(Publisher):
             self._pop(pkey, notify=False)
             self.notify('key_r:%s' % pkey, info)
             self.notify('key:%s' % pkey, info)
+        self._pkey = 0
         if count > 0:
+            self._save()
             self.notify('change_r', KeyValueChange(-count, None, None))
             self.notify('change', KeyValueChange(-count, None, None))
-        self._pkey = 0
         return count
 
     def remove(self, filter=None):
@@ -706,8 +710,8 @@ class Table(Publisher):
     def maxPK(self):
         return max(self._primary)
 
-    def _on_addref(self):
-        self.subscribe('change_r', self.ref._save)
+    def _save(self):
+        pass
 
 class Client(object):
     def __init__(self):
