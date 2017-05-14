@@ -19,12 +19,12 @@ class Person(Publisher):
 
     def setName(self, name):
         self.name = name
-        self.notify('update', {'name': name})
+        self.notify('info', {'name': name})
         self._save()
 
     def setAge(self, age):
         self.age = age
-        self.notify('update', {'age': age})
+        self.notify('info', {'age': age})
         self._save()
 
     def getId(self):
@@ -64,7 +64,7 @@ class CollectionTest(unittest.TestCase):
         c.discard(t)
 
         self.assertEqual(c.count(), 1)
-        self.assertEqual(len(t.subscribers('update')), 0)
+        self.assertEqual(len(t.subscribers('*')), 0)
 
         d = c.get(QTerm(':name', 'eq', 'Dick'))
 

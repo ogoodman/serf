@@ -3,7 +3,7 @@
 """Tests for traverse module."""
 
 import unittest
-from traverse import traverse
+from serf.traverse import traverse
 
 class TraverseTest(unittest.TestCase):
     def test(self):

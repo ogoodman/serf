@@ -7,7 +7,7 @@ class Collection(Table):
 
     Objects must implement getId() returning a unique identifier, and
     getInfo() returning a dict of brief info for the object. They must
-    also be Publishers with an 'update' event notifying of any changes
+    also be Publishers with an 'info' event notifying of any changes
     to the info as a dict of modified key-value pairs.
 
     Info for objects added to the collection will remain up-to-date at
@@ -27,7 +27,7 @@ class Collection(Table):
         """Adds an object to the collection."""
         info = item.getInfo()
         info['id'] = id = item.getId()
-        info['sid'] = item.subscribe('update', self._onUpdate, (id,), persist=True)
+        info['sid'] = item.subscribe('*', self._onUpdate, (id,), persist=True)
         self.setKey(':id str', info)
 
     def discard(self, item):
@@ -35,7 +35,7 @@ class Collection(Table):
         id = item.getId()
         kvs = self.pop(Key(':id str', id))
         for kv in kvs:
-            item.unsubscribe('update', kv.value['sid'], persist=True)
+            item.unsubscribe('*', kv.value['sid'], persist=True)
 
     def get(self, query):
         """Returns the first object matching the query."""
@@ -44,5 +44,6 @@ class Collection(Table):
             return self._storage[found[0]['id']]
 
     def _onUpdate(self, ev, info, id):
-        update = [FieldValue(':' + k, v) for k, v in info.iteritems()]
-        self.update(Key(':id str', id), update)
+        if ev == 'info':
+            update = [FieldValue(':' + k, v) for k, v in info.iteritems()]
+            self.update(Key(':id str', id), update)

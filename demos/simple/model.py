@@ -22,6 +22,7 @@ class Person(Publisher):
     def haveBirthday(self):
         """Adds one to the age."""
         self.age += 1
+        self.notify('info', {'age': self.age})
         self.notify('update', {'age': self.age})
         if hasattr(self, 'ref'):
             self.ref._save()

@@ -5,10 +5,10 @@
 import unittest
 import weakref
 import types
-from publisher import Publisher
-from weak_list import getAdapter
-from storage import Storage
-from bound_method import BoundMethod
+from serf.publisher import Publisher
+from serf.weak_list import getAdapter
+from serf.storage import Storage
+from serf.bound_method import BoundMethod
 
 class Parent(object):
     def __init__(self, child):
@@ -170,6 +170,49 @@ class PublisherTest(unittest.TestCase):
         p.unsubscribe('dusted', sid, persist=True)
         p.notify('dusted', 15)
         self.assertEqual(len(storage['sub'].events), 1)
+
+    def testCatchAllSubscriptions(self):
+        # Persistent.
+        store = {}
+        storage = Storage(store)
+
+        storage['pub'] = p = Publisher()
+        storage['sub'] = s = Subscriber([])
+
+        sid = p.subscribe('*', s.on, args=('hello',), persist=True)
+
+        del s, p
+
+        p = storage['pub']
+        p.notify('dusted', 14)
+
+        # FIXME: a tuple is converted to a list here. That's a
+        # serializer bug.
+        self.assertEqual(storage['sub'].events, [['dusted', 14, 'hello']])
+
+        p.unsubscribe('*', sid, persist=True)
+        p.notify('dusted', 15)
+        self.assertEqual(len(storage['sub'].events), 1)
+
+    def testLazyInfo(self):
+        s = Subscriber([])
+        p = Publisher()
+        p.subscribe('bar', s.on)
+
+        self.info_calls = 0
+        def info():
+            self.info_calls += 1
+            return {'n': 42}
+
+        # no subscribers to 'foo' so info won't be called.
+        p.notify('foo', info)
+        self.assertEqual(s.events, [])
+        self.assertEqual(self.info_calls, 0)
+
+        p.notify('bar', info)
+        self.assertEqual(s.events, [('bar', {'n': 42})])
+        self.assertEqual(self.info_calls, 1)
+
 
 if __name__ == '__main__':
     unittest.main()

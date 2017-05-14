@@ -60,13 +60,17 @@ class Publisher(object):
 
         If any subscriber throws an exception or returns False
         it will be unsubscribed from future notifications.
+
+        If info is callable, it will be called to get the info
+        for the event, but only if the event has subscribers.
+        This allows us to avoid expensive info computation when
+        there are no subscribers.
         """
-        first = True
-        for sub, args in self.subscribers(event):
+        subs = self.subscribers(event) + self.subscribers('*')
+        if subs and callable(info):
+            info = info()
+        for sub, args in subs:
             try:
-                if first and callable(info):
-                    first = False
-                    info = info()
                 if sub(event, info, *args) is False:
                     self.unsubscribe(event, sub)
             except RefError, e:
