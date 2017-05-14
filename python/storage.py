@@ -51,6 +51,9 @@ class StorageCtx(object):
                 cls._upgrade(data, data_version)
             args = [data.get(key.lstrip('_')) for key in cls.serialize]
             inst = cls(*args)
+            if cls_version != data_version:
+                # Ensure new nested serializables get correct _save hook.
+                encodes(inst, self)
             if hasattr(cls, '_save'):
                 inst._save = self.save
             return inst
