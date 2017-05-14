@@ -30,6 +30,21 @@ class Obj(object):
         self.data[key] = value
         self._save()
 
+class V(object):
+    serialize = ('props',)
+    def __init__(self, props=None):
+        self.props = props
+
+class NewV(object):
+    serialize = ('info',)
+    _version = 1
+    def __init__(self, info=None):
+        self.info = info
+    @staticmethod
+    def _upgrade(data, version):
+        if version == 0:
+            data['info'] = data['props'] + '-updated'
+
 class StorageTest(unittest.TestCase):
     def test(self):
         s = Storage({})
@@ -189,6 +204,17 @@ class StorageTest(unittest.TestCase):
         
         ns = NameStore(s, {})
         self.assertRaises(NoSuchName, ns.getn, 'bimbo')
+
+    def testVersioning(self):
+        s = Storage({})
+        s['v'] = V('info')
+
+        # simulate a change of version.
+        s.map_class = lambda c: c.replace('.V', '.NewV')
+
+        v = s['v']
+        self.assertEqual(type(v), NewV)
+        self.assertEqual(v.info, 'info-updated')
 
 if __name__ == '__main__':
     unittest.main()

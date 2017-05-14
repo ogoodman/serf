@@ -8,14 +8,6 @@ from serf.proxy import Proxy
 from serf.util import randomString, importSymbol
 from serf.synchronous import Synchronous
 
-# This enables us to move serializable classes around.
-# FIXME: this is a bad way to do it because it assumes that
-# serf.config is owned by the application.
-try:
-    from serf.config import mapClass
-except ImportError:
-    mapClass = lambda c: c
-
 AUTO_MAKE = {
     'node_observer': 'serf.po.node_observer.NodeObserver'
 }
@@ -45,12 +37,18 @@ class StorageCtx(object):
                 storage.save(self.path)
 
     def custom(self, name, data):
+        storage = self.storage()
         if name == 'ref':
-            return Ref(self.storage(), data['path'], data.get('facet'))
+            return Ref(storage, data['path'], data.get('facet'))
         if name == 'inst':
-            cls = importSymbol(mapClass(data['CLS']))
-            data['#vat'] = self.storage()
-            data.update(self.storage().resources)
+            cls = importSymbol(storage.map_class(data['CLS']))
+            data['#vat'] = storage
+            data.update(storage.resources)
+            # Check for version change.
+            data_version = data.get('$version', 0)
+            cls_version = getattr(cls, '_version', 0)
+            if cls_version != data_version:
+                cls._upgrade(data, data_version)
             args = [data.get(key.lstrip('_')) for key in cls.serialize]
             inst = cls(*args)
             if hasattr(cls, '_save'):
@@ -59,24 +57,26 @@ class StorageCtx(object):
         raise SerializationError(name)
 
     def record(self, inst):
-        t = type(inst)
+        cls = type(inst)
         # Replace any instance having a slot somewhere with its Ref.
         ref = getattr(inst, 'ref', None)
         if type(ref) is Ref and ref._path != self.path:
-            t, inst = Ref, ref
-        if t is Ref:
+            cls, inst = Ref, ref
+        if cls is Ref:
             data = {'path': inst._path}
             if inst._facet:
                 data['facet'] = inst._facet
             return 'ref', data
-        if type(getattr(t, 'serialize', None)) is tuple:
+        if type(getattr(cls, 'serialize', None)) is tuple:
             data = getDict(inst)
-            cls = inst.__class__
             data['CLS'] = '%s.%s' % (cls.__module__, cls.__name__)
+            version = getattr(cls, '_version', None)
+            if version:
+                data['$version'] = version
             if hasattr(cls, '_save'):
                 inst._save = self.save
             return 'inst', data
-        raise SerializationError(str(t))
+        raise SerializationError(str(cls))
 
     def codec(self, type_id):
         return None, None
@@ -92,6 +92,7 @@ class Storage(object):
         self.resources = {}
         self.make_context = StorageCtx if cx_factory is None else cx_factory
         self.node_id = None
+        self.map_class = lambda c: c
 
     def __getitem__(self, path):
         # we get instantiated values
