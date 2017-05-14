@@ -160,7 +160,7 @@ then:
             # etc ...
 
 enables `the_logger` to be passed to each instance that needs it. The
-leading underscore indicates that the serialize list member is to be
+leading `#` indicates that the serialize list member is to be
 provided to `__init__` from the resources dictionary, but ignored when
 storing the object.
 
@@ -294,12 +294,12 @@ change.
     f  # --> Person('fred',20,[Person('george',21,[])])
     g  # --> Person('george',22)
 
-We actually had to try quite hard to cause this 'problem': it is only
+We actually had to try quite hard to cause this problem: it is only
 a problem because we want one shared object rather than two separate
 ones.
 
 Suppose instead that we made *george* and saved him *before* we added
-him as a friend of *fred*. Now *george* has a ref member and when we
+him as a friend of *fred*. Now *george* has a `ref` member and when we
 save *fred*, instead of storing a copy of the entire referenced
 *george* object we will store a `Ref`.
 
@@ -389,9 +389,9 @@ run into problems:
     f2._save()
 
 In fact, `Storage` caches any values it instantiates in a
-`WeakValueDictionary` so that both `f1` and `f2` above will in fact be
+`WeakValueDictionary` so that both `f1` and `f2` above will be
 references to the same object. A `WeakValueDictionary` forgets a value
-as soon as the last normal reference goes away. So once both `f1` and
+as soon as the last normal reference goes away, so once both `f1` and
 `f2` go out of scope, or are deleted or assigned new values, the cache
 entry will go too.
 
@@ -508,7 +508,7 @@ This does not change anything with regard to subscriptions made by
 non-persistent objects. Bound methods to non-persistent objects cannot
 be serialized and reinstantiated, so the subscription will last as
 long as both publisher and subscriber remain in memory. If the
-persistent publisher is discarded an re-instantiated, any normal
+persistent publisher is discarded and re-instantiated, any normal
 subscriptions will be gone.
 
     s = Subscriber()
