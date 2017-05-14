@@ -12,7 +12,6 @@ from serf.storage import Storage
 
 from serf.tables.table import *
 from serf.tables.query import *
-from serf.tables.table_handle import TableHandle
 
 SERF_NODE = '127.0.0.1:6506'
 
@@ -24,7 +23,6 @@ storage = Storage(store)
 if 'table' not in storage:
     storage['table'] = Table()
 TABLE = storage['table']
-TH_TABLE = TableHandle(TABLE)
 
 JC_OPTS = dict(hooks=JC_HOOKS, safe=['serf.tables'], auto_proxy=True)
 
@@ -32,7 +30,7 @@ def handle(transport):
     thread = EventletThread()
     thread.callFromThread = thread.call
     handler = RPCHandler(transport, {}, t_model=thread, jc_opts=JC_OPTS)
-    handler.provide('table', TH_TABLE)
+    handler.provide('table', TABLE)
     transport.handle()
 
 if __name__ == '__main__':

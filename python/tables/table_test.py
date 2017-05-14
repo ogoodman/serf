@@ -6,8 +6,8 @@ from datetime import datetime
 from serf.storage import Storage
 
 from notification_tracker import NotificationTracker
-from table import *
-from query import *
+from serf.tables.table import *
+from serf.tables.query import *
 
 class TableTest(unittest.TestCase):
     client = Client()

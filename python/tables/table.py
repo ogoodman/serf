@@ -15,13 +15,6 @@ from query import getMember, setMember, checkField, QTerm
 #def decodes(r):
 #    return dict(r)
 
-class TableCodec(object):
-    def encodes(self, obj):
-        return encodes(obj)
-
-    def decodes(self, data):
-        return decodes(data)
-
 class FieldValue(object):
     serialize = ('field', 'value', 'when')
 
@@ -76,6 +69,9 @@ class KeyValue(object):
         self.key = key
         self.value = value
         self.skey = skey
+
+    def __repr__(self):
+        return repr((self.key, self.value, self.skey))
 
 class KeyValueChange(object):
     serialize = ('key', 'value', 'old')
@@ -506,11 +502,11 @@ class Table(Publisher):
             self.notify('key:%s' % self._pkey, info)
 
     def insert(self, records, notify=True):
+        if type(records) is not list:
+            records = [records]
         return self.insert_r(map(encodes, records), notify)
 
     def insert_r(self, records, notify=True):
-        if type(records) is not list:
-            records = [records]
         keys = []
         for r in records:
             self._put(r, notify)
@@ -711,7 +707,7 @@ class Table(Publisher):
         return max(self._primary)
 
     def _on_addref(self):
-        self.subscribe('change', self.ref._save)
+        self.subscribe('change_r', self.ref._save)
 
 class Client(object):
     def __init__(self):
@@ -732,6 +728,7 @@ class Client(object):
 # as values.
 
 JC_HOOKS = {}
+JC_HOOKS['KeyValue'] = lambda _,args: KeyValue(*args)
 JC_HOOKS['PKey'] = lambda _,args: PKey(*args)
 JC_HOOKS['Key'] = lambda _,args: Key(*args)
 JC_HOOKS['KeyRange'] = lambda _,args: KeyRange(*args)

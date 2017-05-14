@@ -6,6 +6,8 @@ $(function() {
     // NOTE: On the server these classes actually do something. Here
     // we only need to be able to create them or examine their values
     // so their construction can be completely automated.
+    KeyValue = rpc.makePODClass('KeyValue', ['key', 'value']);
+    KeyValueChange = rpc.makePODClass('KeyValueChange', ['key', 'value', 'old']);
     PKey = rpc.makePODClass('PKey', ['pk']);
     QTerm = rpc.makePODClass('QTerm', ['field', 'condition', 'value']);
     FieldValue = rpc.makePODClass('FieldValue', ['field', 'value']);
@@ -43,15 +45,18 @@ $(function() {
     t = serv.getProxy('table', ['insert', 'select', 'update']);
 
     // Populate the table.
-    t.select().done(rows => {
-        var recs = rows.map(kv => { rec = kv[1]; rec.recid = kv[0]; return rec; });
+    t.select().done(function(rows) {
+        var recs = rows.map(function(kv) {
+            kv.value.recid = kv.key;
+            return kv.value;
+        });
         grid.add(recs);
     });
 
     // Watch for changes from the server.
-    t.subscribe('change', (ev, info) => {
-        let recid = info[0];
-        let newrow = info[2];
+    t.subscribe('change', function(ev, info) {
+        let recid = info.key;
+        let newrow = info.value;
         if (!newrow) {
             grid.remove(recid);
         } else if (grid.get(recid)) {
@@ -63,9 +68,9 @@ $(function() {
     });
 
     // Send local changes.
-    grid.on('change', event => {
+    grid.on('change', function(event) {
         let field = grid.columns[event.column].field;
         t.update(new PKey(event.recid), [new FieldValue(':' + field, event.value_new)]);
-        event.onComplete = () => grid.save();
+        event.onComplete = function() { grid.save(); };
     });
 });

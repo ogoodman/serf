@@ -18,7 +18,6 @@ from serf.transport import Transport
 from serf.eventlet_thread import EventletThread
 from serf.proxy import Proxy
 from serf.repl_proxy import REPLProxy
-from serf.tables.table_handle import TableHandle
 
 SERVER = '127.0.0.1:6508'
 
@@ -37,4 +36,4 @@ thread.callFromThread(net.start)
 
 admin = remote('admin')
 login = remote('login')
-users = TableHandle(remote('users'))
+users = remote('users')

@@ -15,8 +15,6 @@ from serf.po.printer import Printer
 
 from serf.tables.table import *
 from serf.tables.query import *
-from serf.serializer import encodes, decodes
-from serf.tables.table_handle import TableHandle
 
 SERVER = '127.0.0.1:6506'
 
@@ -32,4 +30,4 @@ def proxy(name):
 thread.start(True)
 thread.callFromThread(transport.start)
 
-table = TableHandle(proxy('table'))
+table = proxy('table')

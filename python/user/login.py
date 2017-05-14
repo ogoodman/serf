@@ -1,5 +1,4 @@
 from serf.tables.table import *
-from serf.tables.table_handle import TableHandle
 
 class Login(object):
     """The Login capability requires/creates a 'users' table in storage."""
@@ -12,7 +11,7 @@ class Login(object):
             self._vat['users'] = Table()
 
     def _get_rec(self, userid):
-        users = TableHandle(self._vat['users'])
+        users = self._vat['users']
         user_recs = users.values(Key(':userid str', userid))
         if not user_recs:
             return None
