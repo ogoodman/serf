@@ -29,8 +29,7 @@ This project contains a number of demos.
 * `demos/ws` shows how to develop a backend for a single-page web app,
   using only the most basic Apache or Nginx configurations.
 
-* `demos/chat` provides a realistic example, and is the only one that
-   is documented at this point.
+* `demos/chat` provides a realistic example.
 
 * `demos/simple` demonstrates the basic mechanics of persistent objects
   and their links. It uses only the Serf protocol.
@@ -38,6 +37,3 @@ This project contains a number of demos.
 * Further examples show how to connect user interface elements to
   objects and how the object-capability model can be used to create
   secure multi-user apps.
-
-**NOTE:** in the absence of documentation `demos/simple` is probably not
-simple at all and you might want to skip it for now.

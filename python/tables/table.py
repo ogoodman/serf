@@ -348,10 +348,10 @@ def genFilters(filter):
     return All(), filter
 
 class Table(Publisher):
-    serialize = ('_primary', '_indices', '_pkey')
+    serialize = ('_primary', '_indices', '_pkey', '_subs')
 
-    def __init__(self, primary=None, indices=None, pkey=None):
-        Publisher.__init__(self)
+    def __init__(self, primary=None, indices=None, pkey=None, subs=None):
+        Publisher.__init__(self, subs)
         self._primary = primary or {}
         self._indices = indices or {}
         self._pkey = pkey or 0
