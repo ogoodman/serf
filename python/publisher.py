@@ -61,8 +61,12 @@ class Publisher(object):
         If any subscriber throws an exception or returns False
         it will be unsubscribed from future notifications.
         """
+        first = True
         for sub, args in self.subscribers(event):
             try:
+                if first and callable(info):
+                    first = False
+                    info = info()
                 if sub(event, info, *args) is False:
                     self.unsubscribe(event, sub)
             except RefError, e:
