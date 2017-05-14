@@ -1,7 +1,7 @@
 """Tests for Collection of persistent objects."""
 
 import unittest
-from serf.tables.collection import Collection
+from serf.tables.collection import Collection, NewCollection
 from serf.tables.query import QTerm
 from serf.publisher import Publisher
 from serf.storage import Storage, save_fn
@@ -70,6 +70,52 @@ class CollectionTest(unittest.TestCase):
 
         self.assertEqual(d.age, 3)
 
+    def testUpgrade(self):
+        storage = Storage({})
+
+        t = storage.makeRef(Person('Tom', 3))
+        storage['c'] = c = Collection(storage)
+        c.add(t)
+
+        del c
+        storage.map_class = lambda c: c.replace('.Collection', '.NewCollection')
+
+        c = storage['c']
+        self.assertEqual(type(c), NewCollection)
+
+        t = c.get(QTerm(':name', 'eq', 'Tom'))
+
+        self.assertEqual(type(t), Person)
+
+        # Subscription should survive the upgrade.
+        t.setAge(4)
+        self.assertEqual(c.values()[0]['age'], 4)
+        self.assertEqual(len(t.subscribers('*')), 1)
+
+        c.discard(t)
+        self.assertEqual(c.values(), [])
+        self.assertEqual(t.subscribers('*'), [])
+
+        d = storage.makeRef(Person('Dick', 5))
+        c.add(d)
+        self.assertEqual(c.values()[0]['age'], 5)
+        self.assertEqual(len(d.subscribers('*')), 1)
+
+        d.setAge(6)
+        self.assertEqual(c.values()[0]['age'], 6)
+
+        self.assertEqual(c.maxPK(), 8)
+        self.assertEqual(len(c.select()), 1)
+        self.assertEqual(c.count(QTerm(':name', 'eq', 'Harry')), 0)
+        self.assertEqual(c.pkeys(), [8])
+
+        c.ref._save()
+
+        del c
+
+        d.setAge(7)
+        c = storage['c']
+        self.assertEqual(c.values()[0]['age'], 7)
 
 if __name__ == '__main__':
     unittest.main()

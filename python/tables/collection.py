@@ -47,3 +47,76 @@ class Collection(Table):
         if ev == 'info':
             update = [FieldValue(':' + k, v) for k, v in info.iteritems()]
             self.update(Key(':id str', id), update)
+
+
+class NewCollection(Publisher):
+    """Table of brief info for a set of persistent objects.
+
+    Objects must implement getId() returning a unique identifier, and
+    getInfo() returning a dict of brief info for the object. They must
+    also be Publishers with an 'info' event notifying of any changes
+    to the info as a dict of modified key-value pairs.
+
+    Info for objects added to the collection will remain up-to-date at
+    all times.
+
+    It can be used when we want to find objects by querying over
+    properties, but don't want to have to instantiate all the objects
+    in order to do so.
+    """
+    serialize = ('#vat', '_table', '_subs')
+    _version = 1
+
+    def __init__(self, storage, table=None, subs=None):
+        Publisher.__init__(self, subs)
+        self._table = Table() if table is None else table
+        self._storage = storage
+
+    def add(self, item):
+        """Adds an object to the collection."""
+        info = item.getInfo()
+        info['id'] = id = item.getId()
+        info['sid'] = item.subscribe('*', self._onUpdate, (id,), persist=True)
+        self._table.setKey(':id str', info)
+
+    def discard(self, item):
+        """Removes an object from the collection."""
+        id = item.getId()
+        kvs = self._table.pop(Key(':id str', id))
+        for kv in kvs:
+            item.unsubscribe('*', kv.value['sid'], persist=True)
+
+    def get(self, query):
+        """Returns the first object matching the query."""
+        found = self._table.values(query)
+        if found:
+            return self._storage[found[0]['id']]
+
+    # TODO: get (rename?), join
+    # CAUTION: update, updateIter
+    # MODIFIED: remove
+
+    def select(self, filter=None):
+        return self._table.select(filter)
+
+    def pkeys(self, filter=None):
+        return self._table.pkeys(filter)
+
+    def values(self, filter=None):
+        return self._table.values(filter)
+
+    def count(self, filter=None):
+        return self._table.count(filter)
+
+    def maxPK(self):
+        return self._table.maxPK()
+
+    def _onUpdate(self, ev, info, id):
+        if ev == 'info':
+            update = [FieldValue(':' + k, v) for k, v in info.iteritems()]
+            self._table.update(Key(':id str', id), update)
+
+    @staticmethod
+    def _upgrade(data, version):
+        table = Table(*[data.get(k) for k in ('primary', 'indices', 'pkey')])
+        data['table'] = table
