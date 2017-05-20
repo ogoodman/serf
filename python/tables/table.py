@@ -81,6 +81,15 @@ class KeyValueChange(object):
         self.value = value
         self.old = old
 
+    def __eq__(self, other):
+        return (type(other) == type(self) and
+                other.key == self.key and
+                other.value == self.value and
+                other.old == self.old)
+
+    def __repr__(self):
+        return '(key=%r, value=%r, old=%r)' % (self.key, self.value, self.old)
+
 class JoinSpec(object):
     serialize = ('leftCol', 'rightCol', 'type', 'limit', 'nulls', 'keepOpen')
 

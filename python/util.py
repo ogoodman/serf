@@ -43,6 +43,15 @@ def rmap(func, info):
         return func(info)
     return mapfn(func, info)
 
+def removeAll(l, ob):
+    """Remove all occurrences of ob from the list l."""
+    i = 0
+    while i < len(l):
+        if l[i] == ob:
+            del l[i]
+        else:
+            i += 1
+
 def getOptions(short, long=None, help=None):
     """Functional wrapper for getopt.
 

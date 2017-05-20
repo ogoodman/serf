@@ -3,7 +3,7 @@
 import unittest
 from serf.tables.collection import CollectionV0, Collection
 from serf.tables.query import QTerm
-from serf.publisher import Publisher
+from serf.publisher import Publisher, PERSISTENT
 from serf.publisher_test import Subscriber
 from serf.storage import Storage, save_fn
 
@@ -67,7 +67,7 @@ class CollectionTest(unittest.TestCase):
         self.assertEqual(c.count(), 1)
         self.assertEqual(len(t.subscribers('*')), 0)
 
-        d = c.get(QTerm(':name', 'eq', 'Dick'))
+        d = c.open(QTerm(':name', 'eq', 'Dick'))
 
         self.assertEqual(d.age, 3)
 
@@ -79,7 +79,7 @@ class CollectionTest(unittest.TestCase):
         c.add(t)
 
         storage['s'] = s = Subscriber([])
-        c.subscribe('change', s.on, persist=True)
+        c.subscribe('change', s.on, how=PERSISTENT)
 
         del c, s
         storage.map_class = lambda c: c.replace('.CollectionV0', '.Collection')
@@ -87,7 +87,7 @@ class CollectionTest(unittest.TestCase):
         c = storage['c']
         self.assertEqual(type(c), Collection)
 
-        t = c.get(QTerm(':name', 'eq', 'Tom'))
+        t = c.open(QTerm(':name', 'eq', 'Tom'))
 
         self.assertEqual(type(t), Person)
 

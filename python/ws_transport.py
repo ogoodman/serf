@@ -8,7 +8,6 @@ from hashlib import sha1
 from mimetools import Message
 from cStringIO import StringIO
 from serf.publisher import Publisher
-from serf.weak_list import WeakList
 
 WS_FRAME_CONTINUATION = 0x0
 WS_FRAME_TEXT = 0x1

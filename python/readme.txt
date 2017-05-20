@@ -17,7 +17,6 @@ basic utilities
 obj.py
 publisher.py
 util.py
-weak_list.py
 
 serialization
 serializer.py

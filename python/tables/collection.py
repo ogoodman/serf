@@ -1,4 +1,4 @@
-from serf.publisher import Publisher
+from serf.publisher import Publisher, SubscribeMixin, PERSISTENT
 from serf.storage import save_fn
 from serf.tables.table import Table, Key, FieldValue
 
@@ -27,7 +27,7 @@ class CollectionV0(Table):
         """Adds an object to the collection."""
         info = item.getInfo()
         info['id'] = id = item.getId()
-        info['sid'] = item.subscribe('*', self._onUpdate, (id,), persist=True)
+        info['sid'] = item.subscribe('*', self._onUpdate, (id,), how=PERSISTENT)
         self.setKey(':id str', info)
 
     def discard(self, item):
@@ -35,7 +35,7 @@ class CollectionV0(Table):
         id = item.getId()
         kvs = self.pop(Key(':id str', id))
         for kv in kvs:
-            item.unsubscribe('*', kv.value['sid'], persist=True)
+            item.unsubscribe('*', kv.value['sid'], how=PERSISTENT)
 
     def get(self, query):
         """Returns the first object matching the query."""
@@ -49,7 +49,7 @@ class CollectionV0(Table):
             self.update(Key(':id str', id), update)
 
 
-class Collection(object):
+class Collection(SubscribeMixin):
     """Table of brief info for a set of persistent objects.
 
     Objects must implement getId() returning a unique identifier, and
@@ -75,7 +75,7 @@ class Collection(object):
         """Adds an object to the collection."""
         info = item.getInfo()
         info['id'] = id = item.getId()
-        info['sid'] = item.subscribe('*', self._onUpdate, (id,), persist=True)
+        info['sid'] = item.subscribe('*', self._onUpdate, (id,), how=PERSISTENT)
         self._table.setKey(':id str', info)
 
     def discard(self, item):
@@ -83,19 +83,19 @@ class Collection(object):
         id = item.getId()
         kvs = self._table.pop(Key(':id str', id))
         for kv in kvs:
-            item.unsubscribe('*', kv.value['sid'], persist=True)
+            item.unsubscribe('*', kv.value['sid'], how=PERSISTENT)
 
-    def get(self, query):
+    def open(self, query):
         """Returns the first object matching the query."""
         found = self._table.values(query)
         if found:
             return self._storage[found[0]['id']]
 
-    def subscribe(self, event, cb, args=(), persist=False):
-        return self._table.subscribe(event, cb, args, persist)
+    def addSub(self, sub):
+        self._table.addSub(sub)
 
-    def unsubscribe(self, event, cb, persist=False):
-        self._table.unsubscribe(event, cb, persist)
+    def removeSub(self, sub):
+        self._table.removeSub(sub)
 
     def select(self, filter=None):
         return self._table.select(filter)
