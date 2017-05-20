@@ -212,6 +212,15 @@ class PublisherTest(unittest.TestCase):
         self.assertEqual(s.events, [('bar', {'n': 42})])
         self.assertEqual(self.info_calls, 1)
 
+    def testUnsubscribeWeakById(self):
+        s = Subscriber([])
+        p = Publisher()
+
+        sid = p.subscribe('bar', s.on)
+        p.unsubscribe('bar', sid)
+
+        p.notify('foo', 'bar')
+        self.assertEqual(s.events, [])
 
 if __name__ == '__main__':
     unittest.main()

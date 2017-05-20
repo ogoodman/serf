@@ -26,7 +26,10 @@ class EventBinder(object):
 
     def __init__(self, event, receiver, method, args=(), id=None, how=None):
         self.event = event
-        self.receiver = weakref.ref(receiver) if how==WEAK else receiver
+        if how == WEAK and receiver is not None:
+            self.receiver = weakref.ref(receiver)
+        else:
+            self.receiver = receiver
         self.method = method
         self.args = args
         self.id = id or (random.getrandbits(32) if how==PERSISTENT else hash(receiver))
