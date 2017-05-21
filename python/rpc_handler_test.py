@@ -185,8 +185,8 @@ class RPCHandlerTest(unittest.TestCase):
         oa = Model()
         na.provide('1', oa)
 
-        rset = makeBoundMethod(nb, {'o':'1', 'm':'set'})
-        rset('x', '1')
+        rupdate = makeBoundMethod(nb, {'o':'1', 'm':'update'})
+        rupdate({'x': '1'})
 
         self.assertEqual(oa.get('x'), '1')
 

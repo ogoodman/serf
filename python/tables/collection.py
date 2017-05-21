@@ -115,7 +115,10 @@ class Collection(SubscribeMixin):
     def update(self, filter, values, model=None):
         return self._table.update(filter, values, model)
 
-    # TODO: get (rename?), join, updateIter, remove
+    def get(self, pkey):
+        return self._table.get(pkey)
+
+    # TODO: updateIter, remove
     # NOTE: remove will have to unsubscribe like discard.
 
     def _onUpdate(self, ev, info, id):
