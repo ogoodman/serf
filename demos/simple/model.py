@@ -4,6 +4,7 @@ from serf.fs_dict import FSDict
 from serf.storage import Storage
 from serf.util import dataRoot
 from serf.publisher import Publisher
+from serf.tables.table import *
 from serf.tables.collection import Collection
 
 DATA_DIR = os.path.join(dataRoot(), 'client')

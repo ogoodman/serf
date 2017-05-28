@@ -446,14 +446,14 @@ To send an event the `Person` calls `self.notify`:
     def haveBirthday(self):
         """Adds one to the age."""
         self.age += 1
-        self.notify('update', {'age': self.age})
+        self.notify('info', {'age': self.age})
 
 Make a person and a subscriber:
 
     tom = Person('Tom', 3)
     s = Subscriber()
 
-    tom.subscribe('update', s.onEvent)  # --> a subscription id
+    tom.subscribe('info', s.onEvent)  # --> a subscription id
 
 We can ignore the subscription id for now. It provides one of several
 different ways to unsubscribe should the need arise.
@@ -461,17 +461,17 @@ different ways to unsubscribe should the need arise.
     tom.haveBirthday()
 
     # prints:
-    # onEvent('update', {'age': 4})
+    # onEvent('info', {'age': 4})
 
 The source of the subscription is not provided to the subscriber but
 we can add any extra information we want at the time we make the
 subscription:
 
-    tom.subscribe('update', s.onEvent, args=('tom',))
+    tom.subscribe('info', s.onEvent, args=('tom',))
     tom.haveBirthday()
 
     # prints:
-    # onEvent('update', {'age': 5}, 'tom')
+    # onEvent('info', {'age': 5}, 'tom')
 
 Subscriptions are keyed on the event name and the receiver
 instance.
@@ -512,7 +512,7 @@ persistent publisher is discarded and re-instantiated, any normal
 subscriptions will be gone.
 
     s = Subscriber()
-    tom.subscribe('update', s.onEvent)
+    tom.subscribe('info', s.onEvent)
 
     storage['t'] = tom
 
@@ -528,7 +528,7 @@ persistent subscriptions:
 
     storage['s'] = s = Subscriber()
 
-    tom.subscribe('update', s.onEvent, persist=True)
+    tom.subscribe('info', s.onEvent, how=PERSISTENT)
 
     tom.haveBirthday()  # prints something
 
@@ -543,3 +543,192 @@ once again the message will be printed.
     from model import *
 
     storage['t'].haveBirthday()  # prints something.
+
+**NOTE:** although this is straightforward and works, this is not the
+recommended way to make persistent subscriptions in a serious
+application. See the section on Notifier objects for a better
+solution in such cases.
+
+> What are persistent subscriptions good for? 
+
+Suppose in our application we want to maintain a collection of
+users. We want the collection to behave like a database table over
+which we can query by name or age. We want the collection to publish
+an event when the details of a user change so that UI code can bind to
+the collection and show all users in a grid which tracks the changes.
+
+We can implement this using persistent subscriptions. When a user
+object is added to the collection, the collection makes a persistent
+subscription to the object. When user details change the collection is
+then notified and updates itself accordingly.
+
+Serf has such a `Collection` class, based on the `Table` class.
+We will look at how this works rather than trying to design a
+collection class from scratch.
+
+First a quick look at the `Table` class:
+
+    tbl = Table()
+    tbl.insert({'name': 'Tom', 'age': 10})  # -> [4], a primary key
+    tbl.get(4)  # -> {'age': 10, 'name': 'Tom'}
+    
+    tbl.values()  # -> [{'age': 10, 'name': 'Tom'}]
+    tbl.values(QTerm(':name', 'eq', 'Tom'))  # as above
+    tbl.values(QTerm(':name', 'eq', 'Dick'))  # -> []
+    
+    q = QTerm(':name', 'eq', 'Tom')
+    tbl.update(q, [FieldValue(':age', 11)])
+    tbl.get(4)  # -> {'age': 11, 'name': 'Tom'}
+
+`Tables` are `Publishers`:
+
+    ts = Subscriber()
+    tbl.subscribe('change', ts.onEvent)
+    
+    tbl.update(q, [FieldValue(':age', 12)])
+    # prints:
+    # onEvent('change', (key=4, value={'age': 12, 'name': 'Tom'}, old={'age': 11,...}))
+    
+A `Collection` contains a `Table` and exposes most of its methods. In
+order to be able to add an object to a collection the object must have a
+method giving the information about itself to be inserted into the
+table, and another one which gives a unique id for itself.
+
+    storage['t'] = t = Person('Tom', 10)
+    
+    t.getInfo()  # -> {'age': 10, 'name': 'Tom'}
+    t.getId()    # -> 't' - the storage path
+
+We will go ahead and add *tom* and another person to a collection.
+
+    storage['d'] = d = Person('Dick', 9)
+    storage['c'] = c = Collection()
+    
+    c.add(t)
+    c.add(d)
+    
+    c.values()  # -> [{'id': 't', 'age': 10, 'name': 'Tom', 'sid': ...}, ...]
+    
+    # with q as before..
+    c.values(q)  # -> {'id': 't', 'age': 10, 'name': 'Tom', 'sid': ...}
+    
+    t.haveBirthday()
+    c.values(q)  # -> {'id': 't', 'age': 11, 'name': 'Tom', 'sid': ...}
+
+The subscription has caused our `Collection` to be updated when
+*tom's* age changed. If you subscribe to the `Collection` `'change'`
+event, you will effectively be subscribed to `'info'` events from
+all the objects in the collection.
+
+#### Notifier objects
+
+Subscribing by event name and callback method is fine in simple cases,
+but for persistent subscriptions it is actually not ideal. Suppose we
+have a subscription like this:
+
+    publisher.subscribe('info', sub.onInfoChange)
+
+If we later decide that we also need so subscribe to `'size'` events
+and that an `onChange` method should handle both events we can just
+turn that into:
+
+    publisher.subscribe('info', sub.onChange)
+    publisher.subscribe('size', sub.onChange)
+
+We restart the program and all subscriptions are made afresh.
+
+But if the original subscription was persistent, we aren't going to be
+subscribing again just because we restarted the server. We need to
+write migration code to go through all existing subscriptions,
+unsubscribe the old ones, and make the new ones we want.
+
+A partial solution is to use catch-all event handlers:
+
+    publisher.subscribe('*', sub.onEvent)
+
+Now `onEvent` can filter the events it receives and respond
+appropriately. If we want it to handle a new event, a code change and
+a restart is all that is required.
+
+The down-side to this is that `publisher` might produce a lot of
+events that are of no interest to `sub` and it might be costly for it
+to produce them all. If `sub` is remote (which we will come to soon)
+there is also the cost of delivering the redundant events.
+
+A better solution is to use a *notifier* object. Instead of calling
+`publisher.subscribe` with the event name and the rest, we call
+`publisher.addSub` passing a single notifier object.
+
+For persistent subscriptions the simplest way to make a notifier is to
+inherit from `serf.publisher.NotifierMixin`. Here is what
+the `serf.tables.collection.Notifier` looks like:
+
+    class Notifier(NotifierMixin):
+        def wants(self, event):
+            return event == 'info'
+    
+        def notify(self, event, info):
+            update = [FieldValue(':' + k, v) for k, v in info.iteritems()]
+            self.receiver.update(Key(':id str', self.arg), update)
+
+In this code `self.receiver` is the collection, while `self.arg` is
+the object id. These are set by the inherited `NotifierMixin`
+constructor which we will come to in a moment.
+
+The `wants` method returns `True` if it is interested in a particular
+event. If it returns `False` the publisher may not even need to
+generate info for the event.
+The `notify` method delivers the event to the receiver.
+
+The `NotifierMixin` constructor looks like this:
+
+    notifier = NotifierMixin(receiver, arg, sid=None)
+
+If no `sid` (subscriber id) is given, a random number will be
+generated and exposed as `notifier.sid`. When an object is added to a
+`Collection` a subscription is made as follows:
+
+    id = obj.getId()
+    notifier = Notifier(self, id)  # self is the Collection
+    obj.addSub(notifier)
+
+We can see that `notifier.notify` uses the object's unique id
+(stored in `notifier.arg`) to look up the correct row of the table,
+and updates it using key-value pairs from the event info.
+
+The subscriber id generated when the notifier was made is stored in
+the table. When the time comes to remove the object:
+
+    notifier = Notifier(self, id, sid)
+    obj.removeSub(notifier)
+
+`NotifierMixin` objects use the subscriber id to determine object
+equality.
+
+Returning to our motivating example, we would have started with a
+notifier like this:
+
+    class Notifier(NotifierMixin):
+        def want(self, event):
+            return event == 'info'
+        def notify(self, event, info):
+            self.receiver.onInfoChange(event, info)
+
+We can deal with the changed requirements by changing the code to:
+
+    class Notifier(NotifierMixin):
+        def want(self, event):
+            return event in ('info', 'size')
+        def notify(self, event, info):
+            self.receiver.onChange(event, info)
+
+**NOTE:** although this is initially a bit more work than
+method-based subscriptions, it is a picnic compared to the trouble you
+will unleash if you use the latter for persistent subscriptions.
+
+**NOTE:** another advantage of notifier based subscriptions is that
+you don't necessarily have to add any special-purpose event handling
+methods to your subscriber class. You can see this in the `Collection`
+case: only the existing table `update` method is needed handle the
+event.
+
