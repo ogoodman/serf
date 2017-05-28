@@ -2,10 +2,10 @@ from collection import Collection
 from serf.model import Model
 
 class CollectionModel(Model, Collection):
-    serialize = ('#vat', 'data', '_subs', '_table')
+    serialize = ('data', '_subs', '_table')
 
-    def __init__(self, storage, data=None, subs=None, table=None):
-        Collection.__init__(self, storage, table)
+    def __init__(self, data=None, subs=None, table=None):
+        Collection.__init__(self, table)
         Model.__init__(self, data, subs)
 
     def addSub(self, sub):

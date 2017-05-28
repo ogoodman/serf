@@ -17,12 +17,11 @@ class Collection(SubscribeMixin):
     properties, but don't want to have to instantiate all the objects
     in order to do so.
     """
-    serialize = ('#vat', '_table')
+    serialize = ('_table',)
     _version = 1
 
-    def __init__(self, storage, table=None):
+    def __init__(self, table=None):
         self._table = Table() if table is None else table
-        self._storage = storage
 
     def add(self, item):
         """Adds an object to the collection."""
@@ -37,12 +36,6 @@ class Collection(SubscribeMixin):
         kvs = self._table.pop(Key(':id str', id))
         for kv in kvs:
             item.unsubscribe('*', kv.value['sid'], how=PERSISTENT)
-
-    def open(self, query):
-        """Returns the first object matching the query."""
-        found = self._table.values(query)
-        if found:
-            return self._storage[found[0]['id']]
 
     def addSub(self, sub):
         self._table.addSub(sub)
