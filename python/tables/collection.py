@@ -1,4 +1,5 @@
-from serf.publisher import Publisher, SubscribeMixin, PERSISTENT
+import random
+from serf.publisher import Publisher, SubscribeMixin, PERSISTENT, NotifierMixin
 from serf.storage import save_fn
 from serf.tables.table import Table, Key, FieldValue
 
@@ -27,7 +28,9 @@ class Collection(SubscribeMixin):
         """Adds an object to the collection."""
         info = item.getInfo()
         info['id'] = id = item.getId()
-        info['sid'] = item.subscribe('*', self._onUpdate, (id,), how=PERSISTENT)
+        notifier = Notifier(self, id)
+        info['sid'] = notifier.sid
+        item.addSub(notifier)
         self._table.setKey(':id str', info)
 
     def discard(self, item):
@@ -35,7 +38,7 @@ class Collection(SubscribeMixin):
         id = item.getId()
         kvs = self._table.pop(Key(':id str', id))
         for kv in kvs:
-            item.unsubscribe('*', kv.value['sid'], how=PERSISTENT)
+            item.removeSub(Notifier(self, id, kv.value['sid']))
 
     def addSub(self, sub):
         self._table.addSub(sub)
@@ -67,7 +70,11 @@ class Collection(SubscribeMixin):
     # TODO: updateIter, remove
     # NOTE: remove will have to unsubscribe like discard.
 
-    def _onUpdate(self, ev, info, id):
-        if ev == 'info':
-            update = [FieldValue(':' + k, v) for k, v in info.iteritems()]
-            self._table.update(Key(':id str', id), update)
+class Notifier(NotifierMixin):
+
+    def wants(self, event):
+        return event == 'info'
+
+    def notify(self, event, info):
+        update = [FieldValue(':' + k, v) for k, v in info.iteritems()]
+        self.receiver.update(Key(':id str', self.arg), update)

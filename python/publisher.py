@@ -224,3 +224,59 @@ def convertSubs(subs):
             print 'convertSubs', event, bm.target, bm.method, args, id
             new_subs.append(EventBinder(event, bm.target, bm.method, args, id))
     return new_subs
+
+class NotifierMixin(object):
+    """Base class for defining persistent subscribers.
+
+    Implementations must define `wants` and `notify`. E.g.:
+
+        class MyNotifier(NotifierMixin):
+
+            def wants(self, event):
+                return event == 'update'
+
+            def notify(self, event, info):
+                self.receiver.handleUpdate(event, info, self.arg)
+
+    Instead of doing:
+
+        sid = publisher.subscribe('update', subscriber.handleUpdate, (arg,),
+                                  how=PERSISTENT)
+
+    we do:
+
+        notifier = MyNotifier(subscriber, arg)
+        publisher.addSub(notifier)
+
+        sid = notifier.sid
+
+    Although it is somewhat more work, it provides a degree of
+    future-proofing that is highly desirable with persistent
+    subscriptions.
+
+    With method-based subscriptions we cannot change what events we
+    subscribe to or what method is called, without going through all
+    existing subscriptions and re-doing them. With notifier objects we
+    simply change the definitions of `wants` and `notify` and all
+    existing subscriptions are immediately changed.
+
+    NOTE: although it is possible to get the same future-proofing from
+    doing a '*' subscription and providing a catch-all event handling
+    method, this has the disadvantage of generating unnecessary work
+    for the publisher when events occur that are of no interest to the
+    subscriber.
+
+    """
+    serialize = ('receiver', 'arg', 'sid')
+    how = PERSISTENT
+
+    def __init__(self, receiver, arg=None, sid=None):
+        self.receiver = receiver
+        self.arg = arg
+        self.sid = sid or random.getrandbits(32)
+
+    def __eq__(self, other):
+        return other.sid == self.sid
+
+    def handle(self):
+        return None
