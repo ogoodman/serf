@@ -1,7 +1,7 @@
 """Tests for Collection of persistent objects."""
 
 import unittest
-from serf.tables.collection import CollectionV0, Collection
+from serf.tables.collection import Collection
 from serf.tables.query import QTerm
 from serf.publisher import Publisher, PERSISTENT
 from serf.publisher_test import Subscriber
@@ -70,58 +70,6 @@ class CollectionTest(unittest.TestCase):
         d = c.open(QTerm(':name', 'eq', 'Dick'))
 
         self.assertEqual(d.age, 3)
-
-    def testUpgrade(self):
-        storage = Storage({})
-
-        t = storage.makeRef(Person('Tom', 3))
-        storage['c'] = c = CollectionV0(storage)
-        c.add(t)
-
-        storage['s'] = s = Subscriber([])
-        c.subscribe('change', s.on, how=PERSISTENT)
-
-        del c, s
-        storage.map_class = lambda c: c.replace('.CollectionV0', '.Collection')
-
-        c = storage['c']
-        self.assertEqual(type(c), Collection)
-
-        t = c.open(QTerm(':name', 'eq', 'Tom'))
-
-        self.assertEqual(type(t), Person)
-
-        # Subscriptions to objects must survive the upgrade.
-        t.setAge(4)
-        self.assertEqual(c.values()[0]['age'], 4)
-        self.assertEqual(len(t.subscribers('*')), 1)
-
-        # Persistent subscriptions to the Collection must survive.
-        s = storage['s']
-        self.assertEqual(len(s.events), 1)
-
-        c.discard(t)
-        self.assertEqual(c.values(), [])
-        self.assertEqual(t.subscribers('*'), [])
-
-        d = storage.makeRef(Person('Dick', 5))
-        c.add(d)
-        self.assertEqual(c.values()[0]['age'], 5)
-        self.assertEqual(len(d.subscribers('*')), 1)
-
-        d.setAge(6)
-        self.assertEqual(c.values()[0]['age'], 6)
-
-        self.assertEqual(c.maxPK(), 8)
-        self.assertEqual(len(c.select()), 1)
-        self.assertEqual(c.count(QTerm(':name', 'eq', 'Harry')), 0)
-        self.assertEqual(c.pkeys(), [8])
-
-        del c
-
-        d.setAge(7)
-        c = storage['c']
-        self.assertEqual(c.values()[0]['age'], 7)
 
     def testSubscribe(self):
         storage = Storage({})
