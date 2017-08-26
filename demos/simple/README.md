@@ -602,7 +602,7 @@ table, and another one which gives a unique id for itself.
 We will go ahead and add *tom* and another person to a collection.
 
     storage['d'] = d = Person('Dick', 9)
-    storage['c'] = c = Collection()
+    storage['c'] = c = Collection(storage)
     
     c.add(t)
     c.add(d)

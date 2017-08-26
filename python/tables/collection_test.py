@@ -35,13 +35,6 @@ class Person(Publisher):
         return {'name': self.name, 'age': self.age}
 
 
-def find_one(storage, collection, query):
-    found = collection.values(query)
-    if not found:
-        return None
-    return storage[found[0]['id']]
-
-
 class CollectionTest(unittest.TestCase):
     def test(self):
         storage = Storage({})
@@ -49,7 +42,7 @@ class CollectionTest(unittest.TestCase):
         t = storage.makeRef(Person('Tom', 3))
         d = storage.makeRef(Person('Dick', 3))
 
-        storage['c'] = c = Collection()
+        storage['c'] = c = Collection(storage)
 
         c.add(t)
         c.add(d)
@@ -74,7 +67,7 @@ class CollectionTest(unittest.TestCase):
         self.assertEqual(c.count(), 1)
         self.assertEqual(len(t.subscribers('*')), 0)
 
-        d = find_one(storage, c, QTerm(':name', 'eq', 'Dick'))
+        d = c.open(QTerm(':name', 'eq', 'Dick'))
 
         self.assertEqual(d.age, 3)
 
@@ -82,7 +75,7 @@ class CollectionTest(unittest.TestCase):
         storage = Storage({})
 
         t = storage.makeRef(Person('Tom', 3))
-        storage['c'] = c = Collection()
+        storage['c'] = c = Collection(storage)
         c.add(t)
 
         storage['s'] = s = Subscriber([])

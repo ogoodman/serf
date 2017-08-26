@@ -15,7 +15,7 @@ class CollectionModelTest(unittest.TestCase):
     def test(self):
         storage = Storage({})
         storage['s'] = s = Subscriber([])
-        storage['c'] = c = People({'name': 'Kids', 'area': 3056})
+        storage['c'] = c = People(storage, {'name': 'Kids', 'area': 3056})
         storage['t'] = t = Person({'name': 'Tom', 'age': 3})
 
         # Subscriptions to a CollectionModel go to both
