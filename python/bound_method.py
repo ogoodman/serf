@@ -33,7 +33,7 @@ class JCBoundMethod(object):
             if self.node == h.node_id:
                 h.localCall(self.oid, self.method, args)
             else:
-                h.send(self.node, self.oid, {'m':self.method, 'a':list(args)})
+                h.send(self.node, {'m':self.method, 'a':list(args), 'o': self.oid})
         except:
             pass
 

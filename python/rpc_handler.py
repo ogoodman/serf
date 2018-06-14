@@ -57,7 +57,7 @@ class SendErrorCb(object):
         self.cb_id = sender_cb_id
 
     def failure(self, exc):
-        self.vat.lput(self.cb_id, {'e': exc})
+        self.vat.lput({'e': exc, 'o': self.cb_id})
 
 def encodeException(e):
     return [type(e).__name__] + list(e.args)
@@ -306,7 +306,7 @@ class RPCHandler(object):
         """
         self.thread_model.callFromThread(self._rhandle, msg)
 
-    def lput(self, addr, msg):
+    def lput(self, msg):
         """Handler for messages staying on this node.
 
         Messages are not encoded. They may be going from one
@@ -317,11 +317,11 @@ class RPCHandler(object):
             addr: instance to which message is addressed
             msg: python data (not encoded)
         """
-        self.thread_model.callFromThread(self._nhandle, addr, msg)
+        self.thread_model.callFromThread(self._nhandle, msg)
 
-    def _nhandle(self, addr, msg):
+    def _nhandle(self, msg):
         msg = rmap(self.localize, msg)
-        self._handle(addr, msg, self.node_id)
+        self._handle(msg, self.node_id)
 
     def _peer_protocol(self, node):
         if node in ('server', 'browser'):
@@ -342,17 +342,13 @@ class RPCHandler(object):
         else:
             f = StringIO(msg_data['message'])
             msg = decode(f, RemoteCtx(self, msg_data))
-        addr = msg['o']
-        # Subtract transport path from incoming message.
-        assert(addr.startswith(self.node.path))
-        addr = addr[len(self.node.path):]
-        self._handle(addr, msg, from_)
+        self._handle(msg, from_)
 
-    def _handle(self, addr, msg, from_):
+    def _handle(self, msg, from_):
         if 'm' in msg:
-            self.thread_model.call(self.handleCall, addr, msg, from_)
+            self.thread_model.call(self.handleCall, msg['o'], msg, from_)
         else:
-            self.handleReply(addr, msg)
+            self.handleReply(msg['o'], msg)
 
     def handleReply(self, addr, msg):
         # TODO: make from-node part of the callbacks key and pass it through.
@@ -393,17 +389,16 @@ class RPCHandler(object):
                 print 'Exc (no reply addr):', addr, msg, exc
             return
         if exc is None:
-            msg = {'r': result}
+            msg = {'r': result, 'o': reply_addr}
         else:
-            msg = {'e': encodeException(exc)}
+            msg = {'e': encodeException(exc), 'o': reply_addr}
         try:
             # serialization errors can occur here.
-            self.send(reply_node, reply_addr, msg)
+            self.send(reply_node, msg)
         except SerializationError, exc:
-            self.send(reply_node, reply_addr, {'e': encodeException(exc)})
+            self.send(reply_node, {'e': encodeException(exc), 'o': reply_addr})
 
-    def send(self, node, addr, msg, errh=None):
-        msg['o'] = addr
+    def send(self, node, msg, errh=None):
         pcol = self._peer_protocol(node)
         if pcol == 'json':
             if self.verbose:
@@ -429,9 +424,10 @@ class RPCHandler(object):
         self.callbacks[reply_addr] = cb
         msg = {'m': method,
                'a': args,
+               'o': addr,
                'O': reply_addr}
         send_err_cb = SendErrorCb(self, reply_addr)
-        self.send(node, addr, msg, send_err_cb.failure)
+        self.send(node, msg, send_err_cb.failure)
         return cb
 
     def localize(self, x):
@@ -484,7 +480,8 @@ class RPCHandler(object):
             getn = self.storage.resources['#env'].ns.getn
         except (AttributeError, KeyError):
             return
-        self.lput(getn(name)._path, msg)
+        msg['o'] = getn(name)._path
+        self.lput(msg)
 
     def _notifyNodeObserver(self, ev, node_id):
         msg = {'m': ev, 'a': (node_id,)}
