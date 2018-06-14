@@ -346,12 +346,13 @@ class RPCHandler(object):
 
     def _handle(self, msg, from_):
         if 'm' in msg:
-            self.thread_model.call(self.handleCall, msg['o'], msg, from_)
+            self.thread_model.call(self.handleCall, msg, from_)
         else:
-            self.handleReply(msg['o'], msg)
+            self.handleReply(msg)
 
-    def handleReply(self, addr, msg):
+    def handleReply(self, msg):
         # TODO: make from-node part of the callbacks key and pass it through.
+        addr = msg['i']
         cb = self.callbacks.pop(addr)
         if 'r' in msg:
             cb.success(msg['r'])
@@ -378,25 +379,26 @@ class RPCHandler(object):
                     pass
         return result, exc
 
-    def handleCall(self, addr, msg, reply_node):
+    def handleCall(self, msg, reply_node):
+        addr = msg['o']
         method = msg['m']
         args = msg['a']
         result, exc = self.localCall(addr, method, args)
         try:
-            reply_addr = msg['O']
+            reply_addr = msg['i']
         except KeyError:
             if exc is not None:
                 print 'Exc (no reply addr):', addr, msg, exc
             return
         if exc is None:
-            msg = {'r': result, 'o': reply_addr}
+            msg = {'r': result, 'i': reply_addr}
         else:
-            msg = {'e': encodeException(exc), 'o': reply_addr}
+            msg = {'e': encodeException(exc), 'i': reply_addr}
         try:
             # serialization errors can occur here.
             self.send(reply_node, msg)
         except SerializationError, exc:
-            self.send(reply_node, {'e': encodeException(exc), 'o': reply_addr})
+            self.send(reply_node, {'e': encodeException(exc), 'i': reply_addr})
 
     def send(self, node, msg, errh=None):
         pcol = self._peer_protocol(node)
@@ -425,7 +427,7 @@ class RPCHandler(object):
         msg = {'m': method,
                'a': args,
                'o': addr,
-               'O': reply_addr}
+               'i': reply_addr}
         send_err_cb = SendErrorCb(self, reply_addr)
         self.send(node, msg, send_err_cb.failure)
         return cb
