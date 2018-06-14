@@ -245,6 +245,9 @@ var rpc = (function() {
         for (var i = 0, n = (methods ? methods.length : 0); i < n; ++i) {
             proxy.addMethod(methods[i]);
         }
+        if (!methods) {
+            proxy = new Proxy(proxy, handler);
+        }
         return proxy;
     };
 
